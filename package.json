@@ -10,7 +10,7 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build && npm run copy-app",
-    "copy-app": "cp -r src-tauri/target/release/bundle/macos/Imagio.app ~/Downloads/"
+    "copy-app": "rm -rf /Applications/Imagio.app && cp -r src-tauri/target/release/bundle/macos/Imagio.app /Applications/ && echo '✅ Imagio.app installed to /Applications/'"
   },
   "keywords": ["tauri", "ocr", "tesseract", "macos"],
   "author": "",

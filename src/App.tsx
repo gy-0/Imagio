@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { open } from '@tauri-apps/plugin-dialog';
+import { open, save } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { convertFileSrc } from '@tauri-apps/api/core';
 
@@ -32,35 +32,34 @@ function App() {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [showComparison, setShowComparison] = useState<boolean>(false);
 
-  // Load params from localStorage or use defaults
-  const getInitialParams = (): ProcessingParams => {
-    const saved = localStorage.getItem('imagio_params');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        // Fall through to defaults
-      }
-    }
+  // OCR preprocessing best practices defaults
+  // Always reset to these defaults (do not persist user changes)
+  const getDefaultParams = (): ProcessingParams => {
     return {
-      contrast: 1.0,
-      brightness: 0.0,
-      sharpness: 1.0,
-      useAdaptiveThreshold: false,
-      useClahe: false,
-      gaussianBlur: 0.0,
-      bilateralFilter: false,
-      morphology: 'none',
+      contrast: 1.3,              // Enhance text/background separation
+      brightness: 0.0,            // No brightness adjustment by default
+      sharpness: 1.2,             // Slight sharpening for text clarity
+      useAdaptiveThreshold: true, // Critical for OCR: binarize text
+      useClahe: true,             // Adaptive histogram equalization
+      gaussianBlur: 0.5,          // Light noise reduction
+      bilateralFilter: false,     // Off by default (use Gaussian instead)
+      morphology: 'none',         // No morphological operations by default
       language: 'eng'
     };
   };
 
-  // Processing parameters
-  const [params, setParams] = useState<ProcessingParams>(getInitialParams());
+  // Processing parameters - always use defaults (never remember user choices)
+  const [params, setParams] = useState<ProcessingParams>(getDefaultParams());
 
-  // Save params to localStorage whenever they change
+  // Auto-update processed image when params change (if image is loaded)
   useEffect(() => {
-    localStorage.setItem('imagio_params', JSON.stringify(params));
+    if (imagePath && !isProcessing) {
+      // Debounce the OCR call to avoid too many requests
+      const timer = setTimeout(() => {
+        performOCROnPath(imagePath);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
   }, [params]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -118,10 +117,15 @@ function App() {
         const path = selected as string;
         setImagePath(path);
         setOcrText('');
-        
+        setProcessedImageUrl('');
+        setShowComparison(false);
+
         // Convert file path to URL for preview
         const assetUrl = convertFileSrc(path);
         setImagePreviewUrl(assetUrl);
+
+        // Automatically perform OCR
+        await performOCROnPath(path);
       }
     } catch (error) {
       console.error('Error selecting file:', error);
@@ -130,26 +134,28 @@ function App() {
 
   const takeScreenshot = async () => {
     setIsProcessing(true);
+    setProcessingStatus('Taking screenshot...');
     try {
       const result = await invoke<{ path: string; text: string }>('take_screenshot');
       setImagePath(result.path);
       const assetUrl = convertFileSrc(result.path);
       setImagePreviewUrl(assetUrl);
-      
-      if (result.text) {
-        setOcrText(result.text);
-      }
+      setOcrText('');
+      setProcessedImageUrl('');
+      setShowComparison(false);
+
+      // Automatically perform OCR with current params
+      setProcessingStatus('Processing image...');
+      await performOCROnPath(result.path);
     } catch (error) {
       console.error('Error taking screenshot:', error);
       alert('Error: ' + error);
-    } finally {
       setIsProcessing(false);
+      setProcessingStatus('');
     }
   };
 
-  const performOCR = async () => {
-    if (!imagePath) return;
-
+  const performOCROnPath = async (path: string) => {
     setIsProcessing(true);
     setProcessingStatus('Loading image...');
 
@@ -158,7 +164,7 @@ function App() {
       await new Promise(resolve => setTimeout(resolve, 100)); // Allow UI to update
 
       const result = await invoke<OcrResult>('perform_ocr', {
-        imagePath,
+        imagePath: path,
         params
       });
 
@@ -182,11 +188,15 @@ function App() {
     }
   };
 
+  const performOCR = async () => {
+    if (!imagePath) return;
+    await performOCROnPath(imagePath);
+  };
+
   const copyToClipboard = async () => {
     if (ocrText && textareaRef.current) {
       try {
         await navigator.clipboard.writeText(ocrText);
-        alert('Text copied to clipboard!');
       } catch (error) {
         console.error('Failed to copy:', error);
         textareaRef.current.select();
@@ -197,9 +207,19 @@ function App() {
 
   const saveText = async () => {
     if (!ocrText) return;
-    
+
     try {
-      await invoke('save_text', { text: ocrText });
+      const filePath = await save({
+        filters: [{
+          name: 'Text',
+          extensions: ['txt']
+        }],
+        defaultPath: 'ocr_result.txt'
+      });
+
+      if (filePath) {
+        await invoke('save_text_to_path', { text: ocrText, filePath });
+      }
     } catch (error) {
       console.error('Error saving text:', error);
       alert('Error: ' + error);
@@ -210,77 +230,6 @@ function App() {
     setParams(prev => ({ ...prev, [key]: value }));
   };
 
-  // Preset configurations for different scenarios
-  const applyPreset = (preset: string) => {
-    switch (preset) {
-      case 'document':
-        setParams({
-          ...params,
-          contrast: 1.3,
-          brightness: 0.1,
-          sharpness: 1.2,
-          useAdaptiveThreshold: true,
-          useClahe: false,
-          gaussianBlur: 0.5,
-          bilateralFilter: false,
-          morphology: 'none',
-        });
-        break;
-      case 'handwriting':
-        setParams({
-          ...params,
-          contrast: 1.5,
-          brightness: 0.2,
-          sharpness: 1.5,
-          useAdaptiveThreshold: true,
-          useClahe: true,
-          gaussianBlur: 1.0,
-          bilateralFilter: false,
-          morphology: 'dilate',
-        });
-        break;
-      case 'lowquality':
-        setParams({
-          ...params,
-          contrast: 1.4,
-          brightness: 0.15,
-          sharpness: 1.8,
-          useAdaptiveThreshold: true,
-          useClahe: true,
-          gaussianBlur: 0.5,
-          bilateralFilter: true,
-          morphology: 'none',
-        });
-        break;
-      case 'photo':
-        setParams({
-          ...params,
-          contrast: 1.2,
-          brightness: 0.0,
-          sharpness: 1.3,
-          useAdaptiveThreshold: false,
-          useClahe: true,
-          gaussianBlur: 0.5,
-          bilateralFilter: true,
-          morphology: 'none',
-        });
-        break;
-      case 'default':
-      default:
-        setParams({
-          ...params,
-          contrast: 1.0,
-          brightness: 0.0,
-          sharpness: 1.0,
-          useAdaptiveThreshold: false,
-          useClahe: false,
-          gaussianBlur: 0.0,
-          bilateralFilter: false,
-          morphology: 'none',
-        });
-        break;
-    }
-  };
 
   // Drag and drop handlers
   const handleDragEnter = (e: React.DragEvent) => {
@@ -316,10 +265,15 @@ function App() {
         const path = (imageFile as any).path || imageFile.name;
         setImagePath(path);
         setOcrText('');
+        setProcessedImageUrl('');
+        setShowComparison(false);
 
         // Convert file path to URL for preview
         const assetUrl = convertFileSrc(path);
         setImagePreviewUrl(assetUrl);
+
+        // Automatically perform OCR
+        await performOCROnPath(path);
       } catch (error) {
         console.error('Error handling dropped file:', error);
       }
@@ -337,7 +291,7 @@ function App() {
       <h1>Imagio - OCR Application</h1>
 
       <div className="shortcuts-hint">
-        ⌨️ Shortcuts: ⌘O Open | ⌘⇧S Screenshot | ⌘↵ Extract | ⌘C Copy | ⌘S Save
+        ⌨️ Shortcuts: <kbd>⌘O</kbd> Open | <kbd>⌘⇧S</kbd> Screenshot | <kbd>⌘C</kbd> Copy | <kbd>⌘S</kbd> Save
       </div>
 
       {isDragging && (
@@ -349,17 +303,37 @@ function App() {
       )}
 
       <div className="toolbar">
-        <button onClick={selectImage} className="primary-btn">
-          📁 Select Image
+        <button onClick={selectImage} className="toolbar-btn">
+          <span className="btn-icon">📁</span>
+          <span className="btn-text">Select Image</span>
         </button>
-        <button onClick={takeScreenshot} className="primary-btn">
-          📸 Take Screenshot
+        <button onClick={takeScreenshot} className="toolbar-btn">
+          <span className="btn-icon">📸</span>
+          <span className="btn-text">Screenshot</span>
         </button>
-        <button 
-          onClick={() => setShowAdvanced(!showAdvanced)} 
-          className="secondary-btn"
+        <div className="toolbar-btn language-btn">
+          <span className="btn-icon">🌐</span>
+          <select
+            className="language-select"
+            value={params.language}
+            onChange={(e) => updateParam('language', e.target.value)}
+          >
+            <option value="eng">English</option>
+            <option value="chi_sim">简体中文</option>
+            <option value="chi_tra">繁體中文</option>
+            <option value="jpn">日本語</option>
+            <option value="kor">한국어</option>
+            <option value="fra">Français</option>
+            <option value="deu">Deutsch</option>
+            <option value="spa">Español</option>
+          </select>
+        </div>
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="toolbar-btn advanced-btn"
         >
-          ⚙️ {showAdvanced ? 'Hide' : 'Show'} Advanced
+          <span className="btn-icon">⚙️</span>
+          <span className="btn-text">{showAdvanced ? 'Hide' : 'Show'} Advanced</span>
         </button>
       </div>
 
@@ -410,158 +384,116 @@ function App() {
         <div className="advanced-controls">
           <h3>Advanced Processing</h3>
 
-          <div className="control-group">
-            <label>
-              Preset:
-              <select onChange={(e) => applyPreset(e.target.value)} defaultValue="">
-                <option value="">Select a preset...</option>
-                <option value="default">Default (No Processing)</option>
-                <option value="document">📄 Printed Document</option>
-                <option value="handwriting">✍️ Handwriting</option>
-                <option value="lowquality">📷 Low Quality / Scanned</option>
-                <option value="photo">📸 Photo of Text</option>
-              </select>
-            </label>
-          </div>
+          <div className="controls-grid">
+            <div className="control-group">
+              <label>
+                Contrast: {params.contrast.toFixed(1)}
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2.0"
+                  step="0.1"
+                  value={params.contrast}
+                  onChange={(e) => updateParam('contrast', parseFloat(e.target.value))}
+                />
+              </label>
+            </div>
 
-          <div className="control-group">
-            <label>
-              Language:
-              <select 
-                value={params.language} 
-                onChange={(e) => updateParam('language', e.target.value)}
-              >
-                <option value="eng">English</option>
-                <option value="chi_sim">Chinese (Simplified)</option>
-                <option value="chi_tra">Chinese (Traditional)</option>
-                <option value="jpn">Japanese</option>
-                <option value="kor">Korean</option>
-                <option value="fra">French</option>
-                <option value="deu">German</option>
-                <option value="spa">Spanish</option>
-              </select>
-            </label>
-          </div>
+            <div className="control-group">
+              <label>
+                Brightness: {params.brightness.toFixed(1)}
+                <input
+                  type="range"
+                  min="-0.5"
+                  max="0.5"
+                  step="0.1"
+                  value={params.brightness}
+                  onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
+                />
+              </label>
+            </div>
 
-          <div className="control-group">
-            <label>
-              Contrast: {params.contrast.toFixed(1)}
-              <input 
-                type="range" 
-                min="0.5" 
-                max="2.0" 
-                step="0.1" 
-                value={params.contrast}
-                onChange={(e) => updateParam('contrast', parseFloat(e.target.value))}
-              />
-            </label>
-          </div>
+            <div className="control-group">
+              <label>
+                Sharpness: {params.sharpness.toFixed(1)}
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2.0"
+                  step="0.1"
+                  value={params.sharpness}
+                  onChange={(e) => updateParam('sharpness', parseFloat(e.target.value))}
+                />
+              </label>
+            </div>
 
-          <div className="control-group">
-            <label>
-              Brightness: {params.brightness.toFixed(1)}
-              <input 
-                type="range" 
-                min="-0.5" 
-                max="0.5" 
-                step="0.1" 
-                value={params.brightness}
-                onChange={(e) => updateParam('brightness', parseFloat(e.target.value))}
-              />
-            </label>
-          </div>
+            <div className="control-group">
+              <label>
+                Gaussian Blur: {params.gaussianBlur.toFixed(1)}
+                <input
+                  type="range"
+                  min="0"
+                  max="5.0"
+                  step="0.5"
+                  value={params.gaussianBlur}
+                  onChange={(e) => updateParam('gaussianBlur', parseFloat(e.target.value))}
+                />
+              </label>
+            </div>
 
-          <div className="control-group">
-            <label>
-              Sharpness: {params.sharpness.toFixed(1)}
-              <input 
-                type="range" 
-                min="0.5" 
-                max="2.0" 
-                step="0.1" 
-                value={params.sharpness}
-                onChange={(e) => updateParam('sharpness', parseFloat(e.target.value))}
-              />
-            </label>
-          </div>
+            <div className="control-group">
+              <label>
+                Morphology:
+                <select
+                  value={params.morphology}
+                  onChange={(e) => updateParam('morphology', e.target.value)}
+                >
+                  <option value="none">None</option>
+                  <option value="erode">Erode (Thin)</option>
+                  <option value="dilate">Dilate (Thicken)</option>
+                </select>
+              </label>
+            </div>
 
-          <div className="control-group">
-            <label>
-              Gaussian Blur: {params.gaussianBlur.toFixed(1)}
-              <input
-                type="range"
-                min="0"
-                max="5.0"
-                step="0.5"
-                value={params.gaussianBlur}
-                onChange={(e) => updateParam('gaussianBlur', parseFloat(e.target.value))}
-              />
-            </label>
-          </div>
+            <div className="control-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={params.useClahe}
+                  onChange={(e) => updateParam('useClahe', e.target.checked)}
+                />
+                CLAHE
+              </label>
+            </div>
 
-          <div className="control-group">
-            <label>
-              Morphology:
-              <select
-                value={params.morphology}
-                onChange={(e) => updateParam('morphology', e.target.value)}
-              >
-                <option value="none">None</option>
-                <option value="erode">Erode (Thin Text)</option>
-                <option value="dilate">Dilate (Thicken Text)</option>
-              </select>
-            </label>
-          </div>
+            <div className="control-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={params.bilateralFilter}
+                  onChange={(e) => updateParam('bilateralFilter', e.target.checked)}
+                />
+                Bilateral Filter
+              </label>
+            </div>
 
-          <div className="control-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={params.useClahe}
-                onChange={(e) => updateParam('useClahe', e.target.checked)}
-              />
-              Use CLAHE (Contrast Enhancement)
-            </label>
-          </div>
-
-          <div className="control-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={params.bilateralFilter}
-                onChange={(e) => updateParam('bilateralFilter', e.target.checked)}
-              />
-              Bilateral Filter (Noise Reduction)
-            </label>
-          </div>
-
-          <div className="control-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={params.useAdaptiveThreshold}
-                onChange={(e) => updateParam('useAdaptiveThreshold', e.target.checked)}
-              />
-              Use Adaptive Threshold
-            </label>
+            <div className="control-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={params.useAdaptiveThreshold}
+                  onChange={(e) => updateParam('useAdaptiveThreshold', e.target.checked)}
+                />
+                Adaptive Threshold
+              </label>
+            </div>
           </div>
         </div>
       )}
 
-      {imagePath && (
-        <div className="action-section">
-          <button
-            onClick={performOCR}
-            disabled={isProcessing}
-            className="primary-btn large"
-          >
-            {isProcessing ? '⏳ Processing...' : '🔍 Extract Text'}
-          </button>
-          {isProcessing && processingStatus && (
-            <div className="processing-status">
-              {processingStatus}
-            </div>
-          )}
+      {isProcessing && processingStatus && (
+        <div className="processing-status">
+          {processingStatus}
         </div>
       )}
 
@@ -581,7 +513,7 @@ function App() {
           <textarea
             ref={textareaRef}
             value={ocrText}
-            readOnly
+            onChange={(e) => setOcrText(e.target.value)}
             rows={15}
             placeholder="OCR results will appear here..."
           />

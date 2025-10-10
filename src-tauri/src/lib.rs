@@ -26,47 +26,54 @@ struct ScreenshotResult {
 }
 
 /// Apply image preprocessing based on parameters
+/// Following best practices for OCR preprocessing:
+/// 1. Noise reduction (Gaussian blur or bilateral filter)
+/// 2. Brightness/Contrast adjustment
+/// 3. Sharpening
+/// 4. Contrast enhancement (CLAHE)
+/// 5. Morphological operations
+/// 6. Binarization (Adaptive threshold) - always last
 fn preprocess_image(img: DynamicImage, params: &ProcessingParams) -> Result<DynamicImage, String> {
     let mut processed = img;
 
-    // Apply gaussian blur first if needed (useful for noise reduction)
-    if params.gaussian_blur > 0.0 {
+    // Step 1: Noise reduction
+    // Bilateral filter preserves edges better than Gaussian blur
+    if params.bilateral_filter {
+        processed = apply_bilateral_filter(&processed);
+    } else if params.gaussian_blur > 0.0 {
         processed = apply_gaussian_blur(&processed, params.gaussian_blur);
     }
 
-    // Apply bilateral filter for edge-preserving noise reduction
-    if params.bilateral_filter {
-        processed = apply_bilateral_filter(&processed);
-    }
-
-    // Apply CLAHE for better contrast (works well on grayscale)
-    if params.use_clahe {
-        processed = apply_clahe(&processed)?;
-    }
-
-    // Apply brightness adjustment
+    // Step 2: Brightness and contrast adjustment
+    // Adjust brightness first, then contrast for better results
     if params.brightness != 0.0 {
         processed = adjust_brightness(&processed, params.brightness);
     }
 
-    // Apply contrast adjustment
     if params.contrast != 1.0 {
         processed = adjust_contrast(&processed, params.contrast);
     }
 
-    // Apply sharpness (using unsharp mask)
-    if params.sharpness != 1.0 {
+    // Step 3: Sharpening (enhance text edges)
+    if params.sharpness > 1.0 {
         processed = adjust_sharpness(&processed, params.sharpness);
     }
 
-    // Apply morphological operations
+    // Step 4: CLAHE for local contrast enhancement
+    // This works well on grayscale and should come after basic adjustments
+    if params.use_clahe {
+        processed = apply_clahe(&processed)?;
+    }
+
+    // Step 5: Morphological operations (refine text shape)
     if params.morphology == "erode" {
         processed = apply_erosion(&processed);
     } else if params.morphology == "dilate" {
         processed = apply_dilation(&processed);
     }
 
-    // Apply adaptive threshold if enabled (should be last)
+    // Step 6: Binarization (always last step)
+    // Adaptive threshold converts to black/white for optimal OCR
     if params.use_adaptive_threshold {
         processed = apply_adaptive_threshold(&processed)?;
     }
@@ -93,23 +100,24 @@ fn adjust_brightness(img: &DynamicImage, brightness: f32) -> DynamicImage {
     DynamicImage::ImageRgba8(output)
 }
 
-/// Adjust image contrast
+/// Adjust image contrast using standard formula
+/// contrast > 1.0 increases contrast, < 1.0 decreases contrast
 fn adjust_contrast(img: &DynamicImage, contrast: f32) -> DynamicImage {
     let (width, height) = img.dimensions();
     let mut output = ImageBuffer::new(width, height);
-    let factor = (259.0 * (contrast * 255.0 + 255.0)) / (255.0 * (259.0 - contrast * 255.0));
-    
+
+    // Standard contrast adjustment: new_value = (old_value - 128) * contrast + 128
     for (x, y, pixel) in img.pixels() {
         let rgba = pixel.0;
         let adjusted = [
-            ((factor * (rgba[0] as f32 - 128.0) + 128.0).clamp(0.0, 255.0)) as u8,
-            ((factor * (rgba[1] as f32 - 128.0) + 128.0).clamp(0.0, 255.0)) as u8,
-            ((factor * (rgba[2] as f32 - 128.0) + 128.0).clamp(0.0, 255.0)) as u8,
+            ((rgba[0] as f32 - 128.0) * contrast + 128.0).clamp(0.0, 255.0) as u8,
+            ((rgba[1] as f32 - 128.0) * contrast + 128.0).clamp(0.0, 255.0) as u8,
+            ((rgba[2] as f32 - 128.0) * contrast + 128.0).clamp(0.0, 255.0) as u8,
             rgba[3],
         ];
         output.put_pixel(x, y, Rgba(adjusted));
     }
-    
+
     DynamicImage::ImageRgba8(output)
 }
 
@@ -428,15 +436,15 @@ async fn take_screenshot() -> Result<ScreenshotResult, String> {
     
     let path_str = screenshot_path.to_string_lossy().to_string();
     
-    // Automatically perform OCR on the screenshot
+    // Automatically perform OCR on the screenshot with best practice defaults
     let params = ProcessingParams {
-        contrast: 1.0,
-        brightness: 0.0,
-        sharpness: 1.0,
-        use_adaptive_threshold: false,
-        use_clahe: false,
-        gaussian_blur: 0.0,
-        bilateral_filter: false,
+        contrast: 1.3,              // Enhance text/background separation
+        brightness: 0.0,            // No brightness adjustment by default
+        sharpness: 1.2,             // Slight sharpening for text clarity
+        use_adaptive_threshold: true,  // Critical for OCR: binarize text
+        use_clahe: true,            // Adaptive histogram equalization
+        gaussian_blur: 0.5,         // Light noise reduction
+        bilateral_filter: false,    // Off by default (use Gaussian instead)
         morphology: "none".to_string(),
         language: "eng".to_string(),
     };
@@ -453,22 +461,10 @@ async fn take_screenshot() -> Result<ScreenshotResult, String> {
 }
 
 #[tauri::command]
-async fn save_text(text: String) -> Result<(), String> {
-    // Use dialog to save file
-    let file_path = tauri::async_runtime::block_on(async {
-        // For now, save to default location
-        let home_dir = dirs::home_dir().ok_or("Failed to get home directory")?;
-        let desktop = home_dir.join("Desktop");
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        Ok::<PathBuf, String>(desktop.join(format!("ocr_result_{}.txt", timestamp)))
-    })?;
-    
+async fn save_text_to_path(text: String, file_path: String) -> Result<(), String> {
     fs::write(&file_path, text)
         .map_err(|e| format!("Failed to save file: {}", e))?;
-    
+
     Ok(())
 }
 
@@ -488,7 +484,7 @@ pub fn run() {
 
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![perform_ocr, take_screenshot, save_text])
+    .invoke_handler(tauri::generate_handler![perform_ocr, take_screenshot, save_text_to_path])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

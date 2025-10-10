@@ -5,7 +5,8 @@
       "Bash(cargo check:*)",
       "Bash(npm run tauri:*)",
       "Bash(echo $HOME)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(cargo:*)"
     ],
     "deny": [],
     "ask": []
