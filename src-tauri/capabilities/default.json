@@ -10,6 +10,12 @@
     "dialog:default",
     "fs:default",
     "core:path:default",
-    "core:image:default"
+    "core:image:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://*.bfl.ai/*" }
+      ]
+    }
   ]
 }

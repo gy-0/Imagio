@@ -3,6 +3,8 @@
  * Based on the FLUX Pro 1.1 Ultra API
  */
 
+import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
+
 export interface ImageGenerationOptions {
   prompt: string;
   aspectRatio?: string;
@@ -13,6 +15,7 @@ export interface ImageGenerationOptions {
 export interface GenerationResponse {
   id: string;
   status: string;
+  polling_url: string;
 }
 
 export interface ResultResponse {
@@ -47,15 +50,15 @@ export class ImageGenerationClient {
    * Generate an image from a prompt
    */
   async generateImage(options: ImageGenerationOptions): Promise<string> {
-    const requestId = await this.createGenerationRequest(options);
-    const imageUrl = await this.pollForResult(requestId);
+    const { requestId, pollingUrl } = await this.createGenerationRequest(options);
+    const imageUrl = await this.pollForResult(pollingUrl, requestId);
     return imageUrl;
   }
 
   /**
    * Create a generation request and return the request ID
    */
-  private async createGenerationRequest(options: ImageGenerationOptions): Promise<string> {
+  private async createGenerationRequest(options: ImageGenerationOptions): Promise<{ requestId: string; pollingUrl: string }> {
     const url = `${this.baseURL}/flux-pro-1.1-ultra`;
 
     const requestBody: Record<string, any> = {
@@ -72,7 +75,7 @@ export class ImageGenerationClient {
     console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
     try {
-      const response = await fetch(url, {
+      const response = await resolveFetch()(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,8 +104,17 @@ export class ImageGenerationClient {
       }
 
       const data: GenerationResponse = await response.json();
+      if (!data.polling_url) {
+        throw new ImageGenerationError(
+          'API response missing polling URL.',
+          'REQUEST_FAILED'
+        );
+      }
+
       console.log('Generation request created:', data.id);
-      return data.id;
+      console.log('Polling URL:', data.polling_url);
+
+      return { requestId: data.id, pollingUrl: data.polling_url };
     } catch (error) {
       if (error instanceof ImageGenerationError) {
         throw error;
@@ -117,12 +129,10 @@ export class ImageGenerationClient {
   /**
    * Poll for the result of a generation request
    */
-  private async pollForResult(requestId: string, maxAttempts: number = 120): Promise<string> {
-    const url = `${this.baseURL}/get_result?id=${requestId}`;
-
+  private async pollForResult(pollingUrl: string, requestId?: string, maxAttempts: number = 120): Promise<string> {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        const response = await fetch(url, {
+        const response = await resolveFetch()(pollingUrl, {
           headers: {
             'accept': 'application/json',
             'x-key': this.apiKey,
@@ -149,7 +159,7 @@ export class ImageGenerationClient {
         }
 
         // Still pending, wait before next poll
-        console.log(`Polling attempt ${attempt + 1}/${maxAttempts}: ${data.status}`);
+        console.log(`Polling attempt ${attempt + 1}/${maxAttempts} for ${requestId ?? 'request'}: ${data.status}`);
         await this.sleep(500);
       } catch (error) {
         if (error instanceof ImageGenerationError) {
@@ -181,7 +191,7 @@ export class ImageGenerationClient {
  */
 export async function downloadImageAsBlob(imageUrl: string): Promise<string> {
   try {
-    const response = await fetch(imageUrl, {
+    const response = await resolveFetch()(imageUrl, {
       cache: 'no-store',
     });
 
@@ -204,4 +214,11 @@ export async function downloadImageAsBlob(imageUrl: string): Promise<string> {
       'DOWNLOAD_FAILED'
     );
   }
+}
+
+function resolveFetch(): typeof fetch {
+  const isTauri =
+    typeof window !== 'undefined' &&
+    typeof (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== 'undefined';
+  return isTauri ? (tauriFetch as unknown as typeof fetch) : fetch;
 }

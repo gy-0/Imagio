@@ -25,8 +25,8 @@ tauri = { version = "2.8.5", features = ["protocol-asset"] }
 tauri-plugin-log = "2"
 tauri-plugin-dialog = "2.0"
 tauri-plugin-fs = "2.0"
+tauri-plugin-http = "2"
 tesseract = "0.15"
 dirs = "5.0"
 image = { version = "0.25", features = ["png", "jpeg", "gif", "bmp", "tiff", "webp"] }
 imageproc = "0.25"
-

@@ -12,7 +12,12 @@
     "tauri:build": "tauri build && npm run copy-app",
     "copy-app": "rm -rf /Applications/Imagio.app && cp -r src-tauri/target/release/bundle/macos/Imagio.app /Applications/ && echo '✅ Imagio.app installed to /Applications/'"
   },
-  "keywords": ["tauri", "ocr", "tesseract", "macos"],
+  "keywords": [
+    "tauri",
+    "ocr",
+    "tesseract",
+    "macos"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
@@ -24,10 +29,11 @@
     "vite": "^7.1.9"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
     "@tauri-apps/api": "^2.2.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
-    "@tauri-apps/plugin-fs": "^2.0.0"
+    "@tauri-apps/plugin-fs": "^2.0.0",
+    "@tauri-apps/plugin-http": "^2.5.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   }
 }

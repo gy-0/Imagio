@@ -901,12 +901,18 @@ Generate a concise, descriptive prompt that captures the essence and key visual 
                       </div>
                       <div className="button-group prompt-buttons">
                         <button
-                          onClick={() => navigator.clipboard.writeText(optimizedPrompt)}
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(optimizedPrompt).catch(error => {
+                              console.error('Failed to copy optimized prompt:', error);
+                            });
+                          }}
                           className="secondary-btn"
                         >
                           📋 Copy
                         </button>
                         <button
+                          type="button"
                           onClick={generateImage}
                           className="primary-btn"
                           disabled={isGenerating || !optimizedPrompt.trim()}
@@ -926,26 +932,26 @@ Generate a concise, descriptive prompt that captures the essence and key visual 
                       </div>
                     )}
                   </div>
-                  <div className="generated-image-section">
-                    <h3>Generated Image</h3>
-                    <div className="generated-image-container">
-                      {isGenerating ? (
-                        <div className="generation-loading">
-                          <div className="spinner"></div>
-                          <p>{generationStatus}</p>
-                        </div>
-                      ) : generatedImageUrl ? (
-                        <img
-                          src={generatedImageUrl}
-                          alt="Generated"
-                          className="generated-image"
-                        />
-                      ) : (
-                        <div className="empty-state">
-                          <p>Generated image will appear here</p>
-                        </div>
-                      )}
-                    </div>
+                </div>
+                <div className="generated-image-section">
+                  <h3>Generated Image</h3>
+                  <div className="generated-image-container">
+                    {isGenerating ? (
+                      <div className="generation-loading">
+                        <div className="spinner"></div>
+                        <p>{generationStatus}</p>
+                      </div>
+                    ) : generatedImageUrl ? (
+                      <img
+                        src={generatedImageUrl}
+                        alt="Generated"
+                        className="generated-image"
+                      />
+                    ) : (
+                      <div className="empty-state">
+                        <p>Generated image will appear here</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
