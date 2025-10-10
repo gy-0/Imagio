@@ -27,4 +27,6 @@ tauri-plugin-dialog = "2.0"
 tauri-plugin-fs = "2.0"
 tesseract = "0.15"
 dirs = "5.0"
+image = { version = "0.25", features = ["png", "jpeg", "gif", "bmp", "tiff", "webp"] }
+imageproc = "0.25"
 
