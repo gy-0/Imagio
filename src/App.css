@@ -38,12 +38,26 @@ body {
 h1 {
   font-size: 2.5em;
   line-height: 1.1;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   text-align: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.shortcuts-hint {
+  text-align: center;
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 2rem;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  .shortcuts-hint {
+    color: rgba(0, 0, 0, 0.5);
+  }
 }
 
 h2 {
@@ -73,6 +87,35 @@ h3 {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.comparison-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.comparison-side h3 {
+  text-align: center;
+  margin-bottom: 0.5rem;
+  font-size: 1em;
+  color: #667eea;
+}
+
+@media (max-width: 768px) {
+  .comparison-container {
+    grid-template-columns: 1fr;
+  }
 }
 
 .image-container {
@@ -151,8 +194,26 @@ h3 {
 /* Action Section */
 .action-section {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
   margin-bottom: 2rem;
+}
+
+.processing-status {
+  font-size: 0.9em;
+  color: #667eea;
+  font-weight: 500;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Result Card */
@@ -317,6 +378,31 @@ textarea:focus {
 .advanced-controls,
 .result-card {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* Drag and Drop Overlay */
+.drop-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(102, 126, 234, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.drop-message {
+  font-size: 2em;
+  font-weight: bold;
+  color: white;
+  padding: 2rem 3rem;
+  border: 3px dashed white;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 /* Scrollbar */

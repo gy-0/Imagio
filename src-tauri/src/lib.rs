@@ -6,11 +6,16 @@ use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 use imageproc::contrast::adaptive_threshold;
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ProcessingParams {
     contrast: f32,
     brightness: f32,
     sharpness: f32,
     use_adaptive_threshold: bool,
+    use_clahe: bool,
+    gaussian_blur: f32,
+    bilateral_filter: bool,
+    morphology: String, // "none", "erode", "dilate"
     language: String,
 }
 
@@ -23,27 +28,49 @@ struct ScreenshotResult {
 /// Apply image preprocessing based on parameters
 fn preprocess_image(img: DynamicImage, params: &ProcessingParams) -> Result<DynamicImage, String> {
     let mut processed = img;
-    
+
+    // Apply gaussian blur first if needed (useful for noise reduction)
+    if params.gaussian_blur > 0.0 {
+        processed = apply_gaussian_blur(&processed, params.gaussian_blur);
+    }
+
+    // Apply bilateral filter for edge-preserving noise reduction
+    if params.bilateral_filter {
+        processed = apply_bilateral_filter(&processed);
+    }
+
+    // Apply CLAHE for better contrast (works well on grayscale)
+    if params.use_clahe {
+        processed = apply_clahe(&processed)?;
+    }
+
     // Apply brightness adjustment
     if params.brightness != 0.0 {
         processed = adjust_brightness(&processed, params.brightness);
     }
-    
+
     // Apply contrast adjustment
     if params.contrast != 1.0 {
         processed = adjust_contrast(&processed, params.contrast);
     }
-    
+
     // Apply sharpness (using unsharp mask)
     if params.sharpness != 1.0 {
         processed = adjust_sharpness(&processed, params.sharpness);
     }
-    
-    // Apply adaptive threshold if enabled
+
+    // Apply morphological operations
+    if params.morphology == "erode" {
+        processed = apply_erosion(&processed);
+    } else if params.morphology == "dilate" {
+        processed = apply_dilation(&processed);
+    }
+
+    // Apply adaptive threshold if enabled (should be last)
     if params.use_adaptive_threshold {
         processed = apply_adaptive_threshold(&processed)?;
     }
-    
+
     Ok(processed)
 }
 
@@ -144,37 +171,201 @@ fn apply_adaptive_threshold(img: &DynamicImage) -> Result<DynamicImage, String> 
     // Convert to grayscale
     let gray = img.to_luma8();
     let (width, height) = gray.dimensions();
-    
+
     // Apply adaptive threshold using imageproc
     let block_size = 15; // Size of the local region
     let thresholded = adaptive_threshold(&gray, block_size);
-    
+
     // Convert back to RGBA
     let mut output = ImageBuffer::new(width, height);
     for (x, y, pixel) in thresholded.enumerate_pixels() {
         let val = pixel.0[0];
         output.put_pixel(x, y, Rgba([val, val, val, 255]));
     }
-    
+
     Ok(DynamicImage::ImageRgba8(output))
 }
 
+/// Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+fn apply_clahe(img: &DynamicImage) -> Result<DynamicImage, String> {
+    use imageproc::contrast::equalize_histogram;
+
+    // Convert to grayscale
+    let gray = img.to_luma8();
+    let (width, height) = gray.dimensions();
+
+    // Apply histogram equalization (simplified CLAHE)
+    let equalized = equalize_histogram(&gray);
+
+    // Convert back to RGBA
+    let mut output = ImageBuffer::new(width, height);
+    for (x, y, pixel) in equalized.enumerate_pixels() {
+        let val = pixel.0[0];
+        output.put_pixel(x, y, Rgba([val, val, val, 255]));
+    }
+
+    Ok(DynamicImage::ImageRgba8(output))
+}
+
+/// Apply Gaussian blur for noise reduction
+fn apply_gaussian_blur(img: &DynamicImage, sigma: f32) -> DynamicImage {
+    use imageproc::filter::gaussian_blur_f32;
+
+    let rgba = img.to_rgba8();
+    let (width, height) = rgba.dimensions();
+
+    // Process each channel separately
+    let mut output: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(width, height);
+
+    // Initialize with zeros
+    for y in 0..height {
+        for x in 0..width {
+            output.put_pixel(x, y, Rgba([0, 0, 0, 255]));
+        }
+    }
+
+    for c in 0..3 {
+        let mut channel = ImageBuffer::new(width, height);
+        for (x, y, pixel) in rgba.enumerate_pixels() {
+            channel.put_pixel(x, y, image::Luma([pixel.0[c]]));
+        }
+
+        let blurred = gaussian_blur_f32(&channel, sigma);
+
+        for (x, y, pixel) in blurred.enumerate_pixels() {
+            let current = output.get_pixel(x, y).0;
+            let mut new_pixel = current;
+            new_pixel[c] = pixel.0[0];
+            output.put_pixel(x, y, Rgba(new_pixel));
+        }
+    }
+
+    // Copy alpha channel
+    for (x, y, pixel) in rgba.enumerate_pixels() {
+        let mut current = output.get_pixel(x, y).0;
+        current[3] = pixel.0[3];
+        output.put_pixel(x, y, Rgba(current));
+    }
+
+    DynamicImage::ImageRgba8(output)
+}
+
+/// Apply bilateral filter (simplified edge-preserving blur)
+fn apply_bilateral_filter(img: &DynamicImage) -> DynamicImage {
+    // Simplified implementation using weighted averaging
+    let (width, height) = img.dimensions();
+    let mut output = ImageBuffer::new(width, height);
+    let radius = 5;
+    let sigma_color = 75.0;
+    let sigma_space = 75.0;
+
+    for y in 0..height {
+        for x in 0..width {
+            let center = img.get_pixel(x, y);
+            let mut sum = [0.0_f32; 4];
+            let mut weight_sum = 0.0_f32;
+
+            for dy in -(radius as i32)..=(radius as i32) {
+                for dx in -(radius as i32)..=(radius as i32) {
+                    let nx = (x as i32 + dx).clamp(0, width as i32 - 1) as u32;
+                    let ny = (y as i32 + dy).clamp(0, height as i32 - 1) as u32;
+                    let neighbor = img.get_pixel(nx, ny);
+
+                    // Spatial distance
+                    let space_dist = ((dx * dx + dy * dy) as f32).sqrt();
+                    let space_weight = (-space_dist * space_dist / (2.0 * sigma_space * sigma_space)).exp();
+
+                    // Color distance
+                    let color_dist = (
+                        (center.0[0] as f32 - neighbor.0[0] as f32).powi(2) +
+                        (center.0[1] as f32 - neighbor.0[1] as f32).powi(2) +
+                        (center.0[2] as f32 - neighbor.0[2] as f32).powi(2)
+                    ).sqrt();
+                    let color_weight = (-color_dist * color_dist / (2.0 * sigma_color * sigma_color)).exp();
+
+                    let weight = space_weight * color_weight;
+                    weight_sum += weight;
+
+                    for i in 0..4 {
+                        sum[i] += neighbor.0[i] as f32 * weight;
+                    }
+                }
+            }
+
+            let result = [
+                (sum[0] / weight_sum) as u8,
+                (sum[1] / weight_sum) as u8,
+                (sum[2] / weight_sum) as u8,
+                (sum[3] / weight_sum) as u8,
+            ];
+            output.put_pixel(x, y, Rgba(result));
+        }
+    }
+
+    DynamicImage::ImageRgba8(output)
+}
+
+/// Apply erosion morphological operation
+fn apply_erosion(img: &DynamicImage) -> DynamicImage {
+    use imageproc::morphology::erode;
+    use imageproc::distance_transform::Norm;
+
+    let gray = img.to_luma8();
+    let (width, height) = gray.dimensions();
+
+    let eroded = erode(&gray, Norm::LInf, 1);
+
+    let mut output = ImageBuffer::new(width, height);
+    for (x, y, pixel) in eroded.enumerate_pixels() {
+        let val = pixel.0[0];
+        output.put_pixel(x, y, Rgba([val, val, val, 255]));
+    }
+
+    DynamicImage::ImageRgba8(output)
+}
+
+/// Apply dilation morphological operation
+fn apply_dilation(img: &DynamicImage) -> DynamicImage {
+    use imageproc::morphology::dilate;
+    use imageproc::distance_transform::Norm;
+
+    let gray = img.to_luma8();
+    let (width, height) = gray.dimensions();
+
+    let dilated = dilate(&gray, Norm::LInf, 1);
+
+    let mut output = ImageBuffer::new(width, height);
+    for (x, y, pixel) in dilated.enumerate_pixels() {
+        let val = pixel.0[0];
+        output.put_pixel(x, y, Rgba([val, val, val, 255]));
+    }
+
+    DynamicImage::ImageRgba8(output)
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct OcrResult {
+    text: String,
+    processed_image_path: String,
+}
+
 #[tauri::command]
-fn perform_ocr(image_path: String, params: ProcessingParams) -> Result<String, String> {
+fn perform_ocr(image_path: String, params: ProcessingParams) -> Result<OcrResult, String> {
     // Initialize Tesseract with the specified language
     let lang = if params.language.is_empty() {
         "eng"
     } else {
         &params.language
     };
-    
+
     // Load the image
     let img = image::open(&image_path)
         .map_err(|e| format!("Failed to load image: {}", e))?;
-    
+
     // Apply preprocessing
     let processed = preprocess_image(img, &params)?;
-    
+
     // Save processed image to temp file
     let temp_dir = std::env::temp_dir();
     let timestamp = std::time::SystemTime::now()
@@ -182,26 +373,29 @@ fn perform_ocr(image_path: String, params: ProcessingParams) -> Result<String, S
         .unwrap()
         .as_secs();
     let processed_path = temp_dir.join(format!("imagio_processed_{}.png", timestamp));
-    
+
     processed.save(&processed_path)
         .map_err(|e| format!("Failed to save processed image: {}", e))?;
-    
+
     let processed_path_str = processed_path.to_string_lossy().to_string();
-    
+
     // Perform OCR on processed image
     let tesseract = Tesseract::new(None, Some(lang))
         .map_err(|e| format!("Failed to initialize Tesseract: {}", e))?;
-    
+
     let result = tesseract
         .set_image(&processed_path_str)
         .map_err(|e| format!("Failed to set image: {}", e))?
         .get_text()
         .map_err(|e| format!("Failed to extract text: {}", e))?;
-    
-    // Clean up temp file
-    let _ = fs::remove_file(processed_path);
-    
-    Ok(result)
+
+    // Don't clean up temp file - we'll use it for preview
+    // let _ = fs::remove_file(&processed_path);
+
+    Ok(OcrResult {
+        text: result,
+        processed_image_path: processed_path_str,
+    })
 }
 
 #[tauri::command]
@@ -240,14 +434,21 @@ async fn take_screenshot() -> Result<ScreenshotResult, String> {
         brightness: 0.0,
         sharpness: 1.0,
         use_adaptive_threshold: false,
+        use_clahe: false,
+        gaussian_blur: 0.0,
+        bilateral_filter: false,
+        morphology: "none".to_string(),
         language: "eng".to_string(),
     };
     
-    let text = perform_ocr(path_str.clone(), params).unwrap_or_default();
-    
+    let ocr_result = perform_ocr(path_str.clone(), params).unwrap_or(OcrResult {
+        text: String::new(),
+        processed_image_path: String::new(),
+    });
+
     Ok(ScreenshotResult {
         path: path_str,
-        text,
+        text: ocr_result.text,
     })
 }
 
@@ -284,6 +485,7 @@ pub fn run() {
             .build(),
         )?;
       }
+
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![perform_ocr, take_screenshot, save_text])

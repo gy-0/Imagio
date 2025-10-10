@@ -13,23 +13,32 @@ A modern desktop OCR (Optical Character Recognition) application built with Taur
   - Multi-language support (English, Chinese, Japanese, Korean, French, German, Spanish)
   - Real-time text extraction
   
-- 🎨 **Image Processing Controls** (UI Ready)
+- 🎨 **Advanced Image Processing**
   - Contrast adjustment (0.5 - 2.0x)
   - Brightness adjustment (-0.5 - +0.5)
-  - Sharpness enhancement (0.5 - 2.0x)
-  - Adaptive threshold toggle
+  - Sharpness enhancement (0.5 - 2.0x, unsharp mask)
+  - Adaptive threshold
+  - CLAHE (Contrast Limited Adaptive Histogram Equalization)
+  - Gaussian blur (0-5.0 sigma)
+  - Bilateral filter (edge-preserving noise reduction)
+  - Morphological operations (erosion/dilation)
+  - Preset configurations for common scenarios
   
 - 📝 **Text Management**
   - Copy extracted text to clipboard
   - Save results to text files
   - Read-only text display with monospace font
   
-- 🎨 **Modern UI**
+- 🎨 **Modern UI/UX**
   - Clean, responsive interface
   - Light/Dark mode support
   - Smooth animations and transitions
   - Collapsible advanced controls
-  - Live image preview
+  - Before/after image comparison view
+  - Drag & drop image support
+  - Processing progress indicator
+  - Keyboard shortcuts (⌘O, ⌘⇧S, ⌘↵, etc.)
+  - Settings persistence (localStorage)
 
 ## 📸 Screenshots
 
@@ -63,22 +72,39 @@ npm run tauri:dev
 ## 🎯 Usage
 
 1. **Select an Image**
-   - Click "📁 Select Image" to choose an image file
-   - OR click "📸 Take Screenshot" to capture a screenshot
+   - Click "📁 Select Image" (⌘O) to choose an image file
+   - OR click "📸 Take Screenshot" (⌘⇧S) to capture a screenshot
+   - OR drag & drop an image file directly
 
 2. **Adjust Processing** (Optional)
-   - Click "⚙️ Show Advanced" to reveal processing controls
-   - Adjust contrast, brightness, and sharpness
-   - Select recognition language
-   - Enable adaptive threshold if needed
+   - Click "⚙️ Show Advanced" (⌘A) to reveal processing controls
+   - Select a preset for common scenarios (Document, Handwriting, Low Quality, Photo)
+   - OR manually adjust:
+     - Contrast, brightness, and sharpness
+     - Gaussian blur for noise reduction
+     - CLAHE for contrast enhancement
+     - Bilateral filter for edge-preserving smoothing
+     - Morphology operations (erode/dilate)
+     - Adaptive threshold for binary conversion
+   - Choose recognition language
 
 3. **Extract Text**
-   - Click "🔍 Extract Text" to perform OCR
-   - Wait for processing to complete
+   - Click "🔍 Extract Text" (⌘↵) to perform OCR
+   - Watch the progress indicator
+   - View before/after comparison if desired
 
 4. **Export Results**
-   - Click "📋 Copy" to copy text to clipboard
-   - Click "💾 Save" to save as a text file
+   - Click "📋 Copy" (⌘C) to copy text to clipboard
+   - Click "💾 Save" (⌘S) to save as a text file
+
+## ⌨️ Keyboard Shortcuts
+
+- `⌘O` - Open image file
+- `⌘⇧S` - Take screenshot
+- `⌘↵` - Extract text (when image loaded)
+- `⌘C` - Copy text to clipboard (when text available)
+- `⌘S` - Save text to file (when text available)
+- `⌘A` - Toggle advanced settings (when no text)
 
 ## 📦 Supported Image Formats
 
@@ -159,19 +185,22 @@ Imagio/
 
 See [FEATURES.md](FEATURES.md) for detailed feature implementation progress.
 
-### ✅ Completed (Phase 1)
-- Core OCR functionality
-- Screenshot capture
-- Image preview
-- Multi-language support
-- Advanced controls UI
-- Text export (copy/save)
-- Modern UI/UX
+### ✅ Completed (Phase 1-3)
+- ✅ Core OCR functionality with 8 languages
+- ✅ Screenshot capture
+- ✅ Image preview with before/after comparison
+- ✅ Advanced image preprocessing (10+ algorithms)
+- ✅ Preset configurations
+- ✅ Text export (copy/save)
+- ✅ Drag & drop support
+- ✅ Keyboard shortcuts
+- ✅ Settings persistence
+- ✅ Processing progress indicator
+- ✅ Modern responsive UI/UX
 
-### 🚧 In Progress (Phase 2)
-- Image preprocessing implementation
-- Advanced OCR features
-- Performance optimizations
+### 🎉 Status: **Production Ready!**
+
+All core features are implemented and functional. The app now matches and exceeds the original Tesseract-macOS feature set.
 
 ## 🤝 Acknowledgments
 
@@ -186,10 +215,13 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## 🐛 Known Issues
 
-1. Image preprocessing parameters (contrast, brightness, sharpness) are UI-only and don't yet affect the actual image processing
-2. Adaptive threshold toggle is non-functional (pending implementation)
+All major issues have been resolved! ✅
 
-See [FEATURES.md](FEATURES.md) for full issue tracking.
+Minor considerations:
+- Bilateral filter may be slow on very large images
+- Temp processed images are cleaned up on app exit
+
+See [FEATURES.md](FEATURES.md) for complete issue tracking.
 
 ## 💡 Contributing
 

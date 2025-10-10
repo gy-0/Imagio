@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build && npm run copy-app",
+    "copy-app": "cp -r src-tauri/target/release/bundle/macos/Imagio.app ~/Downloads/"
   },
   "keywords": ["tauri", "ocr", "tesseract", "macos"],
   "author": "",
