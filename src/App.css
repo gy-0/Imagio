@@ -617,6 +617,66 @@ textarea:focus {
   background: rgba(0, 0, 0, 0.2);
 }
 
+/* Main Content Layout */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.left-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.right-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Images Vertical Layout */
+.images-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.image-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.image-block h3 {
+  text-align: center;
+  margin-bottom: 0.75rem;
+  font-size: 1.1em;
+  color: #667eea;
+}
+
+.image-block .image-container {
+  margin-bottom: 0;
+}
+
+/* Result Card - Full Height in Right Panel */
+.right-panel .result-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.right-panel .result-card textarea {
+  flex: 1;
+  min-height: 500px;
+  resize: none;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

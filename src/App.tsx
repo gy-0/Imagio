@@ -30,7 +30,6 @@ function App() {
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [showComparison, setShowComparison] = useState<boolean>(false);
 
   // OCR preprocessing best practices defaults
   // Always reset to these defaults (do not persist user changes)
@@ -118,7 +117,6 @@ function App() {
         setImagePath(path);
         setOcrText('');
         setProcessedImageUrl('');
-        setShowComparison(false);
 
         // Convert file path to URL for preview
         const assetUrl = convertFileSrc(path);
@@ -142,7 +140,6 @@ function App() {
       setImagePreviewUrl(assetUrl);
       setOcrText('');
       setProcessedImageUrl('');
-      setShowComparison(false);
 
       // Automatically perform OCR with current params
       setProcessingStatus('Processing image...');
@@ -174,7 +171,6 @@ function App() {
       // Set processed image for comparison
       const processedUrl = convertFileSrc(result.processedImagePath);
       setProcessedImageUrl(processedUrl);
-      setShowComparison(true);
       setProcessingStatus('Complete!');
     } catch (error) {
       console.error('Error performing OCR:', error);
@@ -266,7 +262,6 @@ function App() {
         setImagePath(path);
         setOcrText('');
         setProcessedImageUrl('');
-        setShowComparison(false);
 
         // Convert file path to URL for preview
         const assetUrl = convertFileSrc(path);
@@ -336,49 +331,6 @@ function App() {
           <span className="btn-text">{showAdvanced ? 'Hide' : 'Show'} Advanced</span>
         </button>
       </div>
-
-      {imagePath && (
-        <div className="preview-section">
-          <div className="preview-header">
-            <h2>Selected Image</h2>
-            {processedImageUrl && (
-              <button
-                onClick={() => setShowComparison(!showComparison)}
-                className="secondary-btn"
-              >
-                {showComparison ? '👁️ Hide Comparison' : '👁️ Show Comparison'}
-              </button>
-            )}
-          </div>
-
-          {showComparison && processedImageUrl ? (
-            <div className="comparison-container">
-              <div className="comparison-side">
-                <h3>Original</h3>
-                <div className="image-container">
-                  {imagePreviewUrl && (
-                    <img src={imagePreviewUrl} alt="Original" className="preview-image" />
-                  )}
-                </div>
-              </div>
-              <div className="comparison-side">
-                <h3>Processed</h3>
-                <div className="image-container">
-                  <img src={processedImageUrl} alt="Processed" className="preview-image" />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="image-container">
-              {imagePreviewUrl && (
-                <img src={imagePreviewUrl} alt="Selected" className="preview-image" />
-              )}
-            </div>
-          )}
-
-          <p className="image-path">{imagePath.split('/').pop()}</p>
-        </div>
-      )}
 
       {showAdvanced && (
         <div className="advanced-controls">
@@ -497,26 +449,57 @@ function App() {
         </div>
       )}
 
-      {ocrText && (
-        <div className="result-card">
-          <div className="result-header">
-            <h2>Extracted Text</h2>
-            <div className="button-group">
-              <button onClick={copyToClipboard} className="secondary-btn">
-                📋 Copy
-              </button>
-              <button onClick={saveText} className="secondary-btn">
-                💾 Save
-              </button>
+      {imagePath && (
+        <div className="main-content">
+          <div className="left-panel">
+            <div className="preview-section">
+              <h2>Selected Image</h2>
+
+              <div className="images-vertical">
+                <div className="image-block">
+                  <h3>Original</h3>
+                  <div className="image-container">
+                    {imagePreviewUrl && (
+                      <img src={imagePreviewUrl} alt="Original" className="preview-image" />
+                    )}
+                  </div>
+                </div>
+
+                {processedImageUrl && (
+                  <div className="image-block">
+                    <h3>Processed</h3>
+                    <div className="image-container">
+                      <img src={processedImageUrl} alt="Processed" className="preview-image" />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          <textarea
-            ref={textareaRef}
-            value={ocrText}
-            onChange={(e) => setOcrText(e.target.value)}
-            rows={15}
-            placeholder="OCR results will appear here..."
-          />
+
+          <div className="right-panel">
+            {ocrText && (
+              <div className="result-card">
+                <div className="result-header">
+                  <h2>Extracted Text</h2>
+                  <div className="button-group">
+                    <button onClick={copyToClipboard} className="secondary-btn">
+                      📋 Copy
+                    </button>
+                    <button onClick={saveText} className="secondary-btn">
+                      💾 Save
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  ref={textareaRef}
+                  value={ocrText}
+                  onChange={(e) => setOcrText(e.target.value)}
+                  placeholder="OCR results will appear here..."
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
