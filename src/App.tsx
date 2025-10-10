@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { callChatCompletion, LLMError, normalizeBaseUrl } from './utils/llmClient';
+import { ImageGenerationClient, ImageGenerationError, downloadImageAsBlob } from './utils/imageGenClient';
 
 // OCR processing parameters
 interface ProcessingParams {
@@ -21,6 +23,31 @@ interface OcrResult {
   processedImagePath: string;
 }
 
+// LLM Settings
+interface LLMSettings {
+  apiBaseUrl: string;
+  apiKey: string;
+  modelName: string;
+  temperature: number;
+}
+
+interface LocalConfig {
+  llm?: Partial<LLMSettings>;
+  apiBaseUrl?: string;
+  apiKey?: string;
+  modelName?: string;
+  temperature?: number;
+  bflApiKey?: string;
+}
+
+// Default LLM configuration (fallback if config.local.json is not available)
+const DEFAULT_LLM_SETTINGS: LLMSettings = {
+  apiBaseUrl: 'http://127.0.0.1:11434/v1',
+  apiKey: '',
+  modelName: 'llama3.1:8b',
+  temperature: 0.7
+};
+
 function App() {
   const [imagePath, setImagePath] = useState<string>('');
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
@@ -30,6 +57,33 @@ function App() {
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+
+  // LLM and prompt optimization states
+  // Will be overridden by config.local.json if present
+  const [llmSettings, setLLMSettings] = useState<LLMSettings>(DEFAULT_LLM_SETTINGS);
+  const [imageStyle, setImageStyle] = useState<string>('realistic');
+  const [customDescription, setCustomDescription] = useState<string>('');
+  const [optimizedPrompt, setOptimizedPrompt] = useState<string>('');
+  const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
+  const [llmStatus, setLLMStatus] = useState<string>('');
+  const [llmError, setLLMError] = useState<string>('');
+
+  // Image generation states
+  const [bflApiKey, setBflApiKey] = useState<string>('');
+  const [aspectRatio, setAspectRatio] = useState<string>('16:9');
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [generationStatus, setGenerationStatus] = useState<string>('');
+  const [generationError, setGenerationError] = useState<string>('');
+
+  const isLikelyLocalLLM = useMemo(() => {
+    try {
+      const normalized = normalizeBaseUrl(llmSettings.apiBaseUrl);
+      return /^(https?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0)/i.test(normalized);
+    } catch {
+      return false;
+    }
+  }, [llmSettings.apiBaseUrl]);
 
   // OCR preprocessing best practices defaults
   // Always reset to these defaults (do not persist user changes)
@@ -49,6 +103,67 @@ function App() {
 
   // Processing parameters - always use defaults (never remember user choices)
   const [params, setParams] = useState<ProcessingParams>(getDefaultParams());
+
+  // Load local config overrides (e.g. API key) without committing them to git
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadLocalConfig = async () => {
+      try {
+        const response = await fetch('/config.local.json', { cache: 'no-store' });
+        if (!response.ok) {
+          if (response.status !== 404) {
+            console.warn(`Failed to load local config: ${response.statusText}`);
+          }
+          return;
+        }
+
+        const parsed: LocalConfig = await response.json();
+        const overrides: Partial<LLMSettings> = {
+          ...(parsed.llm ?? {})
+        };
+
+        const ensureNumber = (value: unknown): number | undefined => {
+          if (typeof value === 'number' && Number.isFinite(value)) {
+            return value;
+          }
+          if (typeof value === 'string' && value.trim() !== '') {
+            const numeric = Number(value);
+            if (Number.isFinite(numeric)) {
+              return numeric;
+            }
+          }
+          return undefined;
+        };
+
+        if (parsed.apiBaseUrl) overrides.apiBaseUrl = parsed.apiBaseUrl;
+        if (parsed.apiKey) overrides.apiKey = parsed.apiKey;
+        if (parsed.modelName) overrides.modelName = parsed.modelName;
+
+        const temp = ensureNumber(parsed.temperature ?? overrides.temperature);
+        if (temp !== undefined) overrides.temperature = temp;
+
+        if (!isMounted || Object.keys(overrides).length === 0) {
+          return;
+        }
+
+        setLLMSettings(prev => ({ ...prev, ...overrides }));
+
+        // Load BFL API Key if present
+        if (parsed.bflApiKey) {
+          setBflApiKey(parsed.bflApiKey);
+        }
+      } catch (error) {
+        console.error('Error loading local config:', error);
+      }
+    };
+
+    loadLocalConfig();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Auto-update processed image when params change (if image is loaded)
   useEffect(() => {
@@ -224,6 +339,130 @@ function App() {
 
   const updateParam = (key: keyof ProcessingParams, value: number | boolean | string) => {
     setParams(prev => ({ ...prev, [key]: value }));
+  };
+
+  const updateLLMSetting = <K extends keyof LLMSettings>(key: K, value: LLMSettings[K]) => {
+    setLLMSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const optimizePrompt = async () => {
+    setLLMStatus('');
+    setLLMError('');
+
+    if (!ocrText.trim()) {
+      setLLMError('请先完成 OCR 并获取文本。');
+      return;
+    }
+
+    if (!llmSettings.apiBaseUrl.trim()) {
+      setLLMError('请配置 API Base URL。');
+      return;
+    }
+
+    if (!llmSettings.modelName.trim()) {
+      setLLMError('请配置模型名称。');
+      return;
+    }
+
+    if (!isLikelyLocalLLM && !llmSettings.apiKey.trim()) {
+      setLLMError('远程 LLM 服务需要提供 API Key。');
+      return;
+    }
+
+    setLLMStatus('正在向 LLM 发送请求...');
+    setLLMError('');
+    setIsOptimizing(true);
+
+    try {
+      const systemPrompt = `You are a prompt optimization expert for image generation models like FLUX. Your task is to transform input text into optimized prompts suitable for image generation.`;
+
+      const userPrompt = `Please optimize the following text for image generation with FLUX model:
+
+Extracted text: ${ocrText}
+
+Image style: ${imageStyle}
+
+Additional description: ${customDescription || 'None'}
+
+Generate a concise, descriptive prompt that captures the essence and key visual elements. Focus on visual details, composition, lighting, and style.`;
+
+      const result = await callChatCompletion({
+        baseUrl: llmSettings.apiBaseUrl,
+        apiKey: llmSettings.apiKey || undefined,
+        model: llmSettings.modelName,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: llmSettings.temperature
+      });
+
+      const optimized = result.content.trim();
+      setOptimizedPrompt(optimized);
+      setLLMStatus('生成成功');
+    } catch (error) {
+      console.error('Error optimizing prompt:', error);
+      setLLMStatus('');
+
+      if (error instanceof LLMError) {
+        setLLMError(error.message);
+      } else if (error instanceof Error) {
+        setLLMError(`意外错误: ${error.message}`);
+      } else {
+        setLLMError('发生未知错误，请检查控制台。');
+      }
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
+  const generateImage = async () => {
+    setGenerationStatus('');
+    setGenerationError('');
+
+    if (!optimizedPrompt.trim()) {
+      setGenerationError('请先优化 Prompt。');
+      return;
+    }
+
+    if (!bflApiKey.trim()) {
+      setGenerationError('请配置 BFL API Key（在 config.local.json 中设置 bflApiKey）。');
+      return;
+    }
+
+    setGenerationStatus('正在生成图像...');
+    setGenerationError('');
+    setIsGenerating(true);
+    setGeneratedImageUrl('');
+
+    try {
+      const client = new ImageGenerationClient(bflApiKey);
+
+      setGenerationStatus('正在创建生成请求...');
+      const imageUrl = await client.generateImage({
+        prompt: optimizedPrompt,
+        aspectRatio: aspectRatio || undefined,
+      });
+
+      setGenerationStatus('正在下载图像...');
+      const blobUrl = await downloadImageAsBlob(imageUrl);
+
+      setGeneratedImageUrl(blobUrl);
+      setGenerationStatus('图像生成成功！');
+    } catch (error) {
+      console.error('Error generating image:', error);
+      setGenerationStatus('');
+
+      if (error instanceof ImageGenerationError) {
+        setGenerationError(error.message);
+      } else if (error instanceof Error) {
+        setGenerationError(`意外错误: ${error.message}`);
+      } else {
+        setGenerationError('发生未知错误，请检查控制台。');
+      }
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
 
@@ -440,6 +679,69 @@ function App() {
               </label>
             </div>
           </div>
+
+          <h3 style={{ marginTop: '1.5rem' }}>LLM Settings</h3>
+          <div className="controls-grid">
+            <div className="control-group">
+              <label>
+                API Base URL:
+                <input
+                  type="text"
+                  value={llmSettings.apiBaseUrl}
+                  onChange={(e) => updateLLMSetting('apiBaseUrl', e.target.value)}
+                  placeholder="http://127.0.0.1:11434/v1"
+                />
+              </label>
+            </div>
+
+            <div className="control-group">
+              <label>
+                API Key:
+                <input
+                  type="password"
+                  value={llmSettings.apiKey}
+                  onChange={(e) => updateLLMSetting('apiKey', e.target.value)}
+                  placeholder="Enter your API key"
+                />
+              </label>
+            </div>
+
+            <div className="control-group">
+              <label>
+                Model Name:
+                <input
+                  type="text"
+                  value={llmSettings.modelName}
+                  onChange={(e) => updateLLMSetting('modelName', e.target.value)}
+                  placeholder="llama3.1:8b"
+                />
+              </label>
+            </div>
+
+            <div className="control-group">
+              <label>
+                Temperature: {llmSettings.temperature.toFixed(2)}
+                <input
+                  type="range"
+                  min="0"
+                  max="1.5"
+                  step="0.05"
+                  value={llmSettings.temperature}
+                  onChange={(e) => updateLLMSetting('temperature', parseFloat(e.target.value))}
+                />
+              </label>
+            </div>
+          </div>
+
+          {isLikelyLocalLLM ? (
+            <div className="llm-hint">
+              检测到本地 LLM（例如 Ollama），API Key 可留空。
+            </div>
+          ) : (
+            <div className="llm-hint warning">
+              使用远程 LLM 时请确保 API Key 已填写且安全存储。
+            </div>
+          )}
         </div>
       )}
 
@@ -450,7 +752,7 @@ function App() {
       )}
 
       {imagePath && (
-        <div className="main-content">
+        <div className="main-content-three-column">
           <div className="left-panel">
             <div className="preview-section">
               <h2>Selected Image</h2>
@@ -477,12 +779,21 @@ function App() {
             </div>
           </div>
 
-          <div className="right-panel">
+          <div className="middle-panel">
             {ocrText && (
-              <div className="result-card">
-                <div className="result-header">
-                  <h2>Extracted Text</h2>
-                  <div className="button-group">
+              <>
+                <div className="result-card extracted-text-card">
+                  <div className="result-header">
+                    <h2>Extracted Text</h2>
+                  </div>
+                  <textarea
+                    ref={textareaRef}
+                    value={ocrText}
+                    onChange={(e) => setOcrText(e.target.value)}
+                    placeholder="OCR results will appear here..."
+                    className="extracted-text-area"
+                  />
+                  <div className="button-group extracted-actions">
                     <button onClick={copyToClipboard} className="secondary-btn">
                       📋 Copy
                     </button>
@@ -491,12 +802,152 @@ function App() {
                     </button>
                   </div>
                 </div>
-                <textarea
-                  ref={textareaRef}
-                  value={ocrText}
-                  onChange={(e) => setOcrText(e.target.value)}
-                  placeholder="OCR results will appear here..."
-                />
+
+                <div className="result-card prompt-settings-card">
+                  <div className="result-header">
+                    <h2>Prompt Settings</h2>
+                  </div>
+
+                  <div className="prompt-control-group">
+                    <label>
+                      Image Style:
+                      <select
+                        value={imageStyle}
+                        onChange={(e) => setImageStyle(e.target.value)}
+                        className="style-select"
+                      >
+                        <option value="realistic">Realistic</option>
+                        <option value="artistic">Artistic</option>
+                        <option value="anime">Anime</option>
+                        <option value="abstract">Abstract</option>
+                        <option value="photographic">Photographic</option>
+                        <option value="illustration">Illustration</option>
+                        <option value="3d-render">3D Render</option>
+                        <option value="watercolor">Watercolor</option>
+                        <option value="oil-painting">Oil Painting</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="prompt-control-group">
+                    <label>
+                      Additional Description:
+                      <textarea
+                        value={customDescription}
+                        onChange={(e) => setCustomDescription(e.target.value)}
+                        placeholder="Add custom description or modifications..."
+                        className="custom-description-area"
+                        rows={3}
+                      />
+                    </label>
+                  </div>
+
+                  <button
+                    onClick={optimizePrompt}
+                    className="primary-btn optimize-btn"
+                    disabled={isOptimizing || !ocrText.trim()}
+                  >
+                    {isOptimizing ? '⏳ Optimizing...' : '✨ Optimize Prompt'}
+                  </button>
+
+                  {llmStatus && (
+                    <div className="llm-status success">
+                      {llmStatus}
+                    </div>
+                  )}
+
+                  {llmError && (
+                    <div className="llm-status error">
+                      {llmError}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="right-panel">
+            {optimizedPrompt && (
+              <div className="result-card optimized-prompt-card">
+                <div className="result-header">
+                  <h2>Optimized Prompt</h2>
+                </div>
+                <div className="optimized-prompt-container">
+                  <div className="optimized-prompt-section">
+                    <textarea
+                      value={optimizedPrompt}
+                      onChange={(e) => setOptimizedPrompt(e.target.value)}
+                      placeholder="Optimized prompt will appear here..."
+                      className="optimized-prompt-area"
+                    />
+                    <div className="prompt-actions">
+                      <div className="aspect-ratio-selector">
+                        <label>
+                          Aspect Ratio:
+                          <select
+                            value={aspectRatio}
+                            onChange={(e) => setAspectRatio(e.target.value)}
+                            className="aspect-ratio-select"
+                          >
+                            <option value="21:9">21:9 (Ultrawide)</option>
+                            <option value="16:9">16:9 (Widescreen)</option>
+                            <option value="4:3">4:3 (Standard)</option>
+                            <option value="1:1">1:1 (Square)</option>
+                            <option value="3:4">3:4 (Portrait)</option>
+                            <option value="9:16">9:16 (Mobile)</option>
+                            <option value="9:21">9:21 (Tall)</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div className="button-group prompt-buttons">
+                        <button
+                          onClick={() => navigator.clipboard.writeText(optimizedPrompt)}
+                          className="secondary-btn"
+                        >
+                          📋 Copy
+                        </button>
+                        <button
+                          onClick={generateImage}
+                          className="primary-btn"
+                          disabled={isGenerating || !optimizedPrompt.trim()}
+                        >
+                          {isGenerating ? '⏳ Generating...' : '🎨 Generate Image'}
+                        </button>
+                      </div>
+                    </div>
+                    {generationStatus && (
+                      <div className="generation-status success">
+                        {generationStatus}
+                      </div>
+                    )}
+                    {generationError && (
+                      <div className="generation-status error">
+                        {generationError}
+                      </div>
+                    )}
+                  </div>
+                  <div className="generated-image-section">
+                    <h3>Generated Image</h3>
+                    <div className="generated-image-container">
+                      {isGenerating ? (
+                        <div className="generation-loading">
+                          <div className="spinner"></div>
+                          <p>{generationStatus}</p>
+                        </div>
+                      ) : generatedImageUrl ? (
+                        <img
+                          src={generatedImageUrl}
+                          alt="Generated"
+                          className="generated-image"
+                        />
+                      ) : (
+                        <div className="empty-state">
+                          <p>Generated image will appear here</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

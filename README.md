@@ -7,12 +7,13 @@ A modern desktop OCR (Optical Character Recognition) application built with Taur
 - 🖼️ **Multiple Input Methods**
   - Select images from your filesystem
   - Capture screenshots directly (macOS screencapture integration)
-  
+  - Drag & drop image support
+
 - 🔍 **Advanced OCR**
   - Powered by Tesseract 5.5.1
   - Multi-language support (English, Chinese, Japanese, Korean, French, German, Spanish)
   - Real-time text extraction
-  
+
 - 🎨 **Advanced Image Processing**
   - Contrast adjustment (0.5 - 2.0x)
   - Brightness adjustment (-0.5 - +0.5)
@@ -23,19 +24,25 @@ A modern desktop OCR (Optical Character Recognition) application built with Taur
   - Bilateral filter (edge-preserving noise reduction)
   - Morphological operations (erosion/dilation)
   - Preset configurations for common scenarios
-  
+
+- 🤖 **AI-Powered Features**
+  - **Prompt Optimization**: Transform OCR text into optimized image generation prompts using LLM
+  - **Image Generation**: Generate images from optimized prompts using FLUX Pro 1.1 Ultra
+  - Support for multiple aspect ratios (21:9, 16:9, 4:3, 1:1, 3:4, 9:16, 9:21)
+  - Integration with Black Forest Labs API
+  - Customizable image styles (realistic, artistic, anime, abstract, etc.)
+
 - 📝 **Text Management**
   - Copy extracted text to clipboard
   - Save results to text files
-  - Read-only text display with monospace font
-  
+  - Editable text display with monospace font
+
 - 🎨 **Modern UI/UX**
-  - Clean, responsive interface
+  - Clean, responsive three-column layout
   - Light/Dark mode support
   - Smooth animations and transitions
   - Collapsible advanced controls
   - Before/after image comparison view
-  - Drag & drop image support
   - Processing progress indicator
   - Keyboard shortcuts (⌘O, ⌘⇧S, ⌘↵, etc.)
   - Settings persistence (localStorage)
@@ -71,6 +78,8 @@ npm run tauri:dev
 
 ## 🎯 Usage
 
+### Basic OCR Workflow
+
 1. **Select an Image**
    - Click "📁 Select Image" (⌘O) to choose an image file
    - OR click "📸 Take Screenshot" (⌘⇧S) to capture a screenshot
@@ -78,24 +87,34 @@ npm run tauri:dev
 
 2. **Adjust Processing** (Optional)
    - Click "⚙️ Show Advanced" (⌘A) to reveal processing controls
-   - Select a preset for common scenarios (Document, Handwriting, Low Quality, Photo)
-   - OR manually adjust:
-     - Contrast, brightness, and sharpness
-     - Gaussian blur for noise reduction
-     - CLAHE for contrast enhancement
-     - Bilateral filter for edge-preserving smoothing
-     - Morphology operations (erode/dilate)
-     - Adaptive threshold for binary conversion
+   - Configure LLM settings for prompt optimization
+   - OR manually adjust OCR preprocessing parameters
    - Choose recognition language
 
 3. **Extract Text**
-   - Click "🔍 Extract Text" (⌘↵) to perform OCR
-   - Watch the progress indicator
-   - View before/after comparison if desired
+   - OCR automatically runs when an image is selected
+   - View the extracted text in the middle panel
+   - Edit the text if needed
 
 4. **Export Results**
    - Click "📋 Copy" (⌘C) to copy text to clipboard
    - Click "💾 Save" (⌘S) to save as a text file
+
+### AI Image Generation Workflow
+
+1. **Optimize Prompt**
+   - After extracting text, configure your desired image style
+   - Add additional description (optional)
+   - Click "✨ Optimize Prompt" to generate an optimized prompt using LLM
+
+2. **Generate Image**
+   - Review and edit the optimized prompt if needed
+   - Select your desired aspect ratio (16:9, 1:1, etc.)
+   - Click "🎨 Generate Image" to create an image using FLUX Pro 1.1 Ultra
+   - Wait for the generation to complete (usually 10-30 seconds)
+   - View the generated image in the right panel
+
+**Note:** Image generation requires a valid BFL API key configured in `public/config.local.json`
 
 ## ⌨️ Keyboard Shortcuts
 
@@ -141,6 +160,29 @@ npm run tauri:build
 ```
 
 The built application will be available in `src-tauri/target/release/bundle/`.
+
+## 🔐 Local API Configuration
+
+Create a `public/config.local.json` file (this path is `.gitignore`d) to store your API credentials without committing them:
+
+```json
+{
+  "llm": {
+    "apiBaseUrl": "https://api.openai.com/v1",
+    "apiKey": "sk-your-key",
+    "modelName": "gpt-4"
+  },
+  "bflApiKey": "your-bfl-api-key-here"
+}
+```
+
+**Configuration Options:**
+- `llm.apiBaseUrl`: LLM API endpoint (default: `http://127.0.0.1:11434/v1` for local Ollama)
+- `llm.apiKey`: Your LLM API key (optional for local models like Ollama)
+- `llm.modelName`: Model name to use (e.g., `llama3.1:8b`, `gpt-4`)
+- `bflApiKey`: Your [Black Forest Labs](https://api.bfl.ai/) API key for FLUX image generation
+
+The app will merge these values with its defaults at startup. Keep this file local—never add it to git.
 
 ## 📂 Project Structure
 
