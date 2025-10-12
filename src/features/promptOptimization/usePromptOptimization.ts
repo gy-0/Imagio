@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { callChatCompletion, LLMError, normalizeBaseUrl } from '../../utils/llmClient';
+import { callChatCompletionStream, LLMError, normalizeBaseUrl } from '../../utils/llmClient';
 import type { LLMSettings } from './types';
 
 interface PromptOptimizationState {
@@ -76,9 +76,10 @@ export const usePromptOptimization = (
       return;
     }
 
-    setLLMStatus('Sending request to LLM...');
+    setLLMStatus('Generating prompt...');
     setLLMError('');
     setIsOptimizing(true);
+    setOptimizedPrompt(''); // Clear previous prompt
 
     try {
       const systemPrompt = 'You are a prompt optimization expert for image generation models like FLUX. Your task is to transform input text into optimized prompts suitable for image generation.';
@@ -93,7 +94,9 @@ Additional description: ${customDescription || 'None'}
 
 Generate a concise, descriptive prompt that captures the essence and key visual elements. Focus on visual details, composition, lighting, and style.`;
 
-      const result = await callChatCompletion({
+      let accumulatedPrompt = '';
+
+      await callChatCompletionStream({
         baseUrl: llmSettings.apiBaseUrl,
         apiKey: llmSettings.apiKey || undefined,
         model: llmSettings.modelName,
@@ -101,11 +104,16 @@ Generate a concise, descriptive prompt that captures the essence and key visual 
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: llmSettings.temperature
+        temperature: llmSettings.temperature,
+        maxTokens: 8000,
+        reasoningEffort: 'minimal' // Minimize reasoning for faster, cheaper prompt optimization
+      }, (chunk) => {
+        if (!chunk.isDone && chunk.content) {
+          accumulatedPrompt += chunk.content;
+          setOptimizedPrompt(accumulatedPrompt);
+        }
       });
 
-      const optimized = result.content.trim();
-      setOptimizedPrompt(optimized);
       setLLMStatus('Generated successfully');
     } catch (error) {
       console.error('Error optimizing prompt:', error);

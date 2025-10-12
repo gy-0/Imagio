@@ -1,4 +1,5 @@
 import type { ChangeEvent, FC } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface OptimizedPromptPanelProps {
   optimizedPrompt: string;
@@ -8,6 +9,7 @@ interface OptimizedPromptPanelProps {
   onCopyPrompt: () => void;
   onGenerateImage: () => Promise<void> | void;
   isGenerating: boolean;
+  isOptimizing?: boolean;
   generationStatus: string;
   generationError: string;
   generatedImageUrl: string;
@@ -26,6 +28,7 @@ export const OptimizedPromptPanel: FC<OptimizedPromptPanelProps> = ({
   onCopyPrompt,
   onGenerateImage,
   isGenerating,
+  isOptimizing = false,
   generationStatus,
   generationError,
   generatedImageUrl,
@@ -35,7 +38,18 @@ export const OptimizedPromptPanel: FC<OptimizedPromptPanelProps> = ({
   onClearGeneratedImage,
   hasRemoteImageUrl
 }) => {
-  if (!optimizedPrompt) {
+  // Track if panel has ever shown content - stays visible once shown
+  // Resets when component remounts (via key={ocrText} prop in parent)
+  const hasShownContent = useRef(false);
+  
+  useEffect(() => {
+    if (optimizedPrompt || isOptimizing) {
+      hasShownContent.current = true;
+    }
+  }, [optimizedPrompt, isOptimizing]);
+  
+  // Hide panel initially until content appears
+  if (!hasShownContent.current) {
     return null;
   }
 
@@ -51,6 +65,7 @@ export const OptimizedPromptPanel: FC<OptimizedPromptPanelProps> = ({
             onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onOptimizedPromptChange(event.target.value)}
             placeholder="Optimized prompt will appear here..."
             className="optimized-prompt-area"
+            disabled={isOptimizing}
           />
           <div className="prompt-actions">
             <div className="aspect-ratio-selector">
@@ -90,12 +105,12 @@ export const OptimizedPromptPanel: FC<OptimizedPromptPanelProps> = ({
             </div>
           </div>
           {generationStatus && (
-            <div className="generation-status success">
+            <div className="llm-status success">
               {generationStatus}
             </div>
           )}
           {generationError && (
-            <div className="generation-status error">
+            <div className="llm-status error">
               {generationError}
             </div>
           )}

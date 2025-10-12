@@ -57,14 +57,15 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
     }
   };
 
-  const displayText = textDisplayMode === 'optimized' && optimizedText ? optimizedText : value;
+  const displayText = textDisplayMode === 'optimized' ? (optimizedText || '') : value;
   const hasOptimizedText = Boolean(optimizedText?.trim());
+  const isShowingOptimizedView = textDisplayMode === 'optimized';
 
   return (
     <div className="result-card extracted-text-card">
       <div className="result-header">
         <h2>Extracted Text</h2>
-        {hasOptimizedText && (
+        {(hasOptimizedText || isOptimizing) && (
           <div className="view-mode-toggle">
             <button
               className={`toggle-btn ${textDisplayMode === 'original' ? 'active' : ''}`}
@@ -76,7 +77,7 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
               className={`toggle-btn ${textDisplayMode === 'optimized' ? 'active' : ''}`}
               onClick={() => handleViewModeChange('optimized')}
             >
-              Optimized
+              {isOptimizing ? 'Optimized (Generating...)' : 'Optimized'}
             </button>
           </div>
         )}
@@ -85,8 +86,9 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
         ref={textareaRef}
         value={displayText}
         onChange={handleChange}
-        placeholder="OCR results will appear here..."
+        placeholder={isOptimizing && isShowingOptimizedView ? "Generating optimized text..." : "OCR results will appear here..."}
         className="extracted-text-area"
+        disabled={isOptimizing && isShowingOptimizedView}
       />
       <div className="button-group extracted-actions">
         <button onClick={handleCopy} className="secondary-btn">

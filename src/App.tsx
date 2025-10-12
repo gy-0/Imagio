@@ -16,6 +16,7 @@ import './App.css';
 
 const App = () => {
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const [hasPerformedOcr, setHasPerformedOcr] = useState<boolean>(false);
 
   const {
     llmSettings,
@@ -78,20 +79,35 @@ const App = () => {
     isLikelyLocalLLM
   } = usePromptOptimization(llmSettings, ocrText);
 
+  // Track OCR state changes
   const previousOcrText = useRef<string>('');
   useEffect(() => {
     if (previousOcrText.current !== ocrText) {
+      // OCR text changed - mark as performed if not empty
+      if (ocrText) {
+        setHasPerformedOcr(true);
+      }
+      
+      // Reset dependent states when OCR text changes
+      if (previousOcrText.current) {
+        setOptimizedPrompt('');
+        resetGenerationState();
+      }
+      
       previousOcrText.current = ocrText;
-      setOptimizedPrompt('');
-      resetGenerationState();
     }
   }, [ocrText, resetGenerationState, setOptimizedPrompt]);
-
+  
+  // Reset hasPerformedOcr when new image is selected (imagePath changes)
+  const previousImagePath = useRef<string>('');
   useEffect(() => {
-    if (!optimizedPrompt.trim()) {
-      resetGenerationState();
+    if (previousImagePath.current !== imagePath) {
+      if (imagePath !== previousImagePath.current && previousImagePath.current !== '') {
+        setHasPerformedOcr(false);
+      }
+      previousImagePath.current = imagePath;
     }
-  }, [optimizedPrompt, resetGenerationState]);
+  }, [imagePath]);
 
   const handleGenerateImage = useCallback(() => {
     void generateImage(optimizedPrompt);
@@ -170,7 +186,7 @@ const App = () => {
           </div>
 
           <div className="middle-panel">
-            {ocrText && (
+            {hasPerformedOcr && (
               <>
                 <OcrTextPanel
                   value={ocrText}
@@ -201,6 +217,7 @@ const App = () => {
 
           <div className="right-panel">
             <OptimizedPromptPanel
+              key={ocrText}
               optimizedPrompt={optimizedPrompt}
               onOptimizedPromptChange={setOptimizedPrompt}
               aspectRatio={aspectRatio}
@@ -208,6 +225,7 @@ const App = () => {
               onCopyPrompt={handleCopyPrompt}
               onGenerateImage={handleGenerateImage}
               isGenerating={isGenerating}
+              isOptimizing={isOptimizing}
               generationStatus={generationStatus}
               generationError={generationError}
               generatedImageUrl={generatedImageUrl}

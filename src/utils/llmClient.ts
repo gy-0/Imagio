@@ -16,6 +16,7 @@ export interface ChatCompletionParams {
 	timeoutMs?: number;
 	endpoint?: string;
 	headers?: Record<string, string>;
+	reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
 }
 
 export interface ChatCompletionUsage {
@@ -28,6 +29,11 @@ export interface ChatCompletionResult {
 	content: string;
 	usage?: ChatCompletionUsage;
 	raw: unknown;
+}
+
+export interface StreamChunk {
+	content: string;
+	isDone: boolean;
 }
 
 export class LLMError extends Error {
@@ -82,6 +88,86 @@ function sanitizeMessages(messages: ChatMessage[]): ChatMessage[] {
 	}));
 }
 
+interface LLMResponseValidation {
+	valid: boolean;
+	reason: string;
+	diagnostics?: {
+		hasChoices: boolean;
+		choicesLength: number;
+		hasFirstChoice: boolean;
+		contentType: string;
+		textType: string;
+	};
+}
+
+function validateLLMResponse(parsed: any): LLMResponseValidation {
+	if (!parsed) {
+		return { valid: false, reason: 'Response is null/undefined' };
+	}
+
+	const hasChoices = Array.isArray(parsed?.choices);
+	if (!hasChoices) {
+		return { 
+			valid: false, 
+			reason: 'Missing choices array',
+			diagnostics: {
+				hasChoices: false,
+				choicesLength: 0,
+				hasFirstChoice: false,
+				contentType: 'N/A',
+				textType: 'N/A'
+			}
+		};
+	}
+
+	const choices = parsed.choices;
+	const choicesLength = choices.length;
+	
+	if (choicesLength === 0) {
+		return { 
+			valid: false, 
+			reason: 'Empty choices array',
+			diagnostics: {
+				hasChoices: true,
+				choicesLength: 0,
+				hasFirstChoice: false,
+				contentType: 'N/A',
+				textType: 'N/A'
+			}
+		};
+	}
+
+	const primaryChoice = choices[0];
+	const hasFirstChoice = !!primaryChoice;
+	const contentType = typeof primaryChoice?.message?.content;
+	const textType = typeof primaryChoice?.text;
+
+	const rawContent =
+		contentType === 'string'
+			? primaryChoice.message.content
+			: textType === 'string'
+			? primaryChoice.text
+			: '';
+
+	const content = rawContent.trim();
+
+	if (!content) {
+		return {
+			valid: false,
+			reason: 'Content is empty or whitespace-only',
+			diagnostics: {
+				hasChoices: true,
+				choicesLength,
+				hasFirstChoice,
+				contentType,
+				textType
+			}
+		};
+	}
+
+	return { valid: true, reason: 'Valid response' };
+}
+
 export async function callChatCompletion(params: ChatCompletionParams): Promise<ChatCompletionResult> {
 	const baseUrl = normalizeBaseUrl(params.baseUrl);
 	const url = buildEndpoint(baseUrl, params.endpoint);
@@ -110,6 +196,10 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 	if (typeof params.topP === 'number' && Number.isFinite(params.topP)) {
 		payload.top_p = params.topP;
 		payload.topP = params.topP;
+	}
+
+	if (params.reasoningEffort) {
+		payload.reasoning_effort = params.reasoningEffort;
 	}
 
 		const controller = new AbortController();
@@ -168,6 +258,51 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 					throw new LLMError('无法解析 LLM 响应 JSON', response.status, error);
 		}
 
+		// Log response structure for debugging
+		const debugContent = parsed?.choices?.[0]?.message?.content ?? parsed?.choices?.[0]?.text ?? '';
+		console.log('[LLM Debug] Response structure:', {
+			hasChoices: Array.isArray(parsed?.choices),
+			choicesLength: parsed?.choices?.length ?? 0,
+			firstChoice: parsed?.choices?.[0] ? {
+				hasMessage: !!parsed.choices[0].message,
+				hasContent: !!parsed.choices[0].message?.content,
+				hasText: !!parsed.choices[0].text,
+				contentType: typeof parsed.choices[0].message?.content,
+				textType: typeof parsed.choices[0].text,
+				contentLength: debugContent.length,
+				contentPreview: `"${debugContent.slice(0, 100)}..."`,
+				contentTrimmedLength: debugContent.trim().length
+			} : null,
+			rawSample: JSON.stringify(parsed).slice(0, 500)
+		});
+
+		// Validate the response structure
+		const validation = validateLLMResponse(parsed);
+		
+		if (!validation.valid) {
+			const contentInfo = debugContent ? `原始长度=${debugContent.length}, trim后长度=${debugContent.trim().length}` : '';
+			const diagnosticsStr = validation.diagnostics
+				? `调试信息: choices数量=${validation.diagnostics.choicesLength}, ` +
+				  `primaryChoice存在=${validation.diagnostics.hasFirstChoice}, ` +
+				  `content类型=${validation.diagnostics.contentType}, ` +
+				  `text类型=${validation.diagnostics.textType}` +
+				  (contentInfo ? `, ${contentInfo}` : '')
+				: '';
+			
+			console.error('[LLM Error] Invalid response:', {
+				reason: validation.reason,
+				diagnostics: validation.diagnostics,
+				rawContentLength: debugContent?.length ?? 0,
+				rawContentPreview: debugContent ? `"${debugContent.slice(0, 200)}"` : 'N/A',
+				fullResponse: parsed
+			});
+			
+			throw new LLMError(
+				`LLM 响应缺少有效内容 (${validation.reason})。${diagnosticsStr}`,
+				response.status
+			);
+		}
+
 		const choices = Array.isArray(parsed?.choices) ? parsed.choices : [];
 		const primaryChoice = choices[0] ?? null;
 		const rawContent =
@@ -178,9 +313,6 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 				: '';
 
 		const content = rawContent.trim();
-		if (!content) {
-			throw new LLMError('LLM 响应缺少有效内容', response.status);
-		}
 
 		const usage: ChatCompletionUsage | undefined = parsed?.usage
 			? {
@@ -212,5 +344,167 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 				throw new LLMError(`连接 LLM 服务时出错: ${err?.message ?? String(error)}`, undefined, error);
 			} finally {
 				clearTimeout(timeout);
+	}
+}
+
+export async function callChatCompletionStream(
+	params: ChatCompletionParams,
+	onChunk: (chunk: StreamChunk) => void
+): Promise<void> {
+	const baseUrl = normalizeBaseUrl(params.baseUrl);
+	const url = buildEndpoint(baseUrl, params.endpoint);
+	const headers: Record<string, string> = {
+		'Content-Type': 'application/json',
+		Accept: 'text/event-stream',
+		...params.headers,
+	};
+
+	if (params.apiKey) {
+		headers.Authorization = `Bearer ${params.apiKey}`;
+	}
+
+	const payload: Record<string, unknown> = {
+		model: params.model,
+		messages: sanitizeMessages(params.messages),
+		temperature: typeof params.temperature === 'number' ? params.temperature : 0.7,
+		stream: true,
+	};
+
+	if (typeof params.maxTokens === 'number' && Number.isFinite(params.maxTokens)) {
+		const rounded = Math.max(1, Math.round(params.maxTokens));
+		payload.max_completion_tokens = rounded;
+	}
+
+	if (typeof params.topP === 'number' && Number.isFinite(params.topP)) {
+		payload.top_p = params.topP;
+		payload.topP = params.topP;
+	}
+
+	if (params.reasoningEffort) {
+		payload.reasoning_effort = params.reasoningEffort;
+	}
+
+	const controller = new AbortController();
+	let didTimeout = false;
+	const timeout = setTimeout(() => {
+		didTimeout = true;
+		controller.abort();
+	}, params.timeoutMs ?? 120000); // Longer timeout for streaming
+
+	try {
+		const response = await fetch(url, {
+			method: 'POST',
+			headers,
+			body: JSON.stringify(payload),
+			signal: controller.signal,
+		});
+
+		if (!response.ok) {
+			const contentType = response.headers.get('content-type') ?? '';
+			const isJson = contentType.includes('application/json');
+			
+			let detail = '';
+			if (isJson) {
+				try {
+					const errorBody = await response.json();
+					detail =
+						errorBody?.error?.message ??
+						errorBody?.message ??
+						(typeof errorBody === 'string' ? errorBody : '');
+				} catch {
+					// ignore JSON parse failures for error payloads
+				}
+			} else {
+				try {
+					detail = await response.text();
+				} catch {
+					detail = '';
+				}
+			}
+
+			const message = detail
+				? `LLM 请求失败 (${response.status}): ${detail}`
+				: `LLM 请求失败 (${response.status}): ${response.statusText}`;
+			throw new LLMError(message, response.status);
+		}
+
+		if (!response.body) {
+			throw new LLMError('响应体为空，无法进行流式处理');
+		}
+
+		const reader = response.body.getReader();
+		const decoder = new TextDecoder('utf-8');
+		let buffer = '';
+
+		try {
+			while (true) {
+				const { done, value } = await reader.read();
+				
+				if (done) {
+					break;
+				}
+
+				buffer += decoder.decode(value, { stream: true });
+				const lines = buffer.split('\n');
+				
+				// Keep the last incomplete line in the buffer
+				buffer = lines.pop() || '';
+
+				for (const line of lines) {
+					const trimmed = line.trim();
+					
+					if (!trimmed || trimmed.startsWith(':')) {
+						// Skip empty lines and comments
+						continue;
+					}
+
+					if (trimmed === 'data: [DONE]') {
+						onChunk({ content: '', isDone: true });
+						return;
+					}
+
+					if (trimmed.startsWith('data: ')) {
+						const jsonStr = trimmed.slice(6); // Remove 'data: ' prefix
+						
+						try {
+							const parsed = JSON.parse(jsonStr);
+							
+							// Extract content from the delta
+							const delta = parsed?.choices?.[0]?.delta;
+							const content = delta?.content || '';
+							
+							if (content) {
+								onChunk({ content, isDone: false });
+							}
+						} catch (error) {
+							console.warn('Failed to parse SSE JSON:', jsonStr, error);
+							// Continue processing other chunks
+						}
+					}
+				}
+			}
+
+			// Stream ended without [DONE] marker
+			onChunk({ content: '', isDone: true });
+		} finally {
+			reader.releaseLock();
+		}
+	} catch (error) {
+		if (error instanceof LLMError) {
+			throw error;
+		}
+
+		const maybeDom = error as DOMException;
+		if (maybeDom?.name === 'AbortError') {
+			const message = didTimeout
+				? 'LLM 流式请求超时，请确认服务已启动。'
+				: 'LLM 流式请求已中断。';
+			throw new LLMError(message, didTimeout ? 408 : undefined, error);
+		}
+
+		const err = error as Error;
+		throw new LLMError(`连接 LLM 服务时出错: ${err?.message ?? String(error)}`, undefined, error);
+	} finally {
+		clearTimeout(timeout);
 	}
 }

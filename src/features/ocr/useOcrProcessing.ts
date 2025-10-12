@@ -2,7 +2,7 @@ import type { DragEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
-import { callChatCompletion } from '../../utils/llmClient';
+import { callChatCompletionStream } from '../../utils/llmClient';
 import type { ProcessingParams, OcrResult, TextDisplayMode } from './types';
 import type { LLMSettings } from '../promptOptimization/types';
 
@@ -69,13 +69,19 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     }
 
     setIsOptimizingText(true);
+    setOptimizedText(''); // Clear previous optimized text
+    setTextDisplayMode('optimized'); // Immediately switch to optimized view
+    
     try {
-      const result = await callChatCompletion({
+      let accumulatedText = '';
+      
+      await callChatCompletionStream({
         baseUrl: llmSettings.apiBaseUrl,
         model: llmSettings.modelName,
         apiKey: llmSettings.apiKey,
         temperature: llmSettings.temperature,
-        maxTokens: 2000,
+        maxTokens: 8000,
+        reasoningEffort: 'minimal', // Minimize reasoning for faster, cheaper OCR correction
         messages: [
           {
             role: 'system',
@@ -86,10 +92,12 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
             content: ocrText
           }
         ]
+      }, (chunk) => {
+        if (!chunk.isDone && chunk.content) {
+          accumulatedText += chunk.content;
+          setOptimizedText(accumulatedText);
+        }
       });
-
-      setOptimizedText(result.content);
-      setTextDisplayMode('optimized');
     } catch (error) {
       console.error('Error optimizing OCR text:', error);
       setOptimizedText(`Error: ${error instanceof Error ? error.message : String(error)}`);
