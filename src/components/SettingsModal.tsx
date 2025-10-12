@@ -1,4 +1,4 @@
-import type { FC, ChangeEvent } from 'react';
+import { type FC, type ChangeEvent, useState } from 'react';
 import type { LLMSettings } from '../features/promptOptimization/types';
 
 interface SettingsModalProps {
@@ -18,6 +18,9 @@ export const SettingsModal: FC<SettingsModalProps> = ({
   bflApiKey,
   onBflApiKeyChange
 }) => {
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [showBflApiKey, setShowBflApiKey] = useState(false);
+
   if (!isOpen) {
     return null;
   }
@@ -49,12 +52,32 @@ export const SettingsModal: FC<SettingsModalProps> = ({
           <div className="settings-field">
             <label>
               API Key
-              <input
-                type="password"
-                value={llmSettings.apiKey}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => onLLMSettingChange('apiKey', event.target.value)}
-                placeholder="Enter API key"
-              />
+              <div className="password-input-wrapper">
+                <input
+                  type={showApiKey ? "text" : "password"}
+                  value={llmSettings.apiKey}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => onLLMSettingChange('apiKey', event.target.value)}
+                  placeholder="Enter API key"
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  aria-label={showApiKey ? "Hide API key" : "Show API key"}
+                >
+                  {showApiKey ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  )}
+                </button>
+              </div>
             </label>
           </div>
 
@@ -72,7 +95,10 @@ export const SettingsModal: FC<SettingsModalProps> = ({
 
           <div className="settings-field">
             <label>
-              Temperature
+              <span className="field-label-row">
+                Temperature
+                <span className="slider-value-inline">{llmSettings.temperature.toFixed(2)}</span>
+              </span>
               <input
                 type="range"
                 min={0}
@@ -81,19 +107,38 @@ export const SettingsModal: FC<SettingsModalProps> = ({
                 value={llmSettings.temperature}
                 onChange={(event: ChangeEvent<HTMLInputElement>) => onLLMSettingChange('temperature', parseFloat(event.target.value))}
               />
-              <span className="slider-value">{llmSettings.temperature.toFixed(2)}</span>
             </label>
           </div>
 
           <div className="settings-field">
             <label>
               BFL API Key (for image generation)
-              <input
-                type="password"
-                value={bflApiKey}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => onBflApiKeyChange(event.target.value)}
-                placeholder="Enter BFL API key"
-              />
+              <div className="password-input-wrapper">
+                <input
+                  type={showBflApiKey ? "text" : "password"}
+                  value={bflApiKey}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => onBflApiKeyChange(event.target.value)}
+                  placeholder="Enter BFL API key"
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowBflApiKey(!showBflApiKey)}
+                  aria-label={showBflApiKey ? "Hide BFL API key" : "Show BFL API key"}
+                >
+                  {showBflApiKey ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  )}
+                </button>
+              </div>
             </label>
           </div>
         </div>
