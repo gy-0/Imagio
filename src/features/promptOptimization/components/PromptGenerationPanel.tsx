@@ -12,7 +12,6 @@ interface PromptGenerationPanelProps {
   onOptimizedPromptChange: (value: string) => void;
   onOptimize: () => Promise<void> | void;
   isOptimizing: boolean;
-  llmStatus: string;
   llmError: string;
   isOptimizeDisabled: boolean;
   onCopyPrompt: () => void;
@@ -31,7 +30,6 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
   onOptimizedPromptChange,
   onOptimize,
   isOptimizing,
-  llmStatus,
   llmError,
   isOptimizeDisabled,
   onCopyPrompt,
@@ -103,11 +101,7 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
         {isOptimizing ? '⏳ Generating...' : '✨ Generate Prompt'}
       </button>
 
-      {llmStatus && (
-        <div className="llm-status success">
-          {llmStatus}
-        </div>
-      )}
+      {/* Hide success status to save space */}
 
       {llmError && (
         <div className="llm-status error">

@@ -76,7 +76,8 @@ export const usePromptOptimization = (
       return;
     }
 
-    setLLMStatus('Generating prompt...');
+    // Remove transient generating status to reduce UI clutter
+    // setLLMStatus('Generating prompt...');
     setLLMError('');
     setIsOptimizing(true);
     setOptimizedPrompt(''); // Clear previous prompt
@@ -116,7 +117,8 @@ CRITICAL: Output ONLY the prompt content. Do NOT include any meta-descriptions, 
         }
       });
 
-      setLLMStatus('Generated successfully');
+      // Do not show success banner; optimized prompt itself is enough signal
+      setLLMStatus('');
     } catch (error) {
       console.error('Error optimizing prompt:', error);
       setLLMStatus('');

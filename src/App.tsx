@@ -69,7 +69,6 @@ const App = () => {
     customDescription,
     optimizedPrompt,
     isOptimizing,
-    llmStatus,
     llmError,
     setImageStyle,
     setCustomDescription,
@@ -217,7 +216,6 @@ const App = () => {
                   onOptimizedPromptChange={setOptimizedPrompt}
                   onOptimize={optimizePrompt}
                   isOptimizing={isOptimizing}
-                  llmStatus={llmStatus}
                   llmError={llmError}
                   isOptimizeDisabled={!ocrText.trim()}
                   onCopyPrompt={handleCopyPrompt}
