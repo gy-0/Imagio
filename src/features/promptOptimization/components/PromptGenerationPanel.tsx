@@ -42,42 +42,46 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
     </div>
 
     <div className="prompt-settings-section">
-      <div className="prompt-control-group">
-        <label>
-          Image Style:
-          <Select
-            value={imageStyle}
-            onChange={onImageStyleChange}
-          >
-            <option value="realistic">Realistic</option>
-            <option value="artistic">Artistic</option>
-            <option value="anime">Anime</option>
-            <option value="abstract">Abstract</option>
-            <option value="photographic">Photographic</option>
-            <option value="illustration">Illustration</option>
-            <option value="3d-render">3D Render</option>
-            <option value="watercolor">Watercolor</option>
-            <option value="oil-painting">Oil Painting</option>
-          </Select>
-        </label>
-      </div>
+      <div className="prompt-select-row">
+        <div className="prompt-control-group prompt-control-inline">
+          <label>
+            <span>Image Style:</span>
+            <Select
+              value={imageStyle}
+              onChange={onImageStyleChange}
+              className="compact-select"
+            >
+              <option value="realistic">Realistic</option>
+              <option value="artistic">Artistic</option>
+              <option value="anime">Anime</option>
+              <option value="abstract">Abstract</option>
+              <option value="photographic">Photographic</option>
+              <option value="illustration">Illustration</option>
+              <option value="3d-render">3D Render</option>
+              <option value="watercolor">Watercolor</option>
+              <option value="oil-painting">Oil Painting</option>
+            </Select>
+          </label>
+        </div>
 
-      <div className="prompt-control-group">
-        <label>
-          Aspect Ratio:
-          <Select
-            value={aspectRatio}
-            onChange={onAspectRatioChange}
-          >
-            <option value="21:9">21:9 (Ultrawide)</option>
-            <option value="16:9">16:9 (Widescreen)</option>
-            <option value="4:3">4:3 (Standard)</option>
-            <option value="1:1">1:1 (Square)</option>
-            <option value="3:4">3:4 (Portrait)</option>
-            <option value="9:16">9:16 (Mobile)</option>
-            <option value="9:21">9:21 (Tall)</option>
-          </Select>
-        </label>
+        <div className="prompt-control-group prompt-control-inline">
+          <label>
+            <span>Aspect Ratio:</span>
+            <Select
+              value={aspectRatio}
+              onChange={onAspectRatioChange}
+              className="compact-select"
+            >
+              <option value="21:9">21:9 (Ultrawide)</option>
+              <option value="16:9">16:9 (Widescreen)</option>
+              <option value="4:3">4:3 (Standard)</option>
+              <option value="1:1">1:1 (Square)</option>
+              <option value="3:4">3:4 (Portrait)</option>
+              <option value="9:16">9:16 (Mobile)</option>
+              <option value="9:21">9:21 (Tall)</option>
+            </Select>
+          </label>
+        </div>
       </div>
 
       <div className="prompt-control-group">

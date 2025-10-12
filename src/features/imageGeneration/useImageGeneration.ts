@@ -10,7 +10,7 @@ interface UseImageGenerationOptions {
 }
 
 export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => {
-  const [aspectRatio, setAspectRatio] = useState<string>('16:9');
+  const [aspectRatio, setAspectRatio] = useState<string>('9:16');
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('');
   const [generatedImageBlob, setGeneratedImageBlob] = useState<Blob | null>(null);
   const [generatedImageRemoteUrl, setGeneratedImageRemoteUrl] = useState<string>('');

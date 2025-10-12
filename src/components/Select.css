@@ -27,6 +27,12 @@
   transform: translateY(-1px);
 }
 
+.compact-select .modern-select {
+  padding: 0.5rem 2.25rem 0.5rem 0.85rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+
 .modern-select:focus {
   outline: none;
   border-color: #667eea;
@@ -49,6 +55,10 @@
   pointer-events: none;
   color: rgba(255, 255, 255, 0.7);
   transition: all 0.25s ease;
+}
+
+.compact-select .select-arrow {
+  right: 0.85rem;
 }
 
 .modern-select-wrapper:hover .select-arrow {
@@ -86,5 +96,8 @@
   .modern-select-wrapper:hover .select-arrow {
     color: rgba(0, 0, 0, 0.8);
   }
-}
 
+  .compact-select .modern-select {
+    box-shadow: 0 1px 6px rgba(102, 126, 234, 0.12);
+  }
+}
