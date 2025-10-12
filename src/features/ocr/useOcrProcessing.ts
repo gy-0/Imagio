@@ -26,8 +26,8 @@ const DEFAULT_PARAMS: ProcessingParams = {
   contrast: 1.3,
   brightness: 0.0,
   sharpness: 1.2,
-  useAdaptiveThreshold: true,
-  useClahe: true,
+  useAdaptiveThreshold: false,
+  useClahe: false,
   gaussianBlur: 0.5,
   bilateralFilter: false,
   morphology: 'none',
@@ -167,7 +167,11 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     setImagePreviewUrl(assetUrl);
     onNewImage?.({ path, previewUrl: assetUrl, source });
 
+    // Wait for OCR to complete before returning
     await performOcrOnPath(path);
+
+    // Add a small delay to ensure state updates propagate
+    await new Promise(resolve => setTimeout(resolve, 100));
   }, [clearOptimizedText, onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview]);
 
   const processMultipleImages = useCallback(async (paths: string[], source: 'file' | 'drop' = 'file') => {

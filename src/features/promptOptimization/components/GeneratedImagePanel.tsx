@@ -26,12 +26,16 @@ export const GeneratedImagePanel: FC<GeneratedImagePanelProps> = ({
     return null;
   }
 
+  // Determine if we should show the status message
+  const showStatus = isGenerating || (generationStatus && !generationStatus.startsWith('Auto-saved'));
+  const showAutoSaveHint = generatedImageUrl && generationStatus && generationStatus.startsWith('Auto-saved');
+
   return (
     <div className="result-card generated-image-panel">
       <div className="result-header">
         <h2>Generated Image</h2>
       </div>
-      
+
       <div className={`generated-image-container${generatedImageUrl ? ' has-image' : ''}`}>
         {isGenerating ? (
           <div className="generation-loading">
@@ -50,7 +54,19 @@ export const GeneratedImagePanel: FC<GeneratedImagePanelProps> = ({
           </div>
         )}
       </div>
-      
+
+      {showAutoSaveHint && (
+        <div className="auto-save-hint">
+          {generationStatus}
+        </div>
+      )}
+
+      {showStatus && !isGenerating && (
+        <div className="generation-status-message">
+          {generationStatus}
+        </div>
+      )}
+
       {generatedImageUrl && (
         <div className="generated-image-actions">
           <button

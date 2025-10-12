@@ -20,12 +20,19 @@ export const Toolbar: FC<ToolbarProps> = ({
   onToggleSidebar
 }) => {
   return (
-    <div className="toolbar">
-      <button onClick={onToggleSidebar} className="toolbar-btn sidebar-btn">
-        <span className="btn-icon">🗂️</span>
-        <span className="btn-text">History &amp; Settings</span>
+    <>
+      <button
+        onClick={onToggleSidebar}
+        className="hamburger-btn"
+        aria-label="Toggle sidebar"
+        title="History & Settings"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
       </button>
-      <button onClick={onSelectImage} className="toolbar-btn">
+      <div className="toolbar">
+        <button onClick={onSelectImage} className="toolbar-btn">
         <span className="btn-icon">📁</span>
         <span className="btn-text">Select Image</span>
       </button>
@@ -54,6 +61,7 @@ export const Toolbar: FC<ToolbarProps> = ({
         <span className="btn-icon">⚙️</span>
         <span className="btn-text">{showAdvanced ? 'Hide' : 'Show'} Advanced</span>
       </button>
-    </div>
+      </div>
+    </>
   );
 };

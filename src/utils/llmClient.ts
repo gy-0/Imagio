@@ -53,7 +53,7 @@ export class LLMError extends Error {
 export function normalizeBaseUrl(input: string): string {
 	const trimmed = input.trim();
 	if (!trimmed) {
-		throw new LLMError('API Base URL 不能为空');
+		throw new LLMError('API Base URL cannot be empty');
 	}
 
 	const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`;
@@ -62,7 +62,7 @@ export function normalizeBaseUrl(input: string): string {
 	try {
 		url = new URL(withProtocol);
 	} catch {
-		throw new LLMError('API Base URL 无效');
+		throw new LLMError('Invalid API Base URL');
 	}
 
 	url.hash = '';
@@ -241,21 +241,21 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 			}
 
 			const message = detail
-				? `LLM 请求失败 (${response.status}): ${detail}`
-				: `LLM 请求失败 (${response.status}): ${response.statusText}`;
+				? `LLM request failed (${response.status}): ${detail}`
+				: `LLM request failed (${response.status}): ${response.statusText}`;
 			throw new LLMError(message, response.status);
 		}
 
 		if (!isJson) {
 			const bodyText = await response.text();
-			throw new LLMError(`LLM 返回了非 JSON 内容: ${bodyText.slice(0, 200)}`);
+			throw new LLMError(`LLM returned non-JSON content: ${bodyText.slice(0, 200)}`);
 		}
 
 		let parsed: any;
 		try {
 			parsed = await response.json();
 		} catch (error) {
-					throw new LLMError('无法解析 LLM 响应 JSON', response.status, error);
+					throw new LLMError('Failed to parse LLM response JSON', response.status, error);
 		}
 
 		// Log response structure for debugging
@@ -280,12 +280,12 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 		const validation = validateLLMResponse(parsed);
 		
 		if (!validation.valid) {
-			const contentInfo = debugContent ? `原始长度=${debugContent.length}, trim后长度=${debugContent.trim().length}` : '';
+			const contentInfo = debugContent ? `raw length=${debugContent.length}, trimmed length=${debugContent.trim().length}` : '';
 			const diagnosticsStr = validation.diagnostics
-				? `调试信息: choices数量=${validation.diagnostics.choicesLength}, ` +
-				  `primaryChoice存在=${validation.diagnostics.hasFirstChoice}, ` +
-				  `content类型=${validation.diagnostics.contentType}, ` +
-				  `text类型=${validation.diagnostics.textType}` +
+				? `Debug info: choices count=${validation.diagnostics.choicesLength}, ` +
+				  `primary choice exists=${validation.diagnostics.hasFirstChoice}, ` +
+				  `content type=${validation.diagnostics.contentType}, ` +
+				  `text type=${validation.diagnostics.textType}` +
 				  (contentInfo ? `, ${contentInfo}` : '')
 				: '';
 			
@@ -298,7 +298,7 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 			});
 			
 			throw new LLMError(
-				`LLM 响应缺少有效内容 (${validation.reason})。${diagnosticsStr}`,
+				`LLM response missing valid content (${validation.reason})。${diagnosticsStr}`,
 				response.status
 			);
 		}
@@ -335,13 +335,13 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 		const maybeDom = error as DOMException;
 		if (maybeDom?.name === 'AbortError') {
 			const message = didTimeout
-				? 'LLM 请求超时，请确认服务已启动。'
-				: 'LLM 请求已中断。';
+				? 'LLM request timed out. Please verify the service is running.'
+				: 'LLM request was aborted.';
 			throw new LLMError(message, didTimeout ? 408 : undefined, error);
 		}
 
 		const err = error as Error;
-				throw new LLMError(`连接 LLM 服务时出错: ${err?.message ?? String(error)}`, undefined, error);
+				throw new LLMError(`Error connecting to LLM service: ${err?.message ?? String(error)}`, undefined, error);
 			} finally {
 				clearTimeout(timeout);
 	}
@@ -423,13 +423,13 @@ export async function callChatCompletionStream(
 			}
 
 			const message = detail
-				? `LLM 请求失败 (${response.status}): ${detail}`
-				: `LLM 请求失败 (${response.status}): ${response.statusText}`;
+				? `LLM request failed (${response.status}): ${detail}`
+				: `LLM request failed (${response.status}): ${response.statusText}`;
 			throw new LLMError(message, response.status);
 		}
 
 		if (!response.body) {
-			throw new LLMError('响应体为空，无法进行流式处理');
+			throw new LLMError('Response body is empty, cannot perform streaming');
 		}
 
 		const reader = response.body.getReader();
@@ -497,13 +497,13 @@ export async function callChatCompletionStream(
 		const maybeDom = error as DOMException;
 		if (maybeDom?.name === 'AbortError') {
 			const message = didTimeout
-				? 'LLM 流式请求超时，请确认服务已启动。'
-				: 'LLM 流式请求已中断。';
+				? 'LLM streaming request timed out. Please verify the service is running.'
+				: 'LLM streaming request was aborted.';
 			throw new LLMError(message, didTimeout ? 408 : undefined, error);
 		}
 
 		const err = error as Error;
-		throw new LLMError(`连接 LLM 服务时出错: ${err?.message ?? String(error)}`, undefined, error);
+		throw new LLMError(`Error connecting to LLM service: ${err?.message ?? String(error)}`, undefined, error);
 	} finally {
 		clearTimeout(timeout);
 	}

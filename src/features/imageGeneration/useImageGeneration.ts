@@ -39,6 +39,12 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
   }, []);
 
   const generateImage = useCallback(async (prompt: string) => {
+    // Prevent duplicate generation if already generating
+    if (isGenerating) {
+      console.log('Generation already in progress, skipping duplicate request');
+      return;
+    }
+
     setGenerationStatus('');
     setGenerationError('');
 
@@ -94,7 +100,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
     } finally {
       setIsGenerating(false);
     }
-  }, [aspectRatio, bflApiKey]);
+  }, [aspectRatio, bflApiKey, isGenerating]);
 
   const saveGeneratedImage = useCallback(async () => {
     if ((!generatedImageBlob && !generatedImageUrl) || isGenerating) {
@@ -261,7 +267,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
       const filePath = await join(directoryPath, fileName);
       await writeFile(filePath, new Uint8Array(arrayBuffer));
 
-      setGenerationStatus(`Auto-saved image to: ${filePath}`);
+      setGenerationStatus(`Auto-saved!`);
       return filePath;
     } catch (error) {
       console.error('Error auto-saving generated image:', error);
