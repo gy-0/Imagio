@@ -35,3 +35,4 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 /thesis_updated
+/.cursor/plans

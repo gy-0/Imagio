@@ -14,3 +14,5 @@ export interface OcrResult {
   text: string;
   processedImagePath: string;
 }
+
+export type TextDisplayMode = 'original' | 'optimized';

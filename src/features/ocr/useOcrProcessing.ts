@@ -2,11 +2,14 @@ import type { DragEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
-import type { ProcessingParams, OcrResult } from './types';
+import { callChatCompletion } from '../../utils/llmClient';
+import type { ProcessingParams, OcrResult, TextDisplayMode } from './types';
+import type { LLMSettings } from '../promptOptimization/types';
 
 interface UseOcrProcessingOptions {
   onTextChange?: (text: string) => void;
   onNewImage?: () => void;
+  llmSettings?: LLMSettings;
 }
 
 const DEFAULT_PARAMS: ProcessingParams = {
@@ -22,12 +25,15 @@ const DEFAULT_PARAMS: ProcessingParams = {
 };
 
 export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
-  const { onTextChange, onNewImage } = options;
+  const { onTextChange, onNewImage, llmSettings } = options;
 
   const [imagePath, setImagePath] = useState<string>('');
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
   const [processedImageUrl, setProcessedImageUrl] = useState<string>('');
   const [ocrText, setOcrText] = useState<string>('');
+  const [optimizedText, setOptimizedText] = useState<string>('');
+  const [isOptimizingText, setIsOptimizingText] = useState<boolean>(false);
+  const [textDisplayMode, setTextDisplayMode] = useState<TextDisplayMode>('original');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const isProcessingRef = useRef(false);
   useEffect(() => {
@@ -50,6 +56,46 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     setOcrText(value);
     onTextChange?.(value);
   }, [onTextChange]);
+
+  const optimizeOcrText = useCallback(async () => {
+    if (!ocrText.trim() || !llmSettings) {
+      return;
+    }
+
+    setIsOptimizingText(true);
+    try {
+      const result = await callChatCompletion({
+        baseUrl: llmSettings.apiBaseUrl,
+        model: llmSettings.modelName,
+        apiKey: llmSettings.apiKey,
+        temperature: llmSettings.temperature,
+        maxTokens: 2000,
+        messages: [
+          {
+            role: 'system',
+            content: 'Clean and correct OCR text errors. Remove invalid characters, fix common OCR mistakes, keep original meaning. Return only the corrected text.'
+          },
+          {
+            role: 'user',
+            content: ocrText
+          }
+        ]
+      });
+
+      setOptimizedText(result.content);
+      setTextDisplayMode('optimized');
+    } catch (error) {
+      console.error('Error optimizing OCR text:', error);
+      setOptimizedText(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsOptimizingText(false);
+    }
+  }, [ocrText, llmSettings]);
+
+  const clearOptimizedText = useCallback(() => {
+    setOptimizedText('');
+    setTextDisplayMode('original');
+  }, []);
 
   const performOcrOnPath = useCallback(async (path: string) => {
     setIsProcessing(true);
@@ -103,6 +149,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
       setImagePath(path);
       resetProcessedPreview();
       setOcrText('');
+      clearOptimizedText();
       onTextChange?.('');
       onNewImage?.();
 
@@ -113,7 +160,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     } catch (error) {
       console.error('Error selecting file:', error);
     }
-  }, [performOcrOnPath, onNewImage, onTextChange, resetProcessedPreview]);
+  }, [performOcrOnPath, onNewImage, onTextChange, resetProcessedPreview, clearOptimizedText]);
 
   const takeScreenshot = useCallback(async () => {
     setIsProcessing(true);
@@ -124,6 +171,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
       setImagePath(result.path);
       resetProcessedPreview();
       setOcrText('');
+      clearOptimizedText();
       onTextChange?.('');
       onNewImage?.();
 
@@ -138,7 +186,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
       setIsProcessing(false);
       setProcessingStatus('');
     }
-  }, [onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview]);
+  }, [onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview, clearOptimizedText]);
 
   const performOCR = useCallback(async () => {
     if (!imagePath) {
@@ -218,6 +266,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
       setImagePath(path);
       resetProcessedPreview();
       setOcrText('');
+      clearOptimizedText();
       onTextChange?.('');
       onNewImage?.();
 
@@ -228,7 +277,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     } catch (error) {
       console.error('Error handling dropped file:', error);
     }
-  }, [onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview]);
+  }, [onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview, clearOptimizedText]);
 
   useEffect(() => {
     if (!imagePath || isProcessingRef.current) {
@@ -257,6 +306,12 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     processedImageUrl,
     ocrText,
     updateOcrText,
+    optimizedText,
+    isOptimizingText,
+    textDisplayMode,
+    setTextDisplayMode,
+    optimizeOcrText,
+    clearOptimizedText,
     isProcessing,
     processingStatus,
     params,

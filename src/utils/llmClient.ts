@@ -104,12 +104,12 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 
 	if (typeof params.maxTokens === 'number' && Number.isFinite(params.maxTokens)) {
 		const rounded = Math.max(1, Math.round(params.maxTokens));
-		payload.max_tokens = rounded;
-		payload.max_output_tokens = rounded;
+		payload.max_completion_tokens = rounded;
 	}
 
 	if (typeof params.topP === 'number' && Number.isFinite(params.topP)) {
 		payload.top_p = params.topP;
+		payload.topP = params.topP;
 	}
 
 		const controller = new AbortController();

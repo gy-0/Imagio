@@ -46,6 +46,11 @@ const App = () => {
     processedImageUrl,
     ocrText,
     updateOcrText,
+    optimizedText,
+    isOptimizingText,
+    textDisplayMode,
+    setTextDisplayMode,
+    optimizeOcrText,
     isProcessing,
     processingStatus,
     params,
@@ -57,7 +62,7 @@ const App = () => {
     saveOcrText,
     isDragging,
     dragAndDropHandlers
-  } = useOcrProcessing();
+  } = useOcrProcessing({ llmSettings });
 
   const {
     imageStyle,
@@ -172,6 +177,11 @@ const App = () => {
                   onChange={updateOcrText}
                   onCopy={() => copyOcrText()}
                   onSave={() => saveOcrText()}
+                  optimizedText={optimizedText}
+                  isOptimizing={isOptimizingText}
+                  onOptimize={optimizeOcrText}
+                  textDisplayMode={textDisplayMode}
+                  onTextDisplayModeChange={setTextDisplayMode}
                 />
 
                 <PromptSettingsPanel
