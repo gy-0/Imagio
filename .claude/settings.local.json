@@ -7,7 +7,14 @@
       "Bash(echo $HOME)",
       "Bash(chmod:*)",
       "Bash(cargo:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(npm run check:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(pkill:*)",
+      "Bash(npm run build:dev:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []

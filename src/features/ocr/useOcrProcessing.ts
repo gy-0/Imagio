@@ -8,7 +8,9 @@ import type { LLMSettings } from '../promptOptimization/types';
 
 interface UseOcrProcessingOptions {
   onTextChange?: (text: string) => void;
-  onNewImage?: (details: { path: string; previewUrl: string; source: 'file' | 'drop' | 'screenshot'; }) => void;
+  onNewImage?: (details: { path: string; previewUrl: string; source: 'file' | 'drop' | 'screenshot'; }) => string;
+  onOcrComplete?: (details: { imagePath: string; ocrText: string; processedImageUrl: string; }) => void;
+  onOptimizeComplete?: (details: { imagePath: string; optimizedText: string; }) => void;
   llmSettings?: LLMSettings;
   suppressAutoProcessRef?: MutableRefObject<boolean>;
 }
@@ -41,7 +43,7 @@ const reflowOcrText = (text: string): string => {
 };
 
 export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
-  const { onTextChange, onNewImage, llmSettings, suppressAutoProcessRef } = options;
+  const { onTextChange, onNewImage, onOcrComplete, onOptimizeComplete, llmSettings, suppressAutoProcessRef } = options;
 
   const [imagePath, setImagePath] = useState<string>('');
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
@@ -73,18 +75,24 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     onTextChange?.(value);
   }, [onTextChange]);
 
+  const updateOptimizedText = useCallback((value: string) => {
+    setOptimizedText(value);
+  }, []);
+
   const optimizeOcrText = useCallback(async () => {
     if (!ocrText.trim() || !llmSettings) {
       return;
     }
 
+    // Capture the current image path for the callback
+    const currentImagePath = imagePath;
     setIsOptimizingText(true);
     setOptimizedText(''); // Clear previous optimized text
-    setTextDisplayMode('optimized'); // Immediately switch to optimized view
-    
+    // Don't switch to optimized view immediately - wait for completion
+
     try {
       let accumulatedText = '';
-      
+
       await callChatCompletionStream({
         baseUrl: llmSettings.apiBaseUrl,
         model: llmSettings.modelName,
@@ -108,13 +116,24 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
           setOptimizedText(accumulatedText);
         }
       });
+
+      // Only switch to optimized view after successful completion
+      if (accumulatedText.trim()) {
+        setTextDisplayMode('optimized');
+
+        // Notify completion with results
+        onOptimizeComplete?.({
+          imagePath: currentImagePath,
+          optimizedText: accumulatedText
+        });
+      }
     } catch (error) {
       console.error('Error optimizing OCR text:', error);
       setOptimizedText(`Error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsOptimizingText(false);
     }
-  }, [ocrText, llmSettings]);
+  }, [ocrText, imagePath, llmSettings, onOptimizeComplete]);
 
   const clearOptimizedText = useCallback(() => {
     setOptimizedText('');
@@ -142,6 +161,13 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
       const processedUrl = convertFileSrc(result.processedImagePath);
       setProcessedImageUrl(processedUrl);
       setProcessingStatus('Complete!');
+
+      // Notify completion with results
+      onOcrComplete?.({
+        imagePath: path,
+        ocrText: reflowedText,
+        processedImageUrl: processedUrl
+      });
     } catch (error) {
       console.error('Error performing OCR:', error);
       setProcessingStatus('Error occurred');
@@ -154,7 +180,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
         setProcessingStatus('');
       }, 500);
     }
-  }, [onTextChange, params]);
+  }, [onTextChange, onOcrComplete, params]);
 
   const processImageAtPath = useCallback(async (path: string, source: 'file' | 'drop' | 'screenshot' = 'file') => {
     setImagePath(path);
@@ -165,13 +191,17 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
 
     const assetUrl = convertFileSrc(path);
     setImagePreviewUrl(assetUrl);
-    onNewImage?.({ path, previewUrl: assetUrl, source });
+
+    // Create session and get session ID
+    const sessionId = onNewImage?.({ path, previewUrl: assetUrl, source });
 
     // Wait for OCR to complete before returning
     await performOcrOnPath(path);
 
     // Add a small delay to ensure state updates propagate
     await new Promise(resolve => setTimeout(resolve, 100));
+
+    return sessionId;
   }, [clearOptimizedText, onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview]);
 
   const processMultipleImages = useCallback(async (paths: string[], source: 'file' | 'drop' = 'file') => {
@@ -351,6 +381,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     ocrText,
     updateOcrText,
     optimizedText,
+    updateOptimizedText,
     isOptimizingText,
     textDisplayMode,
     setTextDisplayMode,

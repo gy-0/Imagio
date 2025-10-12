@@ -12,18 +12,20 @@ interface OcrTextPanelProps {
   onOptimize?: () => Promise<void> | void;
   textDisplayMode?: TextDisplayMode;
   onTextDisplayModeChange?: (mode: TextDisplayMode) => void;
+  onOptimizedTextChange?: (value: string) => void;
 }
 
-export const OcrTextPanel: FC<OcrTextPanelProps> = ({ 
-  value, 
-  onChange, 
-  onCopy, 
-  onSave, 
-  optimizedText, 
-  isOptimizing, 
-  onOptimize, 
-  textDisplayMode = 'original', 
-  onTextDisplayModeChange 
+export const OcrTextPanel: FC<OcrTextPanelProps> = ({
+  value,
+  onChange,
+  onCopy,
+  onSave,
+  optimizedText,
+  isOptimizing,
+  onOptimize,
+  textDisplayMode = 'original',
+  onTextDisplayModeChange,
+  onOptimizedTextChange
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -74,7 +76,12 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
   };
 
   const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-    onChange(event.target.value);
+    const newValue = event.target.value;
+    if (textDisplayMode === 'optimized' && onOptimizedTextChange) {
+      onOptimizedTextChange(newValue);
+    } else {
+      onChange(newValue);
+    }
   };
 
   const handleOptimize = async () => {
