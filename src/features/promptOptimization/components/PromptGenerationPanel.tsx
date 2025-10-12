@@ -121,12 +121,11 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
           value={optimizedPrompt}
           onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onOptimizedPromptChange(event.target.value)}
           placeholder="Optimized prompt will appear here..."
-          className="text-area-unified text-area-medium"
+          className="text-area-unified text-area-large"
           disabled={isOptimizing}
         />
       </label>
-
-      <div className="prompt-actions">
+      <div className="button-group prompt-actions-bottom">
         <button
           type="button"
           onClick={onCopyPrompt}
