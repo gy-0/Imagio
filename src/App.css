@@ -423,7 +423,7 @@ h3 {
   font-size: 0.9em;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
   color: inherit;
 }
 
@@ -585,7 +585,7 @@ textarea {
   padding: 1rem;
   font-family: 'SF Mono', 'Monaco', 'Courier New', Courier, monospace;
   font-size: 0.9em;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   color: inherit;
@@ -684,7 +684,7 @@ textarea:focus {
   .custom-description-area,
   .advanced-controls input[type="text"],
   .advanced-controls input[type="password"] {
-    background: #f8f9fa;
+    background: #f5f5f5;
     border-color: #ddd;
     color: #213547;
   }
@@ -1196,7 +1196,7 @@ textarea:focus {
   font-size: 0.9em;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
   color: inherit;
 }
 
