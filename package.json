@@ -5,11 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:browser": "vite --mode browser",
     "build": "tsc && vite build",
-    "build:browser": "tsc && vite build --mode browser",
     "preview": "vite preview",
-    "preview:browser": "vite preview --mode browser",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build && npm run copy-app",

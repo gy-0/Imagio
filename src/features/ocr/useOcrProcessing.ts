@@ -1,9 +1,10 @@
 import type { DragEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { convertFileSrc, invoke } from '@tauri-apps/api/core';
+import { open, save } from '@tauri-apps/plugin-dialog';
 import { callChatCompletionStream } from '../../utils/llmClient';
 import type { ProcessingParams, OcrResult, TextDisplayMode } from './types';
 import type { LLMSettings } from '../promptOptimization/types';
-import { getTauriApis } from '../../utils/tauri-api';
 
 interface UseOcrProcessingOptions {
   onTextChange?: (text: string) => void;
@@ -31,21 +32,6 @@ const reflowOcrText = (text: string): string => {
 
 export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
   const { onTextChange, onNewImage, llmSettings } = options;
-
-  // Tauri API state
-  const [tauriApis, setTauriApis] = useState<any>(null);
-  const [apisLoaded, setApisLoaded] = useState<boolean>(false);
-
-  // Load Tauri APIs on mount
-  useEffect(() => {
-    getTauriApis().then((apis) => {
-      setTauriApis(apis);
-      setApisLoaded(true);
-    }).catch((error) => {
-      console.error('Failed to load Tauri APIs:', error);
-      setApisLoaded(true); // Still set to true to avoid infinite loading
-    });
-  }, []);
 
   const [imagePath, setImagePath] = useState<string>('');
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
@@ -126,11 +112,6 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
   }, []);
 
   const performOcrOnPath = useCallback(async (path: string) => {
-    if (!apisLoaded || !tauriApis) {
-      console.warn('Tauri APIs not loaded yet');
-      return;
-    }
-
     setIsProcessing(true);
     setProcessingStatus('Loading image...');
 
@@ -138,17 +119,17 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
       setProcessingStatus('Preprocessing image...');
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const result = await tauriApis.invoke('perform_ocr', {
+      const result = await invoke<OcrResult>('perform_ocr', {
         imagePath: path,
         params
-      });
+  });
 
       setProcessingStatus('Extracting text...');
       const reflowedText = reflowOcrText(result.text);
       setOcrText(reflowedText);
       onTextChange?.(reflowedText);
 
-      const processedUrl = tauriApis.convertFileSrc(result.processedImagePath);
+      const processedUrl = convertFileSrc(result.processedImagePath);
       setProcessedImageUrl(processedUrl);
       setProcessingStatus('Complete!');
     } catch (error) {
@@ -163,16 +144,11 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
         setProcessingStatus('');
       }, 500);
     }
-  }, [apisLoaded, tauriApis, onTextChange, params]);
+  }, [onTextChange, params]);
 
   const selectImage = useCallback(async () => {
-    if (!apisLoaded || !tauriApis) {
-      console.warn('Tauri APIs not loaded yet');
-      return;
-    }
-
     try {
-      const selected = await tauriApis.open({
+      const selected = await open({
         multiple: false,
         filters: [{
           name: 'Images',
@@ -192,26 +168,21 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
       onTextChange?.('');
       onNewImage?.();
 
-      const assetUrl = tauriApis.convertFileSrc(path);
+      const assetUrl = convertFileSrc(path);
       setImagePreviewUrl(assetUrl);
 
       await performOcrOnPath(path);
     } catch (error) {
       console.error('Error selecting file:', error);
     }
-  }, [apisLoaded, tauriApis, performOcrOnPath, onNewImage, onTextChange, resetProcessedPreview, clearOptimizedText]);
+  }, [performOcrOnPath, onNewImage, onTextChange, resetProcessedPreview, clearOptimizedText]);
 
   const takeScreenshot = useCallback(async () => {
-    if (!apisLoaded || !tauriApis) {
-      console.warn('Tauri APIs not loaded yet');
-      return;
-    }
-
     setIsProcessing(true);
     setProcessingStatus('Taking screenshot...');
 
     try {
-      const result = await tauriApis.invoke('take_screenshot');
+      const result = await invoke<{ path: string; text: string }>('take_screenshot');
       setImagePath(result.path);
       resetProcessedPreview();
       setOcrText('');
@@ -219,7 +190,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
       onTextChange?.('');
       onNewImage?.();
 
-      const assetUrl = tauriApis.convertFileSrc(result.path);
+      const assetUrl = convertFileSrc(result.path);
       setImagePreviewUrl(assetUrl);
       setProcessingStatus('Processing image...');
 
@@ -230,7 +201,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
       setIsProcessing(false);
       setProcessingStatus('');
     }
-  }, [apisLoaded, tauriApis, onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview, clearOptimizedText]);
+  }, [onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview, clearOptimizedText]);
 
   const performOCR = useCallback(async () => {
     if (!imagePath) {
@@ -252,17 +223,12 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
   }, [ocrText]);
 
   const saveOcrText = useCallback(async () => {
-    if (!apisLoaded || !tauriApis) {
-      console.warn('Tauri APIs not loaded yet');
-      return;
-    }
-
     if (!ocrText.trim()) {
       return;
     }
 
     try {
-      const filePath = await tauriApis.save({
+      const filePath = await save({
         filters: [{
           name: 'Text',
           extensions: ['txt']
@@ -274,12 +240,12 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
         return;
       }
 
-      await tauriApis.invoke('save_text_to_path', { text: ocrText, filePath });
+      await invoke('save_text_to_path', { text: ocrText, filePath });
     } catch (error) {
       console.error('Error saving text:', error);
       alert('Error: ' + error);
     }
-  }, [apisLoaded, tauriApis, ocrText]);
+  }, [ocrText]);
 
   const handleDragEnter = useCallback((event: DragEvent) => {
     event.preventDefault();
@@ -303,11 +269,6 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     event.stopPropagation();
     setIsDragging(false);
 
-    if (!apisLoaded || !tauriApis) {
-      console.warn('Tauri APIs not loaded yet');
-      return;
-    }
-
     const files = Array.from(event.dataTransfer.files);
     const imageFile = files.find(file => file.type.startsWith('image/'));
 
@@ -316,33 +277,22 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     }
 
     try {
-      // In browser, create a mock path and store the file
-      const mockPath = `/dropped/${imageFile.name}`;
-      (window as any).__mockFiles = (window as any).__mockFiles || {};
-      (window as any).__mockFiles[mockPath] = imageFile;
+      const path = (imageFile as any).path || imageFile.name;
+      setImagePath(path);
+      resetProcessedPreview();
+      setOcrText('');
+      clearOptimizedText();
+      onTextChange?.('');
+      onNewImage?.();
 
-      // Create data URL for preview
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        (window as any).__mockFiles[mockPath].dataUrl = event.target?.result;
+      const assetUrl = convertFileSrc(path);
+      setImagePreviewUrl(assetUrl);
 
-        setImagePath(mockPath);
-        resetProcessedPreview();
-        setOcrText('');
-        clearOptimizedText();
-        onTextChange?.('');
-        onNewImage?.();
-
-        const assetUrl = tauriApis.convertFileSrc(mockPath);
-        setImagePreviewUrl(assetUrl);
-
-        await performOcrOnPath(mockPath);
-      };
-      reader.readAsDataURL(imageFile);
+      await performOcrOnPath(path);
     } catch (error) {
       console.error('Error handling dropped file:', error);
     }
-  }, [apisLoaded, tauriApis, onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview, clearOptimizedText]);
+  }, [onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview, clearOptimizedText]);
 
   useEffect(() => {
     if (!imagePath || isProcessingRef.current) {
