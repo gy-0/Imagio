@@ -118,7 +118,7 @@ export const OptimizedPromptPanel: FC<OptimizedPromptPanelProps> = ({
       </div>
       <div className="generated-image-section">
         <h3>Generated Image</h3>
-        <div className="generated-image-container">
+        <div className={`generated-image-container${generatedImageUrl ? ' has-image' : ''}`}>
           {isGenerating ? (
             <div className="generation-loading">
               <div className="spinner"></div>

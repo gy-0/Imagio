@@ -1001,6 +1001,11 @@ textarea:focus {
   min-height: 300px;
 }
 
+.generated-image-container.has-image {
+  background: transparent;
+  padding: 0;
+}
+
 .generated-image {
   max-width: 100%;
   max-height: 100%;
@@ -1085,6 +1090,10 @@ textarea:focus {
 
   .generated-image-container {
     background: rgba(0, 0, 0, 0.05);
+  }
+
+  .generated-image-container.has-image {
+    background: transparent;
   }
 
   .generation-loading {
