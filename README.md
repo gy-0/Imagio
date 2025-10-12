@@ -61,19 +61,39 @@ A modern desktop OCR (Optical Character Recognition) application built with Taur
 
 ### macOS Installation
 
-```bash
-# Install Tesseract via Homebrew
-brew install tesseract
+```
+Imagio/
+├── src/                        # React frontend source code
+│   ├── App.tsx                # Application shell orchestrating feature modules
+│   ├── components/            # Reusable UI building blocks (toolbar, status, overlays)
+│   ├── features/              # Feature-oriented folders (ocr, promptOptimization, imageGeneration)
+│   │   ├── ocr/
+│   │   │   ├── components/    # OCR-specific panels and advanced controls
+│   │   │   └── useOcrProcessing.ts
+│   │   ├── promptOptimization/
+│   │   │   ├── components/    # Prompt settings and optimized prompt panels
+│   │   │   └── usePromptOptimization.ts
+│   │   └── imageGeneration/
+│   │       └── useImageGeneration.ts
+│   ├── hooks/                 # Cross-cutting hooks (config loading, keyboard shortcuts)
+│   ├── utils/                 # API clients for OCR-adjacent services
+│   └── main.tsx               # React entry point
+├── src-tauri/                 # Tauri/Rust backend
+│   ├── src/
+│   │   ├── lib.rs             # OCR bindings and command handlers
+│   │   └── main.rs            # Tauri entry point
+│   ├── Cargo.toml             # Rust dependencies
+│   └── tauri.conf.json        # Tauri configuration
+```
 
-# Clone the repository
-git clone https://github.com/yourusername/Imagio.git
-cd Imagio
+### 🧱 Frontend architecture
 
-# Install dependencies
-npm install
+The React layer now follows a feature-first structure:
 
-# Run in development mode
-npm run tauri:dev
+- **Shared UI components** live in `src/components` and stay presentation-only.
+- **Feature folders** bundle logic, hooks, and screens for OCR, prompt optimization, and image generation.
+- **Custom hooks** (`src/hooks`) encapsulate cross-cutting concerns such as config loading and keyboard shortcuts.
+- `App.tsx` acts as a lightweight coordinator, composing features via the hooks and UI primitives.
 ```
 
 ## 🎯 Usage
