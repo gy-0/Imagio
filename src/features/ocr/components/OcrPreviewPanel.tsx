@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { FC } from 'react';
 
 interface OcrPreviewPanelProps {
@@ -6,12 +7,46 @@ interface OcrPreviewPanelProps {
 }
 
 export const OcrPreviewPanel: FC<OcrPreviewPanelProps> = ({ imagePreviewUrl, processedImageUrl }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const containerEl = containerRef.current;
+    if (!containerEl) {
+      return;
+    }
+
+    const bottomGap = 32;
+
+    const updateMaxHeight = () => {
+      const rect = containerEl.getBoundingClientRect();
+      const availableSpace = window.innerHeight - rect.top - bottomGap;
+
+      if (availableSpace > 0) {
+        containerEl.style.setProperty('--ocr-preview-max-height', `${availableSpace}px`);
+      } else {
+        containerEl.style.removeProperty('--ocr-preview-max-height');
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(updateMaxHeight);
+    resizeObserver.observe(containerEl);
+    updateMaxHeight();
+
+    window.addEventListener('resize', updateMaxHeight);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateMaxHeight);
+      containerEl.style.removeProperty('--ocr-preview-max-height');
+    };
+  }, []);
+
   if (!imagePreviewUrl) {
     return null;
   }
 
   return (
-    <div className="preview-section">
+    <div className="preview-section" data-ocr-preview ref={containerRef}>
       <h2 className="panel-title">Selected Image</h2>
 
       <div className="images-vertical">

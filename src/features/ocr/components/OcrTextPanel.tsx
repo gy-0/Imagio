@@ -1,5 +1,5 @@
 import type { ChangeEvent, FC } from 'react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { TextDisplayMode } from '../types';
 
 interface OcrTextPanelProps {
@@ -26,6 +26,35 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
   onTextDisplayModeChange 
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const containerEl = containerRef.current;
+    const previewEl = document.querySelector('[data-ocr-preview]') as HTMLElement | null;
+
+    if (!containerEl || !previewEl) {
+      return;
+    }
+
+    const updateHeight = () => {
+      const previewHeight = previewEl.getBoundingClientRect().height;
+      containerEl.style.setProperty('--ocr-preview-height', `${previewHeight}px`);
+      containerEl.style.height = `${previewHeight}px`;
+    };
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(previewEl);
+    updateHeight();
+
+    window.addEventListener('resize', updateHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateHeight);
+      containerEl.style.removeProperty('--ocr-preview-height');
+      containerEl.style.removeProperty('height');
+    };
+  }, []);
 
   const handleCopy = async () => {
     try {
@@ -62,7 +91,7 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
   const isShowingOptimizedView = textDisplayMode === 'optimized';
 
   return (
-    <div className="result-card extracted-text-card">
+    <div className="result-card extracted-text-card" ref={containerRef}>
       <div className="result-header">
         <h2 className="panel-title">Extracted Text</h2>
         {(hasOptimizedText || isOptimizing) && (
