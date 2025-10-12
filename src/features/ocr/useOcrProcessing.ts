@@ -24,6 +24,12 @@ const DEFAULT_PARAMS: ProcessingParams = {
   language: 'eng'
 };
 
+const reflowOcrText = (text: string): string => {
+  // Replace single newlines with spaces, but preserve paragraph breaks (double newlines)
+  // Use regex to match single newlines not followed/preceded by another newline
+  return text.replace(/(?<!\n)\n(?!\n)/g, ' ');
+};
+
 export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
   const { onTextChange, onNewImage, llmSettings } = options;
 
@@ -111,8 +117,9 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
   });
 
       setProcessingStatus('Extracting text...');
-      setOcrText(result.text);
-      onTextChange?.(result.text);
+      const reflowedText = reflowOcrText(result.text);
+      setOcrText(reflowedText);
+      onTextChange?.(reflowedText);
 
       const processedUrl = convertFileSrc(result.processedImagePath);
       setProcessedImageUrl(processedUrl);

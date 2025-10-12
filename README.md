@@ -125,7 +125,7 @@ The React layer now follows a feature-first structure:
 1. **Optimize Prompt**
    - After extracting text, configure your desired image style
    - Add additional description (optional)
-   - Click "✨ Optimize Prompt" to generate an optimized prompt using LLM
+   - Click "✨ Generate Prompt" to generate an optimized prompt using LLM
 
 2. **Generate Image**
    - Review and edit the optimized prompt if needed

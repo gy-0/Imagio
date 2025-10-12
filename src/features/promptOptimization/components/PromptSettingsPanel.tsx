@@ -67,7 +67,7 @@ export const PromptSettingsPanel: FC<PromptSettingsPanelProps> = ({
       className="primary-btn optimize-btn"
       disabled={isOptimizing || isOptimizeDisabled}
     >
-      {isOptimizing ? '⏳ Optimizing...' : '✨ Optimize Prompt'}
+      {isOptimizing ? '⏳ Generating...' : '✨ Generate Prompt'}
     </button>
 
     {llmStatus && (
