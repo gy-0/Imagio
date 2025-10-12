@@ -580,6 +580,26 @@ textarea:focus {
     background-color: #ffffff;
   }
 
+  .llm-status {
+    background: rgba(102, 126, 234, 0.08);
+    border-color: rgba(102, 126, 234, 0.25);
+    color: #2b3a6b;
+  }
+
+  .llm-status.success,
+  .generation-status.success {
+    background: rgba(76, 175, 80, 0.14);
+    border-color: rgba(76, 175, 80, 0.3);
+    color: #1b5e20;
+  }
+
+  .llm-status.error,
+  .generation-status.error {
+    background: rgba(235, 87, 87, 0.14);
+    border-color: rgba(235, 87, 87, 0.35);
+    color: #b71c1c;
+  }
+
   .preview-section,
   .result-card {
     background: rgba(0, 0, 0, 0.02);
