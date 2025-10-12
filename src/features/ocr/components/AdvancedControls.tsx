@@ -66,7 +66,8 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
     <div className="advanced-controls">
       <h3>Advanced Processing</h3>
 
-      <div className="controls-grid">
+      {/* First row: 4 sliders */}
+      <div className="controls-row-4">
         <Slider
           label="Contrast"
           value={params.contrast}
@@ -102,7 +103,10 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
           step={0.5}
           onChange={(value) => onParamChange('gaussianBlur', value)}
         />
+      </div>
 
+      {/* Second row: Morphology dropdown + 3 checkboxes */}
+      <div className="controls-row-mixed">
         <div className="control-group">
           <label>
             Morphology:
@@ -137,7 +141,9 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
       </div>
 
       <h3 style={{ marginTop: '1.5rem' }}>LLM Settings</h3>
-      <div className="controls-grid">
+      
+      {/* LLM Settings row: 4 controls */}
+      <div className="controls-row-4">
         <div className="control-group">
           <label>
             API Base URL:
@@ -185,7 +191,8 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
         />
       </div>
 
-      <div className="control-group">
+      {/* BFL API Key on its own row */}
+      <div className="control-group" style={{ marginTop: '0.75rem' }}>
         <label>
           BFL API Key:
           <input
