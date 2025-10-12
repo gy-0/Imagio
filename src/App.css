@@ -35,13 +35,6 @@ body {
   max-width: 1600px;
   margin: 0 auto;
   padding: 2rem;
-  /* Add left margin to accommodate sidebar */
-  margin-left: 300px;
-  transition: margin-left 0.3s ease;
-}
-
-.container.sidebar-collapsed {
-  margin-left: 20px;
 }
 
 h1 {

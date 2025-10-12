@@ -2,10 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { DropOverlay } from './components/DropOverlay';
 import { ProcessingStatus } from './components/ProcessingStatus';
 import { Toolbar } from './components/toolbar/Toolbar';
-import { Sidebar } from './components/sidebar/Sidebar';
 import { useApplicationConfig } from './hooks/useApplicationConfig';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { useSessionManager } from './hooks/useSessionManager';
 import { AdvancedControls } from './features/ocr/components/AdvancedControls';
 import { OcrPreviewPanel } from './features/ocr/components/OcrPreviewPanel';
 import { OcrTextPanel } from './features/ocr/components/OcrTextPanel';
@@ -26,20 +24,6 @@ const App = () => {
     bflApiKey,
     setBflApiKey
   } = useApplicationConfig();
-
-  // Session management
-  const {
-    sessionList,
-    activeSessionId,
-    activeSession,
-    settings,
-    createSession,
-    selectSession,
-    deleteSession,
-    updateSession,
-    updateSettings,
-    // createMultipleSessions, // TODO: Implement multi-image import
-  } = useSessionManager();
 
   const {
     aspectRatio,
@@ -123,102 +107,6 @@ const App = () => {
     }
   }, [imagePath]);
 
-  // Sync session data when active session or states change
-  useEffect(() => {
-    if (!activeSessionId || !activeSession) return;
-
-    updateSession(activeSessionId, {
-      imagePath,
-      imagePreviewUrl,
-      processedImageUrl,
-      ocrText,
-      optimizedOcrText: optimizedText,
-      imageStyle,
-      customDescription,
-      optimizedPrompt,
-      generatedImageUrl,
-      generatedImageRemoteUrl,
-      aspectRatio: aspectRatio as '1:1' | '16:9' | '9:16',
-      isProcessingOcr: isProcessing,
-      isOptimizingText: isOptimizingText,
-      isOptimizingPrompt: isOptimizing,
-      isGeneratingImage: isGenerating,
-    });
-  }, [
-    activeSessionId,
-    activeSession,
-    imagePath,
-    imagePreviewUrl,
-    processedImageUrl,
-    ocrText,
-    optimizedText,
-    imageStyle,
-    customDescription,
-    optimizedPrompt,
-    generatedImageUrl,
-    generatedImageRemoteUrl,
-    aspectRatio,
-    isProcessing,
-    isOptimizingText,
-    isOptimizing,
-    isGenerating,
-    updateSession,
-  ]);
-
-  // Handle automation based on settings
-  useEffect(() => {
-    if (!activeSessionId || !settings) return;
-
-    // Auto-optimize OCR text when it changes
-    if (settings.autoOptimizeOcr && ocrText && !isOptimizingText && !optimizedText) {
-      void optimizeOcrText();
-    }
-  }, [activeSessionId, settings, ocrText, isOptimizingText, optimizedText, optimizeOcrText]);
-
-  useEffect(() => {
-    if (!activeSessionId || !settings) return;
-
-    // Auto-generate prompt when OCR text is ready
-    const textToUse = optimizedText || ocrText;
-    if (settings.autoGeneratePrompt && textToUse && !isOptimizing && !optimizedPrompt) {
-      void optimizePrompt();
-    }
-  }, [activeSessionId, settings, ocrText, optimizedText, isOptimizing, optimizedPrompt, optimizePrompt]);
-
-  useEffect(() => {
-    if (!activeSessionId || !settings) return;
-
-    // Auto-generate image when prompt is ready
-    if (settings.autoGenerateImage && optimizedPrompt && !isGenerating && !generatedImageUrl) {
-      void generateImage(optimizedPrompt);
-    }
-  }, [activeSessionId, settings, optimizedPrompt, isGenerating, generatedImageUrl, generateImage]);
-
-  useEffect(() => {
-    if (!activeSessionId || !settings) return;
-
-    // Auto-save image when generated
-    if (settings.autoSaveImage && generatedImageUrl && !isGenerating) {
-      void saveGeneratedImage();
-    }
-  }, [activeSessionId, settings, generatedImageUrl, isGenerating, saveGeneratedImage]);
-
-  // Handle session creation
-  const handleCreateSession = useCallback(() => {
-    createSession();
-  }, [createSession]);
-
-  // Handle session selection
-  const handleSelectSession = useCallback((sessionId: string) => {
-    selectSession(sessionId);
-    // Session data will be loaded from useSessionManager
-  }, [selectSession]);
-
-  // Handle session deletion
-  const handleDeleteSession = useCallback((sessionId: string) => {
-    deleteSession(sessionId);
-  }, [deleteSession]);
-
   const handleGenerateImage = useCallback(() => {
     void generateImage(optimizedPrompt);
   }, [generateImage, optimizedPrompt]);
@@ -254,26 +142,15 @@ const App = () => {
   });
 
   return (
-    <>
-      <Sidebar
-        sessions={sessionList}
-        activeSessionId={activeSessionId}
-        settings={settings}
-        onSelectSession={handleSelectSession}
-        onDeleteSession={handleDeleteSession}
-        onCreateSession={handleCreateSession}
-        onUpdateSetting={updateSettings}
-      />
-      
-      <div
-        className={`container ${settings.sidebarCollapsed ? 'sidebar-collapsed' : ''}`}
-        {...dragAndDropHandlers}
-      >
-        <h1>Imagio - OCR Application</h1>
+    <div
+      className="container"
+      {...dragAndDropHandlers}
+    >
+      <h1>Imagio - OCR Application</h1>
 
-        <div className="shortcuts-hint">
-          ⌨️ Shortcuts: <kbd>⌘O</kbd> Open | <kbd>⌘⇧S</kbd> Screenshot | <kbd>⌘C</kbd> Copy | <kbd>⌘S</kbd> Save
-        </div>
+      <div className="shortcuts-hint">
+        ⌨️ Shortcuts: <kbd>⌘O</kbd> Open | <kbd>⌘⇧S</kbd> Screenshot | <kbd>⌘C</kbd> Copy | <kbd>⌘S</kbd> Save
+      </div>
 
       <DropOverlay isVisible={isDragging} />
 
@@ -365,8 +242,7 @@ const App = () => {
           )}
         </div>
       )}
-      </div>
-    </>
+    </div>
   );
 };
 
