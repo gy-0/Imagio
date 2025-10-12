@@ -189,7 +189,12 @@ export class ImageGenerationClient {
 /**
  * Download an image from a URL and return a blob URL
  */
-export async function downloadImageAsBlob(imageUrl: string): Promise<string> {
+export interface DownloadedImage {
+  blob: Blob;
+  objectUrl: string;
+}
+
+export async function downloadImageAsBlob(imageUrl: string): Promise<DownloadedImage> {
   try {
     const response = await resolveFetch()(imageUrl, {
       cache: 'no-store',
@@ -203,8 +208,8 @@ export async function downloadImageAsBlob(imageUrl: string): Promise<string> {
     }
 
     const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    return blobUrl;
+    const objectUrl = URL.createObjectURL(blob);
+    return { blob, objectUrl };
   } catch (error) {
     if (error instanceof ImageGenerationError) {
       throw error;

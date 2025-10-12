@@ -610,6 +610,17 @@ textarea:focus {
     color: #213547;
   }
 
+  .secondary-btn.danger {
+    border-color: rgba(235, 87, 87, 0.45);
+    color: #b51b1b;
+    background: rgba(235, 87, 87, 0.08);
+  }
+
+  .secondary-btn.danger:hover {
+    background: rgba(235, 87, 87, 0.16);
+    color: #a01818;
+  }
+
   textarea {
     background: #f5f5f5;
     border-color: #ddd;
@@ -898,8 +909,8 @@ textarea:focus {
 .optimized-prompt-area {
   flex: 0.67;
   min-height: 0;
-  max-height: 300px;
-  height: 300px;
+  max-height: 225px;
+  height: 225px;
   resize: none;
 }
 
@@ -996,6 +1007,36 @@ textarea:focus {
   max-height: 100%;
   object-fit: contain;
   border-radius: 8px;
+}
+
+.generated-image-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+}
+
+.generated-image-actions .secondary-btn {
+  width: 100%;
+  justify-content: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .generated-image-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.secondary-btn.danger {
+  border-color: rgba(235, 87, 87, 0.45);
+  color: rgba(255, 174, 174, 0.95);
+}
+
+.secondary-btn.danger:hover {
+  background: rgba(235, 87, 87, 0.12);
+  border-color: rgba(235, 87, 87, 0.65);
+  color: rgba(255, 200, 200, 0.95);
 }
 
 .generation-loading {

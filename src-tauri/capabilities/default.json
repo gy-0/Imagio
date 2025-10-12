@@ -9,8 +9,22 @@
     "core:default",
     "dialog:default",
     "fs:default",
+    "fs:allow-create",
+    "fs:allow-write",
+    "fs:allow-write-file",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "$HOME/**" },
+        { "path": "$DESKTOP/**" },
+        { "path": "$DOCUMENT/**" },
+        { "path": "$PICTURE/**" },
+        { "path": "$DOWNLOAD/**" }
+      ]
+    },
     "core:path:default",
     "core:image:default",
+    "clipboard-manager:allow-write-image",
     {
       "identifier": "http:default",
       "allow": [

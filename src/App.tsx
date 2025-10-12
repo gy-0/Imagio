@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { open, save } from '@tauri-apps/plugin-dialog';
+import { writeFile } from '@tauri-apps/plugin-fs';
+import { writeImage } from '@tauri-apps/plugin-clipboard-manager';
 import { invoke } from '@tauri-apps/api/core';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { Image as TauriImage } from '@tauri-apps/api/image';
 import { callChatCompletion, LLMError, normalizeBaseUrl } from './utils/llmClient';
 import { ImageGenerationClient, ImageGenerationError, downloadImageAsBlob } from './utils/imageGenClient';
 
@@ -72,6 +75,8 @@ function App() {
   const [bflApiKey, setBflApiKey] = useState<string>('');
   const [aspectRatio, setAspectRatio] = useState<string>('16:9');
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('');
+  const [generatedImageBlob, setGeneratedImageBlob] = useState<Blob | null>(null);
+  const [generatedImageRemoteUrl, setGeneratedImageRemoteUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generationStatus, setGenerationStatus] = useState<string>('');
   const [generationError, setGenerationError] = useState<string>('');
@@ -350,26 +355,26 @@ function App() {
     setLLMError('');
 
     if (!ocrText.trim()) {
-      setLLMError('请先完成 OCR 并获取文本。');
+      setLLMError('Please complete OCR and extract text first.');
       return;
     }
 
     if (!llmSettings.apiBaseUrl.trim()) {
-      setLLMError('请配置 API Base URL。');
+      setLLMError('Please configure API Base URL.');
       return;
     }
 
     if (!llmSettings.modelName.trim()) {
-      setLLMError('请配置模型名称。');
+      setLLMError('Please configure model name.');
       return;
     }
 
     if (!isLikelyLocalLLM && !llmSettings.apiKey.trim()) {
-      setLLMError('远程 LLM 服务需要提供 API Key。');
+      setLLMError('Remote LLM service requires an API Key.');
       return;
     }
 
-    setLLMStatus('正在向 LLM 发送请求...');
+    setLLMStatus('Sending request to LLM...');
     setLLMError('');
     setIsOptimizing(true);
 
@@ -399,7 +404,7 @@ Generate a concise, descriptive prompt that captures the essence and key visual 
 
       const optimized = result.content.trim();
       setOptimizedPrompt(optimized);
-      setLLMStatus('生成成功');
+      setLLMStatus('Generated successfully');
     } catch (error) {
       console.error('Error optimizing prompt:', error);
       setLLMStatus('');
@@ -407,9 +412,9 @@ Generate a concise, descriptive prompt that captures the essence and key visual 
       if (error instanceof LLMError) {
         setLLMError(error.message);
       } else if (error instanceof Error) {
-        setLLMError(`意外错误: ${error.message}`);
+        setLLMError(`Unexpected error: ${error.message}`);
       } else {
-        setLLMError('发生未知错误，请检查控制台。');
+        setLLMError('An unknown error occurred. Please check the console.');
       }
     } finally {
       setIsOptimizing(false);
@@ -421,34 +426,43 @@ Generate a concise, descriptive prompt that captures the essence and key visual 
     setGenerationError('');
 
     if (!optimizedPrompt.trim()) {
-      setGenerationError('请先优化 Prompt。');
+      setGenerationError('Please optimize the prompt first.');
       return;
     }
 
     if (!bflApiKey.trim()) {
-      setGenerationError('请配置 BFL API Key（在 config.local.json 中设置 bflApiKey）。');
+      setGenerationError('Please configure BFL API Key (set bflApiKey in config.local.json).');
       return;
     }
 
-    setGenerationStatus('正在生成图像...');
+    setGenerationStatus('Generating image...');
     setGenerationError('');
     setIsGenerating(true);
-    setGeneratedImageUrl('');
+    setGeneratedImageRemoteUrl('');
+    setGeneratedImageUrl(prev => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+      return '';
+    });
+    setGeneratedImageBlob(null);
 
     try {
       const client = new ImageGenerationClient(bflApiKey);
 
-      setGenerationStatus('正在创建生成请求...');
+      setGenerationStatus('Creating generation request...');
       const imageUrl = await client.generateImage({
         prompt: optimizedPrompt,
         aspectRatio: aspectRatio || undefined,
       });
 
-      setGenerationStatus('正在下载图像...');
-      const blobUrl = await downloadImageAsBlob(imageUrl);
+  setGeneratedImageRemoteUrl(imageUrl);
+  setGenerationStatus('Downloading image...');
+  const { blob, objectUrl } = await downloadImageAsBlob(imageUrl);
 
-      setGeneratedImageUrl(blobUrl);
-      setGenerationStatus('图像生成成功！');
+  setGeneratedImageBlob(blob);
+  setGeneratedImageUrl(objectUrl);
+      setGenerationStatus('Image generated successfully!');
     } catch (error) {
       console.error('Error generating image:', error);
       setGenerationStatus('');
@@ -456,14 +470,174 @@ Generate a concise, descriptive prompt that captures the essence and key visual 
       if (error instanceof ImageGenerationError) {
         setGenerationError(error.message);
       } else if (error instanceof Error) {
-        setGenerationError(`意外错误: ${error.message}`);
+        setGenerationError(`Unexpected error: ${error.message}`);
       } else {
-        setGenerationError('发生未知错误，请检查控制台。');
+        setGenerationError('An unknown error occurred. Please check the console.');
       }
     } finally {
       setIsGenerating(false);
     }
   };
+
+  const saveGeneratedImage = async () => {
+    if ((!generatedImageBlob && !generatedImageUrl) || isGenerating) {
+      return;
+    }
+
+    try {
+      setGenerationError('');
+      setGenerationStatus('Saving image...');
+
+      const blobCandidate = generatedImageBlob ?? (generatedImageUrl
+        ? await fetch(generatedImageUrl).then(res => res.blob())
+        : null);
+
+      if (!blobCandidate) {
+        throw new Error('Unable to access generated image data.');
+      }
+
+      const arrayBuffer = await blobCandidate.arrayBuffer();
+
+      const defaultFileName = `imagio-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+      const filePath = await save({
+        filters: [{
+          name: 'Images',
+          extensions: ['png', 'jpg', 'jpeg']
+        }],
+        defaultPath: defaultFileName
+      });
+
+      if (!filePath) {
+        setGenerationStatus('Save cancelled');
+        return;
+      }
+
+  await writeFile(filePath, new Uint8Array(arrayBuffer));
+      setGenerationStatus(`Image saved to: ${filePath}`);
+    } catch (error) {
+      console.error('Error saving generated image:', error);
+      setGenerationStatus('');
+      const message = error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
+          : JSON.stringify(error);
+      setGenerationError(`Save failed: ${message || 'Unknown error'}`);
+    }
+  };
+
+  const copyGeneratedImageUrl = async () => {
+    if (!generatedImageRemoteUrl || isGenerating) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(generatedImageRemoteUrl);
+      setGenerationStatus('Image URL copied to clipboard');
+      setGenerationError('');
+    } catch (error) {
+      console.error('Failed to copy image URL:', error);
+      if (error instanceof Error) {
+        setGenerationError(`Copy failed: ${error.message}`);
+      } else {
+        setGenerationError('Copy failed: Unknown error');
+      }
+    }
+  };
+
+  const copyGeneratedImageToClipboard = async () => {
+    if ((!generatedImageBlob && !generatedImageUrl) || isGenerating) {
+      return;
+    }
+
+    try {
+      setGenerationError('');
+      setGenerationStatus('Copying image to clipboard...');
+
+      const blob = generatedImageBlob ?? (generatedImageUrl
+        ? await fetch(generatedImageUrl).then(res => res.blob())
+        : null);
+
+      if (!blob) {
+        throw new Error('Unable to access generated image data.');
+      }
+      let copied = false;
+
+      if (typeof window !== 'undefined' && 'ClipboardItem' in window && navigator?.clipboard?.write) {
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              [blob.type]: blob
+            })
+          ]);
+          copied = true;
+        } catch (clipboardError) {
+          console.warn('Browser clipboard write failed, falling back to Tauri clipboard plugin:', clipboardError);
+        }
+      }
+
+      if (!copied) {
+        const imageBitmap = await createImageBitmap(blob);
+        const canvas = document.createElement('canvas');
+        canvas.width = imageBitmap.width;
+        canvas.height = imageBitmap.height;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          imageBitmap.close();
+          throw new Error('Unable to access 2D canvas context for clipboard copy.');
+        }
+
+        ctx.drawImage(imageBitmap, 0, 0);
+        imageBitmap.close();
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const rgba = new Uint8Array(imageData.data);
+        const tauriImage = await TauriImage.new(rgba, canvas.width, canvas.height);
+        await writeImage(tauriImage);
+        copied = true;
+      }
+
+      if (!copied) {
+        throw new Error('Clipboard write skipped without any available method.');
+      }
+
+      setGenerationStatus('Image copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy image:', error);
+      setGenerationStatus('');
+      if (error instanceof Error) {
+        setGenerationError(`Failed to copy image: ${error.message}`);
+      } else {
+        setGenerationError('Failed to copy image: Unknown error');
+      }
+    }
+  };
+
+  const clearGeneratedImage = () => {
+    if (isGenerating) {
+      return;
+    }
+
+    setGeneratedImageRemoteUrl('');
+    setGeneratedImageUrl(prev => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+      return '';
+    });
+    setGeneratedImageBlob(null);
+    setGenerationStatus('Generated image cleared');
+    setGenerationError('');
+  };
+
+  useEffect(() => {
+    return () => {
+      if (generatedImageUrl) {
+        URL.revokeObjectURL(generatedImageUrl);
+      }
+    };
+  }, [generatedImageUrl]);
 
 
   // Drag and drop handlers
@@ -735,11 +909,11 @@ Generate a concise, descriptive prompt that captures the essence and key visual 
 
           {isLikelyLocalLLM ? (
             <div className="llm-hint">
-              检测到本地 LLM（例如 Ollama），API Key 可留空。
+              Local LLM detected (e.g., Ollama), API Key can be left empty.
             </div>
           ) : (
             <div className="llm-hint warning">
-              使用远程 LLM 时请确保 API Key 已填写且安全存储。
+              When using a remote LLM, ensure API Key is filled in and securely stored.
             </div>
           )}
         </div>
@@ -953,6 +1127,44 @@ Generate a concise, descriptive prompt that captures the essence and key visual 
                       </div>
                     )}
                   </div>
+                  {generatedImageUrl && (
+                    <div className="generated-image-actions">
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        onClick={saveGeneratedImage}
+                        disabled={isGenerating}
+                      >
+                        💾 Save Image
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        onClick={copyGeneratedImageToClipboard}
+                        disabled={isGenerating}
+                      >
+                        📋 Copy Image
+                      </button>
+                      {generatedImageRemoteUrl && (
+                        <button
+                          type="button"
+                          className="secondary-btn"
+                          onClick={copyGeneratedImageUrl}
+                          disabled={isGenerating}
+                        >
+                          🔗 Copy Link
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="secondary-btn danger"
+                        onClick={clearGeneratedImage}
+                        disabled={isGenerating}
+                      >
+                        🗑️ Clear
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
