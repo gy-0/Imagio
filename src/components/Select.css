@@ -1,0 +1,90 @@
+.modern-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.modern-select {
+  width: 100%;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.12) 100%);
+  color: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modern-select:hover {
+  border-color: rgba(102, 126, 234, 0.5);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.18) 0%, rgba(118, 75, 162, 0.18) 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  transform: translateY(-1px);
+}
+
+.modern-select:focus {
+  outline: none;
+  border-color: #667eea;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
+}
+
+.modern-select option {
+  background: #2a2a2a;
+  color: white;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.25s ease;
+}
+
+.modern-select-wrapper:hover .select-arrow {
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* Light mode styles */
+@media (prefers-color-scheme: light) {
+  .modern-select {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+    border-color: rgba(102, 126, 234, 0.25);
+    color: #213547;
+  }
+
+  .modern-select:hover {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.14) 0%, rgba(118, 75, 162, 0.14) 100%);
+    border-color: rgba(102, 126, 234, 0.4);
+  }
+
+  .modern-select:focus {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.16) 0%, rgba(118, 75, 162, 0.16) 100%);
+    border-color: #667eea;
+  }
+
+  .modern-select option {
+    background: #f8f8f8;
+    color: #213547;
+  }
+
+  .select-arrow {
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .modern-select-wrapper:hover .select-arrow {
+    color: rgba(0, 0, 0, 0.8);
+  }
+}
+

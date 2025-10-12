@@ -12,7 +12,7 @@ export const OcrPreviewPanel: FC<OcrPreviewPanelProps> = ({ imagePreviewUrl, pro
 
   return (
     <div className="preview-section">
-      <h2>Selected Image</h2>
+      <h2 className="panel-title">Selected Image</h2>
 
       <div className="images-vertical">
         <div className="image-block">

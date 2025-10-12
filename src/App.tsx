@@ -9,8 +9,8 @@ import { OcrPreviewPanel } from './features/ocr/components/OcrPreviewPanel';
 import { OcrTextPanel } from './features/ocr/components/OcrTextPanel';
 import { useOcrProcessing } from './features/ocr/useOcrProcessing';
 import { useImageGeneration } from './features/imageGeneration/useImageGeneration';
-import { OptimizedPromptPanel } from './features/promptOptimization/components/OptimizedPromptPanel';
-import { PromptSettingsPanel } from './features/promptOptimization/components/PromptSettingsPanel';
+import { PromptGenerationPanel } from './features/promptOptimization/components/PromptGenerationPanel';
+import { GeneratedImagePanel } from './features/promptOptimization/components/GeneratedImagePanel';
 import { usePromptOptimization } from './features/promptOptimization/usePromptOptimization';
 import './App.css';
 
@@ -187,54 +187,56 @@ const App = () => {
 
           <div className="middle-panel">
             {hasPerformedOcr && (
-              <>
-                <OcrTextPanel
-                  value={ocrText}
-                  onChange={updateOcrText}
-                  onCopy={() => copyOcrText()}
-                  onSave={() => saveOcrText()}
-                  optimizedText={optimizedText}
-                  isOptimizing={isOptimizingText}
-                  onOptimize={optimizeOcrText}
-                  textDisplayMode={textDisplayMode}
-                  onTextDisplayModeChange={setTextDisplayMode}
-                />
+              <OcrTextPanel
+                value={ocrText}
+                onChange={updateOcrText}
+                onCopy={() => copyOcrText()}
+                onSave={() => saveOcrText()}
+                optimizedText={optimizedText}
+                isOptimizing={isOptimizingText}
+                onOptimize={optimizeOcrText}
+                textDisplayMode={textDisplayMode}
+                onTextDisplayModeChange={setTextDisplayMode}
+              />
+            )}
+          </div>
 
-                <PromptSettingsPanel
+          <div className="right-panel">
+            {hasPerformedOcr && (
+              <>
+                <PromptGenerationPanel
                   imageStyle={imageStyle}
                   onImageStyleChange={setImageStyle}
+                  aspectRatio={aspectRatio}
+                  onAspectRatioChange={setAspectRatio}
                   customDescription={customDescription}
                   onCustomDescriptionChange={setCustomDescription}
+                  optimizedPrompt={optimizedPrompt}
+                  onOptimizedPromptChange={setOptimizedPrompt}
                   onOptimize={optimizePrompt}
                   isOptimizing={isOptimizing}
                   llmStatus={llmStatus}
                   llmError={llmError}
                   isOptimizeDisabled={!ocrText.trim()}
+                  onCopyPrompt={handleCopyPrompt}
+                  onGenerateImage={handleGenerateImage}
+                  isGenerating={isGenerating}
+                  generationStatus={generationStatus}
+                  generationError={generationError}
+                />
+
+                <GeneratedImagePanel
+                  generatedImageUrl={generatedImageUrl}
+                  isGenerating={isGenerating}
+                  generationStatus={generationStatus}
+                  onSaveGeneratedImage={() => saveGeneratedImage()}
+                  onCopyGeneratedImage={() => copyGeneratedImageToClipboard()}
+                  onCopyGeneratedImageUrl={() => copyGeneratedImageUrl()}
+                  onClearGeneratedImage={clearGeneratedImage}
+                  hasRemoteImageUrl={Boolean(generatedImageRemoteUrl)}
                 />
               </>
             )}
-          </div>
-
-          <div className="right-panel">
-            <OptimizedPromptPanel
-              key={ocrText}
-              optimizedPrompt={optimizedPrompt}
-              onOptimizedPromptChange={setOptimizedPrompt}
-              aspectRatio={aspectRatio}
-              onAspectRatioChange={setAspectRatio}
-              onCopyPrompt={handleCopyPrompt}
-              onGenerateImage={handleGenerateImage}
-              isGenerating={isGenerating}
-              isOptimizing={isOptimizing}
-              generationStatus={generationStatus}
-              generationError={generationError}
-              generatedImageUrl={generatedImageUrl}
-              onSaveGeneratedImage={() => saveGeneratedImage()}
-              onCopyGeneratedImage={() => copyGeneratedImageToClipboard()}
-              onCopyGeneratedImageUrl={() => copyGeneratedImageUrl()}
-              onClearGeneratedImage={clearGeneratedImage}
-              hasRemoteImageUrl={Boolean(generatedImageRemoteUrl)}
-            />
           </div>
         </div>
       )}

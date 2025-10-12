@@ -64,7 +64,7 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
   return (
     <div className="result-card extracted-text-card">
       <div className="result-header">
-        <h2>Extracted Text</h2>
+        <h2 className="panel-title">Extracted Text</h2>
         {(hasOptimizedText || isOptimizing) && (
           <div className="view-mode-toggle">
             <button
@@ -87,7 +87,7 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
         value={displayText}
         onChange={handleChange}
         placeholder={isOptimizing && isShowingOptimizedView ? "Generating optimized text..." : "OCR results will appear here..."}
-        className="extracted-text-area"
+        className="text-area-unified text-area-large"
         disabled={isOptimizing && isShowingOptimizedView}
       />
       <div className="button-group extracted-actions">

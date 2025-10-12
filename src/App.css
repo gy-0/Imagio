@@ -726,6 +726,7 @@ textarea:focus {
   grid-template-columns: 1fr 1fr 1fr;
   gap: 1.5rem;
   margin-bottom: 2rem;
+  align-items: stretch;
 }
 
 @media (max-width: 1400px) {
@@ -751,17 +752,21 @@ textarea:focus {
 .left-panel {
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .middle-panel {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  height: 100%;
+  min-height: 0;
 }
 
 .right-panel {
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
 }
 
 .right-panel .optimized-prompt-card {
@@ -810,21 +815,20 @@ textarea:focus {
 
 /* Extracted Text Card - Locked Height */
 .extracted-text-card {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 1rem;
   height: 100%;
+  flex: 1;
 }
 
-.extracted-text-area {
+.extracted-text-card textarea {
   flex: 1;
-  min-height: 300px;
+  min-height: 0;
   height: auto;
-  max-height: none;
-  width: 100%;
   resize: none;
 }
+
 
 .extracted-actions {
   justify-content: flex-end;
@@ -837,6 +841,35 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+/* Prompt Generation Card */
+.prompt-generation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.prompt-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.optimized-prompt-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.optimized-prompt-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-weight: 500;
+  font-size: 0.95em;
 }
 
 .prompt-control-group {
@@ -869,23 +902,26 @@ textarea:focus {
   padding: 0.5rem;
 }
 
-.custom-description-area {
-  min-height: 80px;
-  padding: 0.75rem;
-  font-family: inherit;
-  font-size: 0.9em;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
-  color: inherit;
+/* Unified Textarea Classes */
+.text-area-small {
+  min-height: 60px;
+  height: 60px;
+  max-height: 120px;
   resize: vertical;
-  line-height: 1.5;
 }
 
-.custom-description-area:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+.text-area-medium {
+  min-height: 80px;
+  height: 100px;
+  max-height: 200px;
+  resize: vertical;
+}
+
+.text-area-large {
+  min-height: 150px;
+  height: 250px;
+  max-height: 600px;
+  resize: vertical;
 }
 
 .optimize-btn {
@@ -898,6 +934,13 @@ textarea:focus {
 .optimize-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Generated Image Panel */
+.generated-image-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 /* Optimized Prompt Card - Locked Height to Match Extracted Text */
@@ -924,19 +967,12 @@ textarea:focus {
   min-height: 0;
 }
 
-.optimized-prompt-area {
-  flex: 0.67;
-  min-height: 0;
-  max-height: 225px;
-  height: 225px;
-  resize: none;
-}
 
 .prompt-actions {
   display: flex;
-  flex-direction: column;
   gap: 0.75rem;
   width: 100%;
+  justify-content: flex-end;
 }
 
 .aspect-ratio-selector {
@@ -1078,6 +1114,10 @@ textarea:focus {
 }
 
 @media (prefers-color-scheme: light) {
+  .optimized-prompt-section {
+    border-top-color: rgba(0, 0, 0, 0.1);
+  }
+
   .aspect-ratio-select {
     background: #f5f5f5;
     border-color: #ddd;
@@ -1185,6 +1225,13 @@ textarea:focus {
 }
 
 .result-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* Shared panel section title */
+.panel-title {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 600;
