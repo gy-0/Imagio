@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { MutableRefObject } from 'react';
 import { callChatCompletionStream, LLMError, normalizeBaseUrl } from '../../utils/llmClient';
 import type { LLMSettings } from './types';
 
@@ -13,6 +14,7 @@ interface PromptOptimizationState {
 
 interface UsePromptOptimizationOptions {
   initialImageStyle?: string;
+  suppressOcrResetRef?: MutableRefObject<boolean>;
 }
 
 interface UsePromptOptimizationResult extends PromptOptimizationState {
@@ -21,6 +23,14 @@ interface UsePromptOptimizationResult extends PromptOptimizationState {
   setOptimizedPrompt: (value: string) => void;
   optimizePrompt: () => Promise<void>;
   isLikelyLocalLLM: boolean;
+  getSessionSnapshot: () => PromptSessionSnapshot;
+  loadSessionSnapshot: (snapshot: PromptSessionSnapshot) => void;
+}
+
+export interface PromptSessionSnapshot {
+  imageStyle: string;
+  customDescription: string;
+  optimizedPrompt: string;
 }
 
 export const usePromptOptimization = (
@@ -28,7 +38,7 @@ export const usePromptOptimization = (
   ocrText: string,
   options: UsePromptOptimizationOptions = {}
 ): UsePromptOptimizationResult => {
-  const { initialImageStyle = 'realistic' } = options;
+  const { initialImageStyle = 'realistic', suppressOcrResetRef } = options;
 
   const [imageStyle, setImageStyle] = useState<string>(initialImageStyle);
   const [customDescription, setCustomDescription] = useState<string>('');
@@ -47,10 +57,14 @@ export const usePromptOptimization = (
   }, [llmSettings.apiBaseUrl]);
 
   useEffect(() => {
+    if (suppressOcrResetRef?.current) {
+      return;
+    }
+
     setOptimizedPrompt('');
     setLLMStatus('');
     setLLMError('');
-  }, [ocrText]);
+  }, [ocrText, suppressOcrResetRef]);
 
   const optimizePrompt = useCallback(async () => {
     setLLMStatus('');
@@ -135,6 +149,18 @@ CRITICAL: Output ONLY the prompt content. Do NOT include any meta-descriptions, 
     }
   }, [customDescription, imageStyle, isLikelyLocalLLM, llmSettings, ocrText]);
 
+  const getSessionSnapshot = useCallback((): PromptSessionSnapshot => ({
+    imageStyle,
+    customDescription,
+    optimizedPrompt
+  }), [customDescription, imageStyle, optimizedPrompt]);
+
+  const loadSessionSnapshot = useCallback((snapshot: PromptSessionSnapshot) => {
+    setImageStyle(snapshot.imageStyle);
+    setCustomDescription(snapshot.customDescription);
+    setOptimizedPrompt(snapshot.optimizedPrompt);
+  }, []);
+
   return {
     imageStyle,
     customDescription,
@@ -146,6 +172,8 @@ CRITICAL: Output ONLY the prompt content. Do NOT include any meta-descriptions, 
     setCustomDescription,
     setOptimizedPrompt,
     optimizePrompt,
-    isLikelyLocalLLM
+    isLikelyLocalLLM,
+    getSessionSnapshot,
+    loadSessionSnapshot
   };
 };

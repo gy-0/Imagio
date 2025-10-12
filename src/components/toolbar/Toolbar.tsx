@@ -7,6 +7,7 @@ interface ToolbarProps {
   onLanguageChange: (language: string) => void;
   showAdvanced: boolean;
   onToggleAdvanced: () => void;
+  onToggleSidebar: () => void;
 }
 
 export const Toolbar: FC<ToolbarProps> = ({
@@ -15,10 +16,15 @@ export const Toolbar: FC<ToolbarProps> = ({
   language,
   onLanguageChange,
   showAdvanced,
-  onToggleAdvanced
+  onToggleAdvanced,
+  onToggleSidebar
 }) => {
   return (
     <div className="toolbar">
+      <button onClick={onToggleSidebar} className="toolbar-btn sidebar-btn">
+        <span className="btn-icon">🗂️</span>
+        <span className="btn-text">History &amp; Settings</span>
+      </button>
       <button onClick={onSelectImage} className="toolbar-btn">
         <span className="btn-icon">📁</span>
         <span className="btn-text">Select Image</span>

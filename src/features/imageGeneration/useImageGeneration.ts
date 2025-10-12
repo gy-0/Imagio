@@ -1,12 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { save } from '@tauri-apps/plugin-dialog';
-import { writeFile } from '@tauri-apps/plugin-fs';
+import { writeFile, mkdir, exists } from '@tauri-apps/plugin-fs';
 import { writeImage } from '@tauri-apps/plugin-clipboard-manager';
 import { Image as TauriImage } from '@tauri-apps/api/image';
+import { join } from '@tauri-apps/api/path';
 import { downloadImageAsBlob, ImageGenerationClient, ImageGenerationError } from '../../utils/imageGenClient';
 
 interface UseImageGenerationOptions {
   bflApiKey: string;
+}
+
+export interface ImageGenerationSessionSnapshot {
+  aspectRatio: string;
+  generatedImageUrl: string;
+  generatedImageRemoteUrl: string;
 }
 
 export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => {
@@ -225,6 +232,49 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
     }
   }, [generatedImageBlob, generatedImageUrl, isGenerating]);
 
+  const saveGeneratedImageToDirectory = useCallback(async (directoryPath: string) => {
+    if ((!generatedImageBlob && !generatedImageUrl) || isGenerating) {
+      return;
+    }
+
+    try {
+      setGenerationError('');
+      setGenerationStatus('Auto-saving image...');
+
+      const blobCandidate = generatedImageBlob ?? (generatedImageUrl
+        ? await fetch(generatedImageUrl).then(res => res.blob())
+        : null);
+
+      if (!blobCandidate) {
+        throw new Error('Unable to access generated image data.');
+      }
+
+      const arrayBuffer = await blobCandidate.arrayBuffer();
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `imagio-${timestamp}.png`;
+
+      const directoryExists = await exists(directoryPath);
+      if (!directoryExists) {
+        await mkdir(directoryPath, { recursive: true });
+      }
+
+      const filePath = await join(directoryPath, fileName);
+      await writeFile(filePath, new Uint8Array(arrayBuffer));
+
+      setGenerationStatus(`Auto-saved image to: ${filePath}`);
+      return filePath;
+    } catch (error) {
+      console.error('Error auto-saving generated image:', error);
+      setGenerationStatus('');
+      if (error instanceof Error) {
+        setGenerationError(`Auto-save failed: ${error.message}`);
+      } else {
+        setGenerationError('Auto-save failed: Unknown error');
+      }
+      throw error;
+    }
+  }, [generatedImageBlob, generatedImageUrl, isGenerating]);
+
   const clearGeneratedImage = useCallback(() => {
     if (isGenerating) {
       return;
@@ -248,6 +298,42 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
     }
   }, [generatedImageUrl]);
 
+  const getSessionSnapshot = useCallback((): ImageGenerationSessionSnapshot => ({
+    aspectRatio,
+    generatedImageUrl,
+    generatedImageRemoteUrl
+  }), [aspectRatio, generatedImageRemoteUrl, generatedImageUrl]);
+
+  const loadSessionSnapshot = useCallback(async (snapshot: ImageGenerationSessionSnapshot) => {
+    setAspectRatio(snapshot.aspectRatio);
+    setGenerationStatus('');
+    setGenerationError('');
+    setGeneratedImageRemoteUrl(snapshot.generatedImageRemoteUrl);
+    setGeneratedImageBlob(null);
+
+    setGeneratedImageUrl((prev) => {
+      if (prev && prev !== snapshot.generatedImageUrl) {
+        URL.revokeObjectURL(prev);
+      }
+      return snapshot.generatedImageUrl;
+    });
+
+    if (!snapshot.generatedImageUrl && snapshot.generatedImageRemoteUrl) {
+      try {
+        const { blob, objectUrl } = await downloadImageAsBlob(snapshot.generatedImageRemoteUrl);
+        setGeneratedImageBlob(blob);
+        setGeneratedImageUrl((prev) => {
+          if (prev && prev !== objectUrl) {
+            URL.revokeObjectURL(prev);
+          }
+          return objectUrl;
+        });
+      } catch (error) {
+        console.error('Error restoring generated image from remote URL:', error);
+      }
+    }
+  }, []);
+
   return {
     aspectRatio,
     setAspectRatio,
@@ -261,6 +347,9 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
     copyGeneratedImageUrl,
     copyGeneratedImageToClipboard,
     clearGeneratedImage,
-    resetGenerationState
+    resetGenerationState,
+    saveGeneratedImageToDirectory,
+    getSessionSnapshot,
+    loadSessionSnapshot
   };
 };

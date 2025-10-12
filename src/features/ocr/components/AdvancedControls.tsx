@@ -1,15 +1,9 @@
 import type { ChangeEvent, FC } from 'react';
 import type { ProcessingParams } from '../types';
-import type { LLMSettings } from '../../promptOptimization/types';
 
 interface AdvancedControlsProps {
   params: ProcessingParams;
   onParamChange: (key: keyof ProcessingParams, value: number | boolean | string) => void;
-  llmSettings: LLMSettings;
-  onLLMSettingChange: <K extends keyof LLMSettings>(key: K, value: LLMSettings[K]) => void;
-  isLikelyLocalLLM: boolean;
-  bflApiKey: string;
-  onBflApiKeyChange: (value: string) => void;
 }
 
 const Slider: FC<{ label: string; value: number; min: number; max: number; step: number; onChange: (value: number) => void; formatValue?: (value: number) => string; }> = ({
@@ -55,12 +49,7 @@ const Checkbox: FC<{ label: string; checked: boolean; onChange: (checked: boolea
 
 export const AdvancedControls: FC<AdvancedControlsProps> = ({
   params,
-  onParamChange,
-  llmSettings,
-  onLLMSettingChange,
-  isLikelyLocalLLM,
-  bflApiKey,
-  onBflApiKeyChange
+  onParamChange
 }) => {
   return (
     <div className="advanced-controls">
@@ -139,80 +128,6 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
           onChange={(checked) => onParamChange('useAdaptiveThreshold', checked)}
         />
       </div>
-
-      <h3 style={{ marginTop: '1.5rem' }}>LLM Settings</h3>
-      
-      {/* LLM Settings row: 4 controls */}
-      <div className="controls-row-4">
-        <div className="control-group">
-          <label>
-            API Base URL:
-            <input
-              type="text"
-              value={llmSettings.apiBaseUrl}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => onLLMSettingChange('apiBaseUrl', event.target.value)}
-              placeholder="http://127.0.0.1:11434/v1"
-            />
-          </label>
-        </div>
-
-        <div className="control-group">
-          <label>
-            API Key:
-            <input
-              type="password"
-              value={llmSettings.apiKey}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => onLLMSettingChange('apiKey', event.target.value)}
-              placeholder="Enter your API key"
-            />
-          </label>
-        </div>
-
-        <div className="control-group">
-          <label>
-            Model Name:
-            <input
-              type="text"
-              value={llmSettings.modelName}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => onLLMSettingChange('modelName', event.target.value)}
-              placeholder="llama3.1:8b"
-            />
-          </label>
-        </div>
-
-        <Slider
-          label="Temperature"
-          value={llmSettings.temperature}
-          min={0}
-          max={1.5}
-          step={0.05}
-          onChange={(value) => onLLMSettingChange('temperature', value)}
-          formatValue={(value) => value.toFixed(2)}
-        />
-      </div>
-
-      {/* BFL API Key on its own row */}
-      <div className="control-group" style={{ marginTop: '0.75rem' }}>
-        <label>
-          BFL API Key:
-          <input
-            type="password"
-            value={bflApiKey}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => onBflApiKeyChange(event.target.value)}
-            placeholder="Enter your BFL API key"
-          />
-        </label>
-      </div>
-
-      {isLikelyLocalLLM ? (
-        <div className="llm-hint">
-          Local LLM detected (e.g., Ollama), API Key can be left empty.
-        </div>
-      ) : (
-        <div className="llm-hint warning">
-          When using a remote LLM, ensure API Key is filled in and securely stored.
-        </div>
-      )}
     </div>
   );
 };
