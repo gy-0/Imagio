@@ -32,7 +32,6 @@ const App = () => {
     generatedImageRemoteUrl,
     isGenerating,
     generationStatus,
-    generationError,
     generateImage,
     saveGeneratedImage,
     copyGeneratedImageUrl,
@@ -224,8 +223,6 @@ const App = () => {
                   onCopyPrompt={handleCopyPrompt}
                   onGenerateImage={handleGenerateImage}
                   isGenerating={isGenerating}
-                  generationStatus={generationStatus}
-                  generationError={generationError}
                 />
               </div>
 

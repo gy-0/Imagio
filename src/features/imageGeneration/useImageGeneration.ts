@@ -72,7 +72,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
 
       setGeneratedImageBlob(blob);
       setGeneratedImageUrl(objectUrl);
-      setGenerationStatus('Image generated successfully!');
+      setGenerationStatus('');
     } catch (error) {
       console.error('Error generating image:', error);
       setGenerationStatus('');

@@ -18,8 +18,6 @@ interface PromptGenerationPanelProps {
   onCopyPrompt: () => void;
   onGenerateImage: () => Promise<void> | void;
   isGenerating: boolean;
-  generationStatus: string;
-  generationError: string;
 }
 
 export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
@@ -38,9 +36,7 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
   isOptimizeDisabled,
   onCopyPrompt,
   onGenerateImage,
-  isGenerating,
-  generationStatus,
-  generationError
+  isGenerating
 }) => (
   <div className="result-card prompt-generation-card">
     <div className="result-header">
@@ -150,18 +146,7 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
         </button>
       </div>
 
-      {generationStatus && (
-        <div className="llm-status success">
-          {generationStatus}
-        </div>
-      )}
-
-      {generationError && (
-        <div className="llm-status error">
-          {generationError}
-        </div>
-      )}
+      {/* Generation status/errors removed from this panel */}
     </div>
   </div>
 );
-
