@@ -23,8 +23,10 @@ export const OcrPreviewPanel: FC<OcrPreviewPanelProps> = ({ imagePreviewUrl, pro
 
       if (availableSpace > 0) {
         containerEl.style.setProperty('--ocr-preview-max-height', `${availableSpace}px`);
+        containerEl.style.height = `${availableSpace}px`;
       } else {
         containerEl.style.removeProperty('--ocr-preview-max-height');
+        containerEl.style.removeProperty('height');
       }
     };
 
@@ -38,6 +40,7 @@ export const OcrPreviewPanel: FC<OcrPreviewPanelProps> = ({ imagePreviewUrl, pro
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateMaxHeight);
       containerEl.style.removeProperty('--ocr-preview-max-height');
+      containerEl.style.removeProperty('height');
     };
   }, []);
 

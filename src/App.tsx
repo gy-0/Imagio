@@ -129,6 +129,9 @@ const App = () => {
 
   const toggleAdvanced = () => setShowAdvanced(prev => !prev);
 
+  const shouldShowGeneratedPanel = isGenerating || Boolean(generatedImageUrl);
+  const gridClassName = `main-content-three-column${shouldShowGeneratedPanel ? ' has-generated' : ''}`;
+
   useKeyboardShortcuts({
     onSelectImage: () => { void selectImage(); },
     onTakeScreenshot: () => { void takeScreenshot(); },
@@ -177,7 +180,7 @@ const App = () => {
       <ProcessingStatus isProcessing={isProcessing} statusMessage={processingStatus} />
 
       {imagePath && (
-        <div className="main-content-three-column">
+        <div className={gridClassName}>
           <div className="left-panel">
             <OcrPreviewPanel
               imagePreviewUrl={imagePreviewUrl}
@@ -201,9 +204,9 @@ const App = () => {
             )}
           </div>
 
-          <div className="right-panel">
-            {hasPerformedOcr && (
-              <>
+          {hasPerformedOcr && (
+            <>
+              <div className="right-panel">
                 <PromptGenerationPanel
                   imageStyle={imageStyle}
                   onImageStyleChange={setImageStyle}
@@ -224,20 +227,24 @@ const App = () => {
                   generationStatus={generationStatus}
                   generationError={generationError}
                 />
+              </div>
 
-                <GeneratedImagePanel
-                  generatedImageUrl={generatedImageUrl}
-                  isGenerating={isGenerating}
-                  generationStatus={generationStatus}
-                  onSaveGeneratedImage={() => saveGeneratedImage()}
-                  onCopyGeneratedImage={() => copyGeneratedImageToClipboard()}
-                  onCopyGeneratedImageUrl={() => copyGeneratedImageUrl()}
-                  onClearGeneratedImage={clearGeneratedImage}
-                  hasRemoteImageUrl={Boolean(generatedImageRemoteUrl)}
-                />
-              </>
-            )}
-          </div>
+              {shouldShowGeneratedPanel && (
+                <div className="generated-panel">
+                  <GeneratedImagePanel
+                    generatedImageUrl={generatedImageUrl}
+                    isGenerating={isGenerating}
+                    generationStatus={generationStatus}
+                    onSaveGeneratedImage={() => saveGeneratedImage()}
+                    onCopyGeneratedImage={() => copyGeneratedImageToClipboard()}
+                    onCopyGeneratedImageUrl={() => copyGeneratedImageUrl()}
+                    onClearGeneratedImage={clearGeneratedImage}
+                    hasRemoteImageUrl={Boolean(generatedImageRemoteUrl)}
+                  />
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

@@ -30,7 +30,9 @@ body {
 }
 
 .container {
-  max-width: 1200px;
+  /* Allow more horizontal space so panels don't shrink
+     when the Generated Image column appears */
+  max-width: 1600px;
   margin: 0 auto;
   padding: 2rem;
 }
@@ -315,7 +317,6 @@ h3 {
   justify-content: center;
   align-items: center;
   min-height: 200px;
-  background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -641,7 +642,7 @@ textarea:focus {
   }
 
   .image-container {
-    background: rgba(0, 0, 0, 0.05);
+    background: transparent;
   }
 
   button {
@@ -754,23 +755,34 @@ textarea:focus {
 /* Three Column Layout */
 .main-content-three-column {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
   align-items: stretch;
 }
 
-@media (max-width: 1400px) {
+.main-content-three-column.has-generated {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 1280px) {
+  .main-content-three-column.has-generated {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1200px) {
   .main-content-three-column {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .main-content-three-column .right-panel {
+  .main-content-three-column .right-panel,
+  .main-content-three-column .generated-panel {
     grid-column: 1 / -1;
   }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 900px) {
   .main-content {
     grid-template-columns: 1fr;
   }
@@ -793,10 +805,26 @@ textarea:focus {
   min-height: 0;
 }
 
-.right-panel {
+.right-panel,
+.generated-panel {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  min-height: 0;
+  height: var(--ocr-preview-height, auto);
+}
+
+.right-panel .result-card,
+.generated-panel .result-card {
+  flex: 1;
+  height: 100%;
+}
+
+@media (max-width: 1200px) {
+  .right-panel,
+  .generated-panel {
+    height: auto;
+  }
 }
 
 .right-panel .optimized-prompt-card {
@@ -848,7 +876,7 @@ textarea:focus {
 
 .right-panel .result-card textarea {
   flex: 1;
-  min-height: 500px;
+  min-height: 0;
   resize: none;
 }
 
@@ -887,6 +915,8 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
 }
 
 .prompt-settings-section {
@@ -901,6 +931,8 @@ textarea:focus {
   gap: 1rem;
   padding-top: 1rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex: 1;
+  min-height: 0;
 }
 
 .optimized-prompt-section label {
@@ -943,9 +975,9 @@ textarea:focus {
 
 /* Unified Textarea Classes */
 .text-area-small {
-  min-height: 60px;
-  height: 60px;
-  max-height: 120px;
+  min-height: 36px;
+  height: 36px;
+  max-height: 48px;
   resize: vertical;
 }
 

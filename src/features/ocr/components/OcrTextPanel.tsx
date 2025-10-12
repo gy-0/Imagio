@@ -31,6 +31,7 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
   useEffect(() => {
     const containerEl = containerRef.current;
     const previewEl = document.querySelector('[data-ocr-preview]') as HTMLElement | null;
+    const rootEl = document.documentElement;
 
     if (!containerEl || !previewEl) {
       return;
@@ -40,6 +41,7 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
       const previewHeight = previewEl.getBoundingClientRect().height;
       containerEl.style.setProperty('--ocr-preview-height', `${previewHeight}px`);
       containerEl.style.height = `${previewHeight}px`;
+      rootEl.style.setProperty('--ocr-preview-height', `${previewHeight}px`);
     };
 
     const observer = new ResizeObserver(updateHeight);
@@ -53,6 +55,7 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
       window.removeEventListener('resize', updateHeight);
       containerEl.style.removeProperty('--ocr-preview-height');
       containerEl.style.removeProperty('height');
+      rootEl.style.removeProperty('--ocr-preview-height');
     };
   }, []);
 
