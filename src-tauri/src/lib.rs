@@ -531,7 +531,7 @@ async fn run_automated_test(test_image_path: Option<String>) -> Result<TestImage
         // 创建简单的测试图片（白底黑字）
         let width = 400;
         let height = 100;
-        let mut img = ImageBuffer::from_fn(width, height, |_, _| {
+        let img = ImageBuffer::from_fn(width, height, |_, _| {
             Rgba([255u8, 255u8, 255u8, 255u8])
         });
 
