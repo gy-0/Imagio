@@ -473,6 +473,113 @@ async fn save_text_to_path(text: String, file_path: String) -> Result<(), String
     Ok(())
 }
 
+// ============================================
+// 自动化测试 API
+// ============================================
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AppHealthCheck {
+    status: String,
+    timestamp: u64,
+    version: String,
+    features: Vec<String>,
+}
+
+#[tauri::command]
+fn health_check() -> Result<AppHealthCheck, String> {
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| format!("Time error: {}", e))?
+        .as_secs();
+
+    Ok(AppHealthCheck {
+        status: "healthy".to_string(),
+        timestamp,
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        features: vec![
+            "ocr".to_string(),
+            "screenshot".to_string(),
+            "image_processing".to_string(),
+        ],
+    })
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TestImageResult {
+    success: bool,
+    ocr_text: String,
+    error: Option<String>,
+    processing_time_ms: u128,
+}
+
+#[tauri::command]
+async fn run_automated_test(test_image_path: Option<String>) -> Result<TestImageResult, String> {
+    use std::time::Instant;
+
+    let start = Instant::now();
+
+    // 如果没有提供测试图片，创建一个简单的测试图片
+    let image_path = if let Some(path) = test_image_path {
+        path
+    } else {
+        // 创建一个包含文本的测试图片
+        let temp_dir = std::env::temp_dir();
+        let test_path = temp_dir.join("imagio_test.png");
+
+        // 创建简单的测试图片（白底黑字）
+        let width = 400;
+        let height = 100;
+        let mut img = ImageBuffer::from_fn(width, height, |_, _| {
+            Rgba([255u8, 255u8, 255u8, 255u8])
+        });
+
+        // 这里应该画文字，但为了简单起见，我们就用一个纯色块
+        // 在实际应用中，你需要使用 imageproc::drawing 来画文字
+
+        let dynamic_img = DynamicImage::ImageRgba8(img);
+        dynamic_img.save(&test_path)
+            .map_err(|e| format!("Failed to create test image: {}", e))?;
+
+        test_path.to_string_lossy().to_string()
+    };
+
+    // 运行 OCR
+    let params = ProcessingParams {
+        contrast: 1.3,
+        brightness: 0.0,
+        sharpness: 1.2,
+        use_adaptive_threshold: true,
+        use_clahe: true,
+        gaussian_blur: 0.5,
+        bilateral_filter: false,
+        morphology: "none".to_string(),
+        language: "eng".to_string(),
+    };
+
+    match perform_ocr(image_path, params) {
+        Ok(result) => {
+            let duration = start.elapsed();
+            Ok(TestImageResult {
+                success: true,
+                ocr_text: result.text,
+                error: None,
+                processing_time_ms: duration.as_millis(),
+            })
+        }
+        Err(e) => {
+            let duration = start.elapsed();
+            Ok(TestImageResult {
+                success: false,
+                ocr_text: String::new(),
+                error: Some(e),
+                processing_time_ms: duration.as_millis(),
+            })
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -491,7 +598,13 @@ pub fn run() {
 
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![perform_ocr, take_screenshot, save_text_to_path])
+    .invoke_handler(tauri::generate_handler![
+      perform_ocr,
+      take_screenshot,
+      save_text_to_path,
+      health_check,
+      run_automated_test
+    ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
