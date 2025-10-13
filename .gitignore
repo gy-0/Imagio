@@ -36,3 +36,4 @@ pnpm-debug.log*
 lerna-debug.log*
 /thesis_updated
 /.cursor/plans
+/.claude
