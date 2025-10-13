@@ -370,6 +370,11 @@ const App = () => {
       return;
     }
 
+    // Don't update while optimization is in progress
+    if (isOptimizing) {
+      return;
+    }
+
     setSessions(prev => {
       let didUpdate = false;
       const next = prev.map(session => {
@@ -394,10 +399,15 @@ const App = () => {
 
       return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
     });
-  }, [activeSessionId, imageStyle, customDescription, optimizedPrompt, isRestoringSessionRef]);
+  }, [activeSessionId, imageStyle, customDescription, optimizedPrompt, isRestoringSessionRef, isOptimizing]);
 
   useEffect(() => {
     if (!activeSessionId || isRestoringSessionRef.current) {
+      return;
+    }
+
+    // Don't update while generation is in progress
+    if (isGenerating) {
       return;
     }
 
@@ -413,7 +423,9 @@ const App = () => {
           updatedAt: Date.now(),
           generation: {
             aspectRatio,
-            generatedImageUrl,
+            // Don't save the temporary blob URL, only save the remote URL
+            // The blob URL will be recreated when loading the session
+            generatedImageUrl: '',
             generatedImageRemoteUrl
           }
         };
@@ -425,7 +437,7 @@ const App = () => {
 
       return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
     });
-  }, [activeSessionId, aspectRatio, generatedImageUrl, generatedImageRemoteUrl, isRestoringSessionRef]);
+  }, [activeSessionId, aspectRatio, generatedImageRemoteUrl, isRestoringSessionRef, isGenerating]);
 
   // Track OCR state changes
   const previousOcrText = useRef<string>('');
@@ -596,11 +608,15 @@ const App = () => {
       suppressPromptResetRef.current = true;
 
       try {
+        // First set the active session ID before loading snapshots
+        // This ensures the effects know which session is being restored
+        setActiveSessionId(sessionId);
+        
+        // Then load all the snapshots
         loadOcrSnapshot(session.ocr);
         loadPromptSnapshot(session.prompt);
         await loadGenerationSnapshot(session.generation);
 
-        setActiveSessionId(sessionId);
         // Check if session has any OCR data (text or processed image)
         const hasOcrData = Boolean(session.ocr.ocrText || session.ocr.processedImageUrl);
         setHasPerformedOcr(hasOcrData);
@@ -613,11 +629,12 @@ const App = () => {
         });
       } finally {
         // Use setTimeout instead of requestAnimationFrame for more reliable timing
+        // Increase delay to ensure all state updates complete
         setTimeout(() => {
           suppressAutoProcessRef.current = false;
           suppressPromptResetRef.current = false;
           isRestoringSessionRef.current = false;
-        }, 100);
+        }, 300);
       }
     };
 
