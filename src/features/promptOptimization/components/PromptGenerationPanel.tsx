@@ -137,7 +137,7 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
           type="button"
           onClick={() => { void onGenerateImage(); }}
           className="primary-btn"
-          disabled={isGenerating || !optimizedPrompt.trim()}
+          disabled={isGenerating || isOptimizing || !optimizedPrompt.trim()}
         >
           {isGenerating ? '⏳ Generating...' : '🎨 Generate Image'}
         </button>

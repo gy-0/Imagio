@@ -170,6 +170,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
 
   const copyGeneratedImageToClipboard = useCallback(async () => {
     if ((!generatedImageBlob && !generatedImageUrl) || isGenerating) {
+      setGenerationError('No image data available to copy');
       return;
     }
 
@@ -182,53 +183,32 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
         : null);
 
       if (!blob) {
-        throw new Error('Unable to access generated image data.');
+        throw new Error('Unable to access generated image data');
       }
 
-      let copied = false;
+      // Only use Tauri clipboard method
+      const imageBitmap = await createImageBitmap(blob);
+      const canvas = document.createElement('canvas');
+      canvas.width = imageBitmap.width;
+      canvas.height = imageBitmap.height;
+      const ctx = canvas.getContext('2d');
 
-      if (typeof window !== 'undefined' && 'ClipboardItem' in window && navigator?.clipboard?.write) {
-        try {
-          await navigator.clipboard.write([
-            new ClipboardItem({
-              [blob.type]: blob
-            })
-          ]);
-          copied = true;
-        } catch (clipboardError) {
-          console.warn('Browser clipboard write failed, falling back to Tauri clipboard plugin:', clipboardError);
-        }
-      }
-
-      if (!copied) {
-        const imageBitmap = await createImageBitmap(blob);
-        const canvas = document.createElement('canvas');
-        canvas.width = imageBitmap.width;
-        canvas.height = imageBitmap.height;
-        const ctx = canvas.getContext('2d');
-
-        if (!ctx) {
-          imageBitmap.close();
-          throw new Error('Unable to access 2D canvas context for clipboard copy.');
-        }
-
-        ctx.drawImage(imageBitmap, 0, 0);
+      if (!ctx) {
         imageBitmap.close();
-
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const rgba = new Uint8Array(imageData.data);
-        const tauriImage = await TauriImage.new(rgba, canvas.width, canvas.height);
-        await writeImage(tauriImage);
-        copied = true;
+        throw new Error('Unable to get canvas context, cannot copy image');
       }
 
-      if (!copied) {
-        throw new Error('Clipboard write skipped without any available method.');
-      }
+      ctx.drawImage(imageBitmap, 0, 0);
+      imageBitmap.close();
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const rgba = new Uint8Array(imageData.data);
+      const tauriImage = await TauriImage.new(rgba, canvas.width, canvas.height);
+      await writeImage(tauriImage);
 
       setGenerationStatus('Image copied to clipboard');
     } catch (error) {
-      console.error('Failed to copy image:', error);
+      console.error('Failed to copy image to clipboard:', error);
       setGenerationStatus('');
       if (error instanceof Error) {
         setGenerationError(`Failed to copy image: ${error.message}`);
