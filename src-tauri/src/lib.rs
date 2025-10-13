@@ -375,11 +375,14 @@ fn perform_ocr(image_path: String, params: ProcessingParams) -> Result<OcrResult
 
     // Save processed image to temp file
     let temp_dir = std::env::temp_dir();
-    let timestamp = std::time::SystemTime::now()
+    let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    let processed_path = temp_dir.join(format!("imagio_processed_{}.png", timestamp));
+        .unwrap();
+    let processed_path = temp_dir.join(format!(
+        "imagio_processed_{}_{}.png",
+        now.as_secs(),
+        now.subsec_nanos()
+    ));
 
     processed.save(&processed_path)
         .map_err(|e| format!("Failed to save processed image: {}", e))?;
@@ -411,11 +414,14 @@ async fn take_screenshot() -> Result<ScreenshotResult, String> {
     use std::process::Command;
     
     let temp_dir = std::env::temp_dir();
-    let timestamp = std::time::SystemTime::now()
+    let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    let screenshot_path = temp_dir.join(format!("imagio_screenshot_{}.png", timestamp));
+        .unwrap();
+    let screenshot_path = temp_dir.join(format!(
+        "imagio_screenshot_{}_{}.png",
+        now.as_secs(),
+        now.subsec_nanos()
+    ));
     
     // Execute screencapture with interactive selection (-i) and cursor (-C)
     let output = Command::new("screencapture")

@@ -85,16 +85,82 @@ const App = () => {
           ocr: {
             ...session.ocr,
             processedImageUrl: details.processedImageUrl,
-            ocrText: details.ocrText
+            ocrText: details.ocrText,
+            // 清空optimizedText，防止旧内容残留
+            optimizedText: '',
+            textDisplayMode: 'original' as const
           }
         };
       });
       return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
     });
 
+    // 自动优化：每个session独立触发
+    if (automationSettings.autoOptimizeOcr && details.ocrText.trim() && llmSettings && !isRestoringSessionRef.current) {
+      // 直接调用优化API，传递当前imagePath和ocrText
+      (async () => {
+        try {
+          let accumulatedText = '';
+          await import('./utils/llmClient').then(({ callChatCompletionStream }) =>
+            callChatCompletionStream({
+              baseUrl: llmSettings.apiBaseUrl,
+              model: llmSettings.modelName,
+              apiKey: llmSettings.apiKey,
+              temperature: llmSettings.temperature,
+              maxTokens: 8000,
+              reasoningEffort: 'minimal',
+              messages: [
+                { role: 'system', content: 'Clean and correct OCR text errors. Remove invalid characters, fix common OCR mistakes, keep original meaning. Return only the corrected text.' },
+                { role: 'user', content: details.ocrText }
+              ]
+            }, (chunk: any) => {
+              if (!chunk.isDone && chunk.content) {
+                accumulatedText += chunk.content;
+              }
+            })
+          );
+          if (accumulatedText.trim()) {
+            // 优化完成后，更新对应session
+            setSessions(prev => {
+              const next = prev.map(session => {
+                if (session.id !== sessionId) return session;
+                return {
+                  ...session,
+                  updatedAt: Date.now(),
+                  ocr: {
+                    ...session.ocr,
+                    optimizedText: accumulatedText,
+                    textDisplayMode: 'optimized' as const
+                  }
+                };
+              });
+              return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
+            });
+          }
+        } catch (error) {
+          // 失败时不影响主流程
+          setSessions(prev => {
+            const next = prev.map(session => {
+              if (session.id !== sessionId) return session;
+              return {
+                ...session,
+                updatedAt: Date.now(),
+                ocr: {
+                  ...session.ocr,
+                  optimizedText: `Error: ${error instanceof Error ? error.message : String(error)}`,
+                  textDisplayMode: 'original' as const
+                }
+              };
+            });
+            return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
+          });
+        }
+      })();
+    }
+
     // Clean up the mapping
     imagePathToSessionIdRef.current.delete(details.imagePath);
-  }, []);
+  }, [automationSettings.autoOptimizeOcr, llmSettings]);
 
   const handleOptimizeComplete = useCallback((details: { imagePath: string; optimizedText: string; }) => {
     // Find the session for this image path
