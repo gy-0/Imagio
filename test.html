@@ -177,6 +177,15 @@
     </div>
 
     <script type="module">
+      // 等待 Tauri API 加载
+      await new Promise(resolve => {
+        if (window.__TAURI__) {
+          resolve();
+        } else {
+          window.addEventListener('DOMContentLoaded', resolve);
+        }
+      });
+
       const { invoke } = window.__TAURI__.core;
 
       let testStats = {
@@ -215,7 +224,8 @@
         logElement.insertBefore(entry, logElement.firstChild);
       }
 
-      window.runHealthCheck = async function() {
+      // 导出全局函数
+      globalThis.runHealthCheck = async function() {
         log('<span class="spinner"></span> 正在运行健康检查...', 'info');
 
         try {
@@ -237,7 +247,7 @@
         }
       };
 
-      window.runOcrTest = async function() {
+      globalThis.runOcrTest = async function() {
         log('<span class="spinner"></span> 正在运行 OCR 测试...', 'info');
 
         try {
@@ -267,7 +277,7 @@
         }
       };
 
-      window.runFullSuite = async function() {
+      globalThis.runFullSuite = async function() {
         log('🚀 开始运行完整测试套件...', 'info');
 
         await runHealthCheck();
@@ -279,7 +289,7 @@
         log(`📊 测试套件完成! 通过: ${testStats.passed}, 失败: ${testStats.failed}`, 'info');
       };
 
-      window.clearLogs = function() {
+      globalThis.clearLogs = function() {
         document.getElementById('test-log').innerHTML = `
           <div style="color: #858585; text-align: center; padding: 20px;">
             日志已清空

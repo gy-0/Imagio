@@ -1,0 +1,71 @@
+{
+  "total": 9,
+  "passed": 5,
+  "failed": 4,
+  "duration": "9.63s",
+  "tests": [
+    {
+      "name": "加载应用主页",
+      "status": "pass",
+      "details": "页面标题: Imagio - OCR App",
+      "screenshot": "/Users/gaoyuan/Imagio/.test-screenshots/01-app-loaded.png",
+      "timestamp": "2025-10-13T22:44:48.244Z"
+    },
+    {
+      "name": "检查 UI 元素",
+      "status": "pass",
+      "details": "{\"title\":\"Imagio - OCR Application\",\"toolbar\":true,\"shortcuts\":\"⌨️ Shortcuts: ⌘O Open | ⌘⇧S Screenshot | ⌘C Copy | ⌘S Save\"}",
+      "screenshot": "/Users/gaoyuan/Imagio/.test-screenshots/02-ui-elements.png",
+      "timestamp": "2025-10-13T22:44:50.297Z"
+    },
+    {
+      "name": "健康检查 API",
+      "status": "fail",
+      "details": "Cannot read properties of undefined (reading 'core')",
+      "screenshot": null,
+      "timestamp": "2025-10-13T22:44:50.298Z"
+    },
+    {
+      "name": "OCR 自动测试",
+      "status": "fail",
+      "details": "Cannot read properties of undefined (reading 'core')",
+      "screenshot": null,
+      "timestamp": "2025-10-13T22:44:50.299Z"
+    },
+    {
+      "name": "按钮可点击性",
+      "status": "pass",
+      "details": "找到 4 个按钮",
+      "screenshot": "/Users/gaoyuan/Imagio/.test-screenshots/05-buttons.png",
+      "timestamp": "2025-10-13T22:44:50.356Z"
+    },
+    {
+      "name": "页面错误检测",
+      "status": "fail",
+      "details": "Cannot read properties of undefined (reading 'core')",
+      "screenshot": null,
+      "timestamp": "2025-10-13T22:44:50.402Z"
+    },
+    {
+      "name": "测试控制台页面",
+      "status": "pass",
+      "details": "标题: 🤖 Imagio 自动化测试控制台",
+      "screenshot": "/Users/gaoyuan/Imagio/.test-screenshots/06-test-console.png",
+      "timestamp": "2025-10-13T22:44:53.269Z"
+    },
+    {
+      "name": "页面错误检测",
+      "status": "fail",
+      "details": "runHealthCheck is not defined",
+      "screenshot": null,
+      "timestamp": "2025-10-13T22:44:53.272Z"
+    },
+    {
+      "name": "控制台健康检查",
+      "status": "pass",
+      "details": "{\"passed\":\"0\",\"failed\":\"0\",\"total\":\"0\"}",
+      "screenshot": "/Users/gaoyuan/Imagio/.test-screenshots/07-health-check-result.png",
+      "timestamp": "2025-10-13T22:44:55.335Z"
+    }
+  ]
+}
