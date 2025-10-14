@@ -16,7 +16,11 @@
       "Bash(npm run build:dev:*)",
       "Bash(npm run:*)",
       "Bash(npm install:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(magick:*)",
+      "Bash(convert:*)",
+      "Bash(sips:*)"
     ],
     "deny": [],
     "ask": []
