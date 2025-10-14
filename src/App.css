@@ -2079,7 +2079,7 @@ textarea:focus {
 
 .password-input-wrapper input {
   flex: 1;
-  padding-right: 3rem;
+  padding-right: 2.5rem !important;
 }
 
 .password-toggle-btn {
@@ -2090,11 +2090,13 @@ textarea:focus {
   color: rgba(255, 255, 255, 0.6);
   font-size: 1.2rem;
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem;
   transition: color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 2rem;
+  height: 2rem;
 }
 
 .password-toggle-btn:hover {
