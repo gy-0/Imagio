@@ -16,6 +16,7 @@ import { PromptGenerationPanel } from './features/promptOptimization/components/
 import { GeneratedImagePanel } from './features/promptOptimization/components/GeneratedImagePanel';
 import { usePromptOptimization } from './features/promptOptimization/usePromptOptimization';
 import type { AppSession, SessionSource } from './types/appSession';
+import type { SortOption } from './components/OverlaySidebar';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import './App.css';
 
@@ -26,6 +27,7 @@ const App = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [sessions, setSessions] = useState<AppSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('updatedAt');
   const suppressAutoProcessRef = useRef<boolean>(false);
   const suppressPromptResetRef = useRef<boolean>(false);
   const isRestoringSessionRef = useRef<boolean>(false);
@@ -92,7 +94,7 @@ const App = () => {
           }
         };
       });
-      return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
+      return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
     });
 
     // 自动优化：每个session独立触发
@@ -134,7 +136,7 @@ const App = () => {
                   }
                 };
               });
-              return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
+              return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
             });
           }
         } catch (error) {
@@ -152,7 +154,7 @@ const App = () => {
                 }
               };
             });
-            return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
+            return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
           });
         }
       })();
@@ -179,7 +181,7 @@ const App = () => {
           }
         };
       });
-      return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
+      return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
     });
   }, []);
 
@@ -288,7 +290,7 @@ const App = () => {
       }
     };
 
-    setSessions(prev => [newSession, ...prev]);
+    setSessions(prev => [newSession, ...prev].sort((a, b) => b[sortBy] - a[sortBy]));
     setActiveSessionId(sessionId);
 
     // Track the mapping from image path to session ID
@@ -361,7 +363,7 @@ const App = () => {
         return prev;
       }
 
-      return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
+      return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
     });
   }, [activeSessionId, imagePath, imagePreviewUrl, processedImageUrl, ocrText, optimizedText, textDisplayMode, isRestoringSessionRef, isOptimizingText]);
 
@@ -397,7 +399,7 @@ const App = () => {
         return prev;
       }
 
-      return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
+      return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
     });
   }, [activeSessionId, imageStyle, customDescription, optimizedPrompt, isRestoringSessionRef, isOptimizing]);
 
@@ -435,7 +437,7 @@ const App = () => {
         return prev;
       }
 
-      return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
+      return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
     });
   }, [activeSessionId, aspectRatio, generatedImageRemoteUrl, isRestoringSessionRef, isGenerating]);
 
@@ -625,7 +627,7 @@ const App = () => {
           const next = prev.map(item => item.id === sessionId
             ? { ...item, updatedAt: Date.now() }
             : item);
-          return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
+          return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
         });
       } finally {
         // Use setTimeout instead of requestAnimationFrame for more reliable timing
@@ -676,6 +678,8 @@ const App = () => {
           setIsSidebarOpen(false);
           setIsSettingsOpen(true);
         }}
+        sortBy={sortBy}
+        onSortByChange={setSortBy}
       />
 
       <SettingsModal

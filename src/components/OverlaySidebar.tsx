@@ -2,6 +2,8 @@ import type { FC, ChangeEvent } from 'react';
 import type { AutomationSettings } from '../hooks/useAutomationSettings';
 import type { AppSession } from '../types/appSession';
 
+export type SortOption = 'createdAt' | 'updatedAt';
+
 interface OverlaySidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -12,6 +14,8 @@ interface OverlaySidebarProps {
   activeSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
   onOpenSettings: () => void;
+  sortBy: SortOption;
+  onSortByChange: (sortBy: SortOption) => void;
 }
 
 const formatTimestamp = (timestamp: number) => {
@@ -36,7 +40,9 @@ export const OverlaySidebar: FC<OverlaySidebarProps> = ({
   sessions,
   activeSessionId,
   onSelectSession,
-  onOpenSettings
+  onOpenSettings,
+  sortBy,
+  onSortByChange
 }) => {
   if (!isOpen) {
     return null;
@@ -119,7 +125,17 @@ export const OverlaySidebar: FC<OverlaySidebarProps> = ({
           </div>
 
           <div className="overlay-section">
-            <h3>History</h3>
+            <div className="overlay-section-header">
+              <h3>History</h3>
+              <select
+                value={sortBy}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => onSortByChange(e.target.value as SortOption)}
+                className="overlay-sort-select"
+              >
+                <option value="updatedAt">Last Modified</option>
+                <option value="createdAt">Date Added</option>
+              </select>
+            </div>
             <div className="overlay-sessions">
               {sessions.length === 0 && (
                 <div className="overlay-empty">No history yet. Sessions will be created when you import images.</div>

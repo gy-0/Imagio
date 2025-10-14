@@ -1572,6 +1572,45 @@ textarea:focus {
   letter-spacing: 0.01em;
 }
 
+.overlay-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.overlay-section-header h3 {
+  margin: 0;
+}
+
+.overlay-sort-select {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.overlay-sort-select:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.overlay-sort-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.overlay-sort-select option {
+  background: #2a2a2a;
+  color: white;
+  padding: 0.4rem;
+}
+
 .overlay-field {
   display: flex;
   flex-direction: column;
@@ -1775,6 +1814,22 @@ textarea:focus {
 
   .overlay-section h3 {
     color: #4a54e8;
+  }
+
+  .overlay-sort-select {
+    background: rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #1a1a1a;
+  }
+
+  .overlay-sort-select:hover {
+    background: rgba(0, 0, 0, 0.12);
+    border-color: rgba(0, 0, 0, 0.25);
+  }
+
+  .overlay-sort-select option {
+    background: #f0f0f0;
+    color: #1a1a1a;
   }
 
   .overlay-field input[type="text"],
