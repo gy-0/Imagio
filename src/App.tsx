@@ -75,6 +75,11 @@ const App = () => {
       return;
     }
 
+    // Update hasPerformedOcr if this is the active session
+    if (sessionId === activeSessionId) {
+      setHasPerformedOcr(true);
+    }
+
     // Update the session directly with OCR results
     // Keep the params from the session (including language setting)
     setSessions(prev => {
@@ -162,9 +167,15 @@ const App = () => {
       })();
     }
 
+    // 自动生成prompt:如果这是当前active session且开启了auto-generate prompt
+    if (sessionId === activeSessionId && automationSettings.autoGeneratePrompt && details.ocrText.trim() && !isRestoringSessionRef.current) {
+      // Reset the lastAutoPromptRef to allow auto-generation for the new image
+      lastAutoPromptRef.current = '';
+    }
+
     // Clean up the mapping
     imagePathToSessionIdRef.current.delete(details.imagePath);
-  }, [automationSettings.autoOptimizeOcr, llmSettings]);
+  }, [activeSessionId, automationSettings.autoOptimizeOcr, automationSettings.autoGeneratePrompt, llmSettings, sortBy]);
 
   const handleOptimizeComplete = useCallback((details: { imagePath: string; optimizedText: string; }) => {
     // Find the session for this image path
@@ -311,6 +322,13 @@ const App = () => {
   useEffect(() => {
     onNewImageHandlerRef.current = handleNewImage;
   }, [handleNewImage]);
+
+  // Re-sort sessions when sortBy changes
+  useEffect(() => {
+    setSessions(prev => {
+      return [...prev].sort((a, b) => b[sortBy] - a[sortBy]);
+    });
+  }, [sortBy]);
 
   useEffect(() => {
     if (isAutomationLoading) {
