@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeFile, mkdir, exists } from '@tauri-apps/plugin-fs';
-import { writeImage } from '@tauri-apps/plugin-clipboard-manager';
-import { Image as TauriImage } from '@tauri-apps/api/image';
+import { invoke } from '@tauri-apps/api/core';
 import { join } from '@tauri-apps/api/path';
 import { downloadImageAsBlob, ImageGenerationClient, ImageGenerationError } from '../../utils/imageGenClient';
 
@@ -253,63 +252,31 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
   }, [generatedImageRemoteUrl, isGenerating, setStatusWithAutoClear]);
 
   const copyGeneratedImageToClipboard = useCallback(async () => {
-    console.log('[copyGeneratedImageToClipboard] Called', {
-      hasBlob: !!generatedImageBlob,
-      hasUrl: !!generatedImageUrl,
-      isGenerating
-    });
-
     if ((!generatedImageBlob && !generatedImageUrl) || isGenerating) {
-      console.log('[copyGeneratedImageToClipboard] Exiting early - no image data or still generating');
-      setGenerationError('No image data available to copy');
+      setGenerationError('No image available to copy');
       return;
     }
 
     try {
       setGenerationError('');
-      console.log('[copyGeneratedImageToClipboard] Starting copy process');
+      setGenerationStatus('Copying image...');
 
-      // Step 1: Get blob
-      setGenerationStatus('Preparing image data...');
+      // 获取 blob
       const blob = generatedImageBlob ?? (generatedImageUrl
         ? await fetch(generatedImageUrl).then(res => res.blob())
         : null);
 
       if (!blob) {
-        throw new Error('Unable to access generated image data');
+        throw new Error('Unable to access image data');
       }
 
-      // Step 2: Create bitmap (decode image)
-      setGenerationStatus('Decoding image...');
-      const imageBitmap = await createImageBitmap(blob);
+      // 转成字节数组传给 Rust
+      const arrayBuffer = await blob.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(arrayBuffer));
 
-      // Step 3: Draw to canvas
-      setGenerationStatus('Processing image...');
-      const canvas = document.createElement('canvas');
-      canvas.width = imageBitmap.width;
-      canvas.height = imageBitmap.height;
-      const ctx = canvas.getContext('2d');
-
-      if (!ctx) {
-        imageBitmap.close();
-        throw new Error('Unable to get canvas context, cannot copy image');
-      }
-
-      ctx.drawImage(imageBitmap, 0, 0);
-      imageBitmap.close();
-
-      // Step 4: Extract pixel data
-      setGenerationStatus('Extracting pixel data...');
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const rgba = new Uint8Array(imageData.data);
-
-      // Step 5: Write to clipboard
-      setGenerationStatus('Writing to clipboard...');
-      const tauriImage = await TauriImage.new(rgba, canvas.width, canvas.height);
-      await writeImage(tauriImage);
+      await invoke('copy_image_from_bytes', { imageBytes: bytes });
 
       setStatusWithAutoClear('Image copied to clipboard');
-      console.log('[copyGeneratedImageToClipboard] Copy completed successfully');
     } catch (error) {
       console.error('Failed to copy image to clipboard:', error);
       setGenerationStatus('');

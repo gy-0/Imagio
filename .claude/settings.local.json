@@ -23,7 +23,8 @@
       "Bash(convert:*)",
       "Bash(sips:*)",
       "Read(//Users/gaoyuan/.config/**)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "WebFetch(domain:v2.tauri.app)"
     ],
     "deny": [],
     "ask": [],

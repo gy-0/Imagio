@@ -612,6 +612,46 @@ async fn run_automated_test(test_image_path: Option<String>) -> Result<TestImage
     }
 }
 
+#[tauri::command]
+async fn copy_image_from_bytes(image_bytes: Vec<u8>) -> Result<(), String> {
+    use std::time::Instant;
+    let start = Instant::now();
+
+    // 解码图片
+    let t0 = Instant::now();
+    let img = image::load_from_memory(&image_bytes)
+        .map_err(|e| format!("Failed to decode image: {}", e))?;
+    println!("[Performance] Decode: {}ms", t0.elapsed().as_millis());
+
+    // 转换为 RGBA
+    let t0 = Instant::now();
+    let rgba_img = img.to_rgba8();
+    let (width, height) = rgba_img.dimensions();
+    let raw_data = rgba_img.into_raw();
+    println!("[Performance] Convert to RGBA: {}ms ({}x{})", t0.elapsed().as_millis(), width, height);
+
+    // 写入剪贴板
+    let t0 = Instant::now();
+    use arboard::{Clipboard, ImageData as ArboardImageData};
+
+    let mut clipboard = Clipboard::new()
+        .map_err(|e| format!("Failed to access clipboard: {}", e))?;
+
+    let img_data = ArboardImageData {
+        width: width as usize,
+        height: height as usize,
+        bytes: raw_data.into(),
+    };
+
+    clipboard.set_image(img_data)
+        .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
+
+    println!("[Performance] Clipboard write: {}ms", t0.elapsed().as_millis());
+    println!("[Performance] TOTAL: {}ms", start.elapsed().as_millis());
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -635,7 +675,8 @@ pub fn run() {
       take_screenshot,
       save_text_to_path,
       health_check,
-      run_automated_test
+      run_automated_test,
+      copy_image_from_bytes
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
