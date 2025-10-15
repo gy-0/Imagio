@@ -151,10 +151,10 @@ export const OverlaySidebar: FC<OverlaySidebarProps> = ({
                   <div className="overlay-session-meta">
                     {formatTimestamp(session.updatedAt)}
                   </div>
-                  {session.ocr.ocrText && (
+                  {(session.ocr.optimizedText || session.ocr.ocrText) && (
                     <div className="overlay-session-snippet">
-                      {session.ocr.ocrText.slice(0, 80)}
-                      {session.ocr.ocrText.length > 80 ? '…' : ''}
+                      {(session.ocr.optimizedText || session.ocr.ocrText).slice(0, 80)}
+                      {(session.ocr.optimizedText || session.ocr.ocrText).length > 80 ? '…' : ''}
                     </div>
                   )}
                 </button>
