@@ -583,6 +583,7 @@ const App = () => {
     onCopyText: () => { void copyOcrText(); },
     onSaveText: () => { void saveOcrText(); },
     onToggleAdvanced: toggleAdvanced,
+    onOpenSettings: () => setIsSettingsOpen(true),
     canPerformOcr: Boolean(imagePath),
     hasOcrText: Boolean(ocrText.trim())
   });
@@ -660,7 +661,7 @@ const App = () => {
       <h1>Imagio - OCR Application</h1>
 
       <div className="shortcuts-hint">
-        ⌨️ Shortcuts: <kbd>⌘O</kbd> Open | <kbd>⌘⇧S</kbd> Screenshot | <kbd>⌘C</kbd> Copy | <kbd>⌘S</kbd> Save
+        ⌨️ Shortcuts: <kbd>⌘O</kbd> Open | <kbd>⌘⇧S</kbd> Screenshot | <kbd>⌘C</kbd> Copy | <kbd>⌘S</kbd> Save | <kbd>⌘,</kbd> Settings
       </div>
 
       <DropOverlay isVisible={isDragging} />

@@ -7,6 +7,7 @@ interface KeyboardShortcutHandlers {
   onCopyText: () => void;
   onSaveText: () => void;
   onToggleAdvanced: () => void;
+  onOpenSettings: () => void;
   canPerformOcr: boolean;
   hasOcrText: boolean;
 }
@@ -18,6 +19,7 @@ export const useKeyboardShortcuts = ({
   onCopyText,
   onSaveText,
   onToggleAdvanced,
+  onOpenSettings,
   canPerformOcr,
   hasOcrText
 }: KeyboardShortcutHandlers) => {
@@ -26,6 +28,13 @@ export const useKeyboardShortcuts = ({
   const { metaKey, ctrlKey, shiftKey } = event;
   const key = event.key.toLowerCase();
       const isModifierActive = metaKey || ctrlKey;
+
+      // Command+, or Ctrl+, to open settings
+      if (isModifierActive && key === ',') {
+        event.preventDefault();
+        onOpenSettings();
+        return;
+      }
 
       if (!isModifierActive) {
         return;
@@ -79,6 +88,7 @@ export const useKeyboardShortcuts = ({
     onCopyText,
     onSaveText,
     onToggleAdvanced,
+    onOpenSettings,
     canPerformOcr,
     hasOcrText
   ]);

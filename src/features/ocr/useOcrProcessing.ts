@@ -99,7 +99,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
         apiKey: llmSettings.apiKey,
         temperature: llmSettings.temperature,
         maxTokens: 8000,
-        reasoningEffort: 'minimal', 
+        reasoningEffort: 'minimal',
         messages: [
           {
             role: 'system',
