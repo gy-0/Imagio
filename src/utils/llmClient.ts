@@ -210,11 +210,12 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 		}, params.timeoutMs ?? 45000);
 
 	try {
-		const response = await fetch(url, {
+		// Use Tauri's HTTP plugin to avoid CORS preflight issues
+		const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http');
+		const response = await tauriFetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
-			signal: controller.signal,
 		});
 
 		const contentType = response.headers.get('content-type') ?? '';
@@ -392,11 +393,12 @@ export async function callChatCompletionStream(
 	}, params.timeoutMs ?? 120000); // Longer timeout for streaming
 
 	try {
-		const response = await fetch(url, {
+		// Use Tauri's HTTP plugin to avoid CORS preflight issues
+		const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http');
+		const response = await tauriFetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
-			signal: controller.signal,
 		});
 
 		if (!response.ok) {
