@@ -6,6 +6,7 @@ import { OverlaySidebar } from './components/OverlaySidebar';
 import { SettingsModal } from './components/SettingsModal';
 import { useApplicationConfig } from './hooks/useApplicationConfig';
 import { useAutomationSettings } from './hooks/useAutomationSettings';
+import { useSessionStorage } from './hooks/useSessionStorage';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { AdvancedControls } from './features/ocr/components/AdvancedControls';
 import { OcrPreviewPanel } from './features/ocr/components/OcrPreviewPanel';
@@ -25,7 +26,7 @@ const App = () => {
   const [hasPerformedOcr, setHasPerformedOcr] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [sessions, setSessions] = useState<AppSession[]>([]);
+  const { sessions, setSessions, isLoading: isSessionsLoading } = useSessionStorage();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('updatedAt');
   const suppressAutoProcessRef = useRef<boolean>(false);
@@ -330,7 +331,7 @@ const App = () => {
 
   // Update the active session's OCR state
   useEffect(() => {
-    if (!activeSessionId || isRestoringSessionRef.current) {
+    if (!activeSessionId || isRestoringSessionRef.current || isSessionsLoading) {
       return;
     }
 
@@ -368,10 +369,10 @@ const App = () => {
 
       return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
     });
-  }, [activeSessionId, imagePath, imagePreviewUrl, processedImageUrl, ocrText, optimizedText, textDisplayMode, params, isRestoringSessionRef, isOptimizingText]);
+  }, [activeSessionId, imagePath, imagePreviewUrl, processedImageUrl, ocrText, optimizedText, textDisplayMode, params, isRestoringSessionRef, isOptimizingText, isSessionsLoading]);
 
   useEffect(() => {
-    if (!activeSessionId || isRestoringSessionRef.current) {
+    if (!activeSessionId || isRestoringSessionRef.current || isSessionsLoading) {
       return;
     }
 
@@ -404,10 +405,10 @@ const App = () => {
 
       return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
     });
-  }, [activeSessionId, imageStyle, customDescription, optimizedPrompt, isRestoringSessionRef, isOptimizing]);
+  }, [activeSessionId, imageStyle, customDescription, optimizedPrompt, isRestoringSessionRef, isOptimizing, isSessionsLoading]);
 
   useEffect(() => {
-    if (!activeSessionId || isRestoringSessionRef.current) {
+    if (!activeSessionId || isRestoringSessionRef.current || isSessionsLoading) {
       return;
     }
 
@@ -442,7 +443,7 @@ const App = () => {
 
       return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
     });
-  }, [activeSessionId, aspectRatio, generatedImageRemoteUrl, isRestoringSessionRef, isGenerating]);
+  }, [activeSessionId, aspectRatio, generatedImageRemoteUrl, isRestoringSessionRef, isGenerating, isSessionsLoading]);
 
   // Track OCR state changes
   const previousOcrText = useRef<string>('');

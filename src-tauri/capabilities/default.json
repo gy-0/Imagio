@@ -12,6 +12,8 @@
     "fs:allow-create",
     "fs:allow-write",
     "fs:allow-write-file",
+    "fs:allow-mkdir",
+    "fs:allow-exists",
     {
       "identifier": "fs:scope",
       "allow": [
@@ -19,7 +21,8 @@
         { "path": "$DESKTOP/**" },
         { "path": "$DOCUMENT/**" },
         { "path": "$PICTURE/**" },
-        { "path": "$DOWNLOAD/**" }
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$HOME/Pictures/**" }
       ]
     },
     "core:path:default",
