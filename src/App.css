@@ -2112,3 +2112,98 @@ textarea:focus {
     color: rgba(0, 0, 0, 0.8);
   }
 }
+
+/* Context Menu */
+.context-menu {
+  position: fixed;
+  z-index: 10000;
+  background: rgba(20, 20, 26, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.5rem 0;
+  min-width: 150px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  animation: contextMenuFadeIn 0.15s ease-out;
+  pointer-events: auto;
+}
+
+@keyframes contextMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer !important;
+  transition: all 0.2s ease;
+  outline: none;
+  user-select: none;
+  pointer-events: auto !important;
+  position: relative;
+}
+
+.context-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 1) !important;
+  transform: scale(1.02);
+}
+
+.context-menu-item:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.context-menu-item.delete {
+  color: rgba(255, 174, 174, 0.9) !important;
+}
+
+.context-menu-item.delete:hover {
+  background: rgba(235, 87, 87, 0.2) !important;
+  color: rgba(255, 200, 200, 0.95) !important;
+  transform: scale(1.02);
+}
+
+@media (prefers-color-scheme: light) {
+  .context-menu {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.2);
+  }
+
+  .context-menu-item {
+    color: rgba(0, 0, 0, 0.8) !important;
+    cursor: pointer !important;
+  }
+
+  .context-menu-item:hover {
+    background: rgba(0, 0, 0, 0.1) !important;
+    color: rgba(0, 0, 0, 1) !important;
+    transform: scale(1.02);
+  }
+
+  .context-menu-item.delete {
+    color: rgba(235, 87, 87, 0.8) !important;
+    cursor: pointer !important;
+  }
+
+  .context-menu-item.delete:hover {
+    background: rgba(235, 87, 87, 0.1) !important;
+    color: rgba(235, 87, 87, 0.95) !important;
+    transform: scale(1.02);
+  }
+}

@@ -1,6 +1,8 @@
-import type { FC, ChangeEvent } from 'react';
+import type { FC, ChangeEvent, MouseEvent } from 'react';
+import { useState } from 'react';
 import type { AutomationSettings } from '../hooks/useAutomationSettings';
 import type { AppSession } from '../types/appSession';
+import { ContextMenu } from './ContextMenu';
 
 export type SortOption = 'createdAt' | 'updatedAt';
 
@@ -13,6 +15,7 @@ interface OverlaySidebarProps {
   sessions: AppSession[];
   activeSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
+  onDeleteSession: (sessionId: string) => void;
   onOpenSettings: () => void;
   sortBy: SortOption;
   onSortByChange: (sortBy: SortOption) => void;
@@ -40,17 +43,49 @@ export const OverlaySidebar: FC<OverlaySidebarProps> = ({
   sessions,
   activeSessionId,
   onSelectSession,
+  onDeleteSession,
   onOpenSettings,
   sortBy,
   onSortByChange
 }) => {
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; sessionId: string } | null>(null);
+
+  const handleContextMenu = (event: MouseEvent<HTMLButtonElement>, sessionId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      sessionId
+    });
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu(null);
+  };
+
+  const handleDeleteSession = () => {
+    if (contextMenu) {
+      console.log('Deleting session:', contextMenu.sessionId); // Debug log
+      onDeleteSession(contextMenu.sessionId);
+    }
+  };
+
   if (!isOpen) {
     return null;
   }
 
   return (
     <div className="overlay-sidebar-root">
-      <div className="overlay-sidebar-backdrop" onClick={onClose} />
+      <div
+        className="overlay-sidebar-backdrop"
+        onClick={() => {
+          if (!contextMenu) {
+            onClose();
+          }
+        }}
+      />
       <aside className="overlay-sidebar-panel">
         <div className="overlay-sidebar-header">
           <h2>Imagio</h2>
@@ -146,6 +181,7 @@ export const OverlaySidebar: FC<OverlaySidebarProps> = ({
                   type="button"
                   className={`overlay-session-item${session.id === activeSessionId ? ' active' : ''}`}
                   onClick={() => onSelectSession(session.id)}
+                  onContextMenu={(event) => handleContextMenu(event, session.id)}
                 >
                   <div className="overlay-session-title">{session.title}</div>
                   <div className="overlay-session-meta">
@@ -173,6 +209,15 @@ export const OverlaySidebar: FC<OverlaySidebarProps> = ({
           </button>
         </div>
       </aside>
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={handleCloseContextMenu}
+          onDelete={handleDeleteSession}
+        />
+      )}
     </div>
   );
 };

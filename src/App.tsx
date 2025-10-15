@@ -637,7 +637,7 @@ const App = () => {
         // First set the active session ID before loading snapshots
         // This ensures the effects know which session is being restored
         setActiveSessionId(sessionId);
-        
+
         // Then load all the snapshots
         loadOcrSnapshot(session.ocr);
         loadPromptSnapshot(session.prompt);
@@ -676,6 +676,16 @@ const App = () => {
     suppressPromptResetRef
   ]);
 
+  const handleDeleteSession = useCallback((sessionId: string) => {
+    setSessions(prev => prev.filter(session => session.id !== sessionId));
+
+    // If we deleted the active session, clear the active session
+    if (sessionId === activeSessionId) {
+      setActiveSessionId(null);
+      setHasPerformedOcr(false);
+    }
+  }, [activeSessionId]);
+
   return (
     <div
       className="container"
@@ -698,6 +708,7 @@ const App = () => {
         sessions={sessions}
         activeSessionId={activeSessionId}
         onSelectSession={handleSelectSession}
+        onDeleteSession={handleDeleteSession}
         onOpenSettings={() => {
           setIsSidebarOpen(false);
           setIsSettingsOpen(true);
