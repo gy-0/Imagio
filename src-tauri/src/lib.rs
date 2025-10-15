@@ -33,48 +33,67 @@ struct ScreenshotResult {
 /// 5. Morphological operations
 /// 6. Binarization (Adaptive threshold) - always last
 fn preprocess_image(img: DynamicImage, params: &ProcessingParams) -> Result<DynamicImage, String> {
+    use std::time::Instant;
     let mut processed = img;
 
     // Step 1: Noise reduction
     // Bilateral filter preserves edges better than Gaussian blur
     if params.bilateral_filter {
+        let start = Instant::now();
         processed = apply_bilateral_filter(&processed);
+        println!("[Performance]   - Bilateral filter: {}ms", start.elapsed().as_millis());
     } else if params.gaussian_blur > 0.0 {
+        let start = Instant::now();
         processed = apply_gaussian_blur(&processed, params.gaussian_blur);
+        println!("[Performance]   - Gaussian blur: {}ms", start.elapsed().as_millis());
     }
 
     // Step 2: Brightness and contrast adjustment
     // Adjust brightness first, then contrast for better results
     if params.brightness != 0.0 {
+        let start = Instant::now();
         processed = adjust_brightness(&processed, params.brightness);
+        println!("[Performance]   - Brightness: {}ms", start.elapsed().as_millis());
     }
 
     if params.contrast != 1.0 {
+        let start = Instant::now();
         processed = adjust_contrast(&processed, params.contrast);
+        println!("[Performance]   - Contrast: {}ms", start.elapsed().as_millis());
     }
 
     // Step 3: Sharpening (enhance text edges)
     if params.sharpness > 1.0 {
+        let start = Instant::now();
         processed = adjust_sharpness(&processed, params.sharpness);
+        println!("[Performance]   - Sharpness: {}ms", start.elapsed().as_millis());
     }
 
     // Step 4: CLAHE for local contrast enhancement
     // This works well on grayscale and should come after basic adjustments
     if params.use_clahe {
+        let start = Instant::now();
         processed = apply_clahe(&processed)?;
+        println!("[Performance]   - CLAHE: {}ms", start.elapsed().as_millis());
     }
 
     // Step 5: Morphological operations (refine text shape)
     if params.morphology == "erode" {
+        let start = Instant::now();
         processed = apply_erosion(&processed);
+        println!("[Performance]   - Erosion: {}ms", start.elapsed().as_millis());
     } else if params.morphology == "dilate" {
+        let start = Instant::now();
         processed = apply_dilation(&processed);
+        println!("[Performance]   - Dilation: {}ms", start.elapsed().as_millis());
     }
 
     // Step 6: Binarization (always last step)
     // Adaptive threshold converts to black/white for optimal OCR
     if params.use_adaptive_threshold {
+        let start = Instant::now();
         processed = apply_adaptive_threshold(&processed)?;
+        println!("[Performance]   - Adaptive threshold: {}ms", start.elapsed().as_millis());
     }
 
     Ok(processed)
@@ -359,6 +378,9 @@ struct OcrResult {
 
 #[tauri::command]
 fn perform_ocr(image_path: String, params: ProcessingParams) -> Result<OcrResult, String> {
+    use std::time::Instant;
+    let total_start = Instant::now();
+
     // Initialize Tesseract with the specified language
     let lang = if params.language.is_empty() {
         "eng"
@@ -367,13 +389,18 @@ fn perform_ocr(image_path: String, params: ProcessingParams) -> Result<OcrResult
     };
 
     // Load the image
+    let load_start = Instant::now();
     let img = image::open(&image_path)
         .map_err(|e| format!("Failed to load image: {}", e))?;
+    println!("[Performance] Image loading took: {}ms", load_start.elapsed().as_millis());
 
     // Apply preprocessing
+    let preprocess_start = Instant::now();
     let processed = preprocess_image(img, &params)?;
+    println!("[Performance] Image preprocessing took: {}ms", preprocess_start.elapsed().as_millis());
 
     // Save processed image to temp file
+    let save_start = Instant::now();
     let temp_dir = std::env::temp_dir();
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -386,10 +413,12 @@ fn perform_ocr(image_path: String, params: ProcessingParams) -> Result<OcrResult
 
     processed.save(&processed_path)
         .map_err(|e| format!("Failed to save processed image: {}", e))?;
+    println!("[Performance] Saving processed image took: {}ms", save_start.elapsed().as_millis());
 
     let processed_path_str = processed_path.to_string_lossy().to_string();
 
     // Perform OCR on processed image
+    let ocr_start = Instant::now();
     let tesseract = Tesseract::new(None, Some(lang))
         .map_err(|e| format!("Failed to initialize Tesseract: {}", e))?;
 
@@ -398,6 +427,9 @@ fn perform_ocr(image_path: String, params: ProcessingParams) -> Result<OcrResult
         .map_err(|e| format!("Failed to set image: {}", e))?
         .get_text()
         .map_err(|e| format!("Failed to extract text: {}", e))?;
+    println!("[Performance] Tesseract OCR took: {}ms", ocr_start.elapsed().as_millis());
+
+    println!("[Performance] Total OCR operation took: {}ms", total_start.elapsed().as_millis());
 
     // Don't clean up temp file - we'll use it for preview
     // let _ = fs::remove_file(&processed_path);

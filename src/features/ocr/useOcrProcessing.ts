@@ -141,17 +141,21 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
   }, []);
 
   const performOcrOnPath = useCallback(async (path: string) => {
+    const perfStart = performance.now();
     setIsProcessing(true);
     setProcessingStatus('Loading image...');
 
     try {
       setProcessingStatus('Preprocessing image...');
-      await new Promise(resolve => setTimeout(resolve, 100));
+      const invokeStart = performance.now();
 
       const result = await invoke<OcrResult>('perform_ocr', {
         imagePath: path,
         params
   });
+
+      const invokeEnd = performance.now();
+      console.log(`[Performance] Rust OCR invoke took: ${(invokeEnd - invokeStart).toFixed(0)}ms`);
 
       setProcessingStatus('Extracting text...');
       const reflowedText = reflowOcrText(result.text);
@@ -161,6 +165,9 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
       const processedUrl = convertFileSrc(result.processedImagePath);
       setProcessedImageUrl(processedUrl);
       setProcessingStatus('Complete!');
+
+      const perfEnd = performance.now();
+      console.log(`[Performance] Total OCR processing took: ${(perfEnd - perfStart).toFixed(0)}ms`);
 
       // Notify completion with results
       onOcrComplete?.({

@@ -167,17 +167,47 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
 
       const arrayBuffer = await blobCandidate.arrayBuffer();
 
-      const defaultFileName = `imagio-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+      // Detect actual image format from blob type and magic bytes
+      const mimeType = blobCandidate.type;
+      const bytes = new Uint8Array(arrayBuffer);
+
+      // Check magic bytes to detect actual format
+      let extension = 'png';
+      if (bytes.length > 3) {
+        // JPEG magic bytes: FF D8 FF
+        if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+          extension = 'jpg';
+        }
+        // PNG magic bytes: 89 50 4E 47
+        else if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+          extension = 'png';
+        }
+        // WebP magic bytes: RIFF ... WEBP
+        else if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+                 bytes.length > 11 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+          extension = 'webp';
+        }
+        // Fallback to MIME type if magic bytes don't match
+        else if (mimeType) {
+          if (mimeType.includes('jpeg') || mimeType.includes('jpg')) {
+            extension = 'jpg';
+          } else if (mimeType.includes('webp')) {
+            extension = 'webp';
+          }
+        }
+      }
+      console.log('[saveGeneratedImage] Detected image format:', { mimeType, extension, firstBytes: Array.from(bytes.slice(0, 12)).map(b => b.toString(16).padStart(2, '0')).join(' ') });
+
+      const defaultFileName = `imagio-${new Date().toISOString().replace(/[:.]/g, '-')}.${extension}`;
       const filePath = await save({
         filters: [{
           name: 'Images',
-          extensions: ['png', 'jpg', 'jpeg']
+          extensions: ['png', 'jpg', 'jpeg', 'webp']
         }],
         defaultPath: defaultFileName
       });
 
       if (!filePath) {
-        setGenerationStatus('Save cancelled');
         return;
       }
 
@@ -237,9 +267,10 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
 
     try {
       setGenerationError('');
-      setGenerationStatus('Copying image to clipboard...');
       console.log('[copyGeneratedImageToClipboard] Starting copy process');
 
+      // Step 1: Get blob
+      setGenerationStatus('Preparing image data...');
       const blob = generatedImageBlob ?? (generatedImageUrl
         ? await fetch(generatedImageUrl).then(res => res.blob())
         : null);
@@ -248,8 +279,12 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
         throw new Error('Unable to access generated image data');
       }
 
-      // Only use Tauri clipboard method
+      // Step 2: Create bitmap (decode image)
+      setGenerationStatus('Decoding image...');
       const imageBitmap = await createImageBitmap(blob);
+
+      // Step 3: Draw to canvas
+      setGenerationStatus('Processing image...');
       const canvas = document.createElement('canvas');
       canvas.width = imageBitmap.width;
       canvas.height = imageBitmap.height;
@@ -263,12 +298,18 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
       ctx.drawImage(imageBitmap, 0, 0);
       imageBitmap.close();
 
+      // Step 4: Extract pixel data
+      setGenerationStatus('Extracting pixel data...');
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const rgba = new Uint8Array(imageData.data);
+
+      // Step 5: Write to clipboard
+      setGenerationStatus('Writing to clipboard...');
       const tauriImage = await TauriImage.new(rgba, canvas.width, canvas.height);
       await writeImage(tauriImage);
 
       setStatusWithAutoClear('Image copied to clipboard');
+      console.log('[copyGeneratedImageToClipboard] Copy completed successfully');
     } catch (error) {
       console.error('Failed to copy image to clipboard:', error);
       setGenerationStatus('');
@@ -299,7 +340,37 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
 
       const arrayBuffer = await blobCandidate.arrayBuffer();
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const fileName = `imagio-${timestamp}.png`;
+
+      // Detect actual image format from blob type and magic bytes
+      const mimeType = blobCandidate.type;
+      const bytes = new Uint8Array(arrayBuffer);
+
+      // Check magic bytes to detect actual format
+      let extension = 'png';
+      if (bytes.length > 3) {
+        // JPEG magic bytes: FF D8 FF
+        if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+          extension = 'jpg';
+        }
+        // PNG magic bytes: 89 50 4E 47
+        else if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+          extension = 'png';
+        }
+        // WebP magic bytes: RIFF ... WEBP
+        else if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+                 bytes.length > 11 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+          extension = 'webp';
+        }
+        // Fallback to MIME type if magic bytes don't match
+        else if (mimeType) {
+          if (mimeType.includes('jpeg') || mimeType.includes('jpg')) {
+            extension = 'jpg';
+          } else if (mimeType.includes('webp')) {
+            extension = 'webp';
+          }
+        }
+      }
+      const fileName = `imagio-${timestamp}.${extension}`;
 
       const directoryExists = await exists(directoryPath);
       if (!directoryExists) {

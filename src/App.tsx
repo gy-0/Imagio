@@ -62,7 +62,6 @@ const App = () => {
     copyGeneratedImageUrl,
     copyGeneratedImageToClipboard,
     clearGeneratedImage,
-    resetGenerationState,
     saveGeneratedImageToDirectory,
     loadSessionSnapshot: loadGenerationSnapshot
   } = useImageGeneration({ bflApiKey });
