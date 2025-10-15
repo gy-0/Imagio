@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeFile, mkdir, exists } from '@tauri-apps/plugin-fs';
 import { writeImage } from '@tauri-apps/plugin-clipboard-manager';
@@ -25,7 +25,42 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
   const [generationStatus, setGenerationStatus] = useState<string>('');
   const [generationError, setGenerationError] = useState<string>('');
 
+  // Track all created blob URLs for cleanup
+  const blobUrlsRef = useRef<Set<string>>(new Set());
+  // Track timeout for auto-clearing status messages
+  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper function to set status with auto-clear for success messages
+  const setStatusWithAutoClear = useCallback((message: string) => {
+    // Clear any existing timeout
+    if (statusTimeoutRef.current) {
+      clearTimeout(statusTimeoutRef.current);
+      statusTimeoutRef.current = null;
+    }
+
+    setGenerationStatus(message);
+
+    // Auto-clear success messages after 3 seconds
+    const isSuccessMessage = message.includes('saved to:') ||
+                            message.includes('copied to clipboard') ||
+                            message.includes('Auto-saved!') ||
+                            message.includes('cleared');
+
+    if (isSuccessMessage) {
+      statusTimeoutRef.current = setTimeout(() => {
+        setGenerationStatus('');
+        statusTimeoutRef.current = null;
+      }, 3000);
+    }
+  }, []);
+
   const resetGenerationState = useCallback(() => {
+    // Clear any pending timeout
+    if (statusTimeoutRef.current) {
+      clearTimeout(statusTimeoutRef.current);
+      statusTimeoutRef.current = null;
+    }
+
     setGenerationStatus('');
     setGenerationError('');
     setGeneratedImageRemoteUrl('');
@@ -33,6 +68,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
     setGeneratedImageUrl(prev => {
       if (prev) {
         URL.revokeObjectURL(prev);
+        blobUrlsRef.current.delete(prev);
       }
       return '';
     });
@@ -65,6 +101,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
     setGeneratedImageUrl(prev => {
       if (prev) {
         URL.revokeObjectURL(prev);
+        blobUrlsRef.current.delete(prev);
       }
       return '';
     });
@@ -85,6 +122,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
 
       setGeneratedImageBlob(blob);
       setGeneratedImageUrl(objectUrl);
+      console.log('[useImageGeneration] Image generated successfully, objectUrl:', objectUrl);
       setGenerationStatus('');
     } catch (error) {
       console.error('Error generating image:', error);
@@ -103,13 +141,21 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
   }, [aspectRatio, bflApiKey, isGenerating]);
 
   const saveGeneratedImage = useCallback(async () => {
+    console.log('[saveGeneratedImage] Called', {
+      hasBlob: !!generatedImageBlob,
+      hasUrl: !!generatedImageUrl,
+      isGenerating
+    });
+
     if ((!generatedImageBlob && !generatedImageUrl) || isGenerating) {
+      console.log('[saveGeneratedImage] Exiting early - no image data or still generating');
       return;
     }
 
     try {
       setGenerationError('');
       setGenerationStatus('Saving image...');
+      console.log('[saveGeneratedImage] Starting save process');
 
       const blobCandidate = generatedImageBlob ?? (generatedImageUrl
         ? await fetch(generatedImageUrl).then(res => res.blob())
@@ -136,7 +182,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
       }
 
       await writeFile(filePath, new Uint8Array(arrayBuffer));
-      setGenerationStatus(`Image saved to: ${filePath}`);
+      setStatusWithAutoClear(`Image saved to: ${filePath}`);
     } catch (error) {
       console.error('Error saving generated image:', error);
       setGenerationStatus('');
@@ -147,17 +193,25 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
           : JSON.stringify(error);
       setGenerationError(`Save failed: ${message || 'Unknown error'}`);
     }
-  }, [generatedImageBlob, generatedImageUrl, isGenerating]);
+  }, [generatedImageBlob, generatedImageUrl, isGenerating, setStatusWithAutoClear]);
 
   const copyGeneratedImageUrl = useCallback(async () => {
+    console.log('[copyGeneratedImageUrl] Called', {
+      hasRemoteUrl: !!generatedImageRemoteUrl,
+      remoteUrl: generatedImageRemoteUrl,
+      isGenerating
+    });
+
     if (!generatedImageRemoteUrl || isGenerating) {
+      console.log('[copyGeneratedImageUrl] Exiting early - no remote URL or still generating');
       return;
     }
 
     try {
       await navigator.clipboard.writeText(generatedImageRemoteUrl);
-      setGenerationStatus('Image URL copied to clipboard');
+      setStatusWithAutoClear('Image URL copied to clipboard');
       setGenerationError('');
+      console.log('[copyGeneratedImageUrl] URL copied successfully');
     } catch (error) {
       console.error('Failed to copy image URL:', error);
       if (error instanceof Error) {
@@ -166,10 +220,17 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
         setGenerationError('Copy failed: Unknown error');
       }
     }
-  }, [generatedImageRemoteUrl, isGenerating]);
+  }, [generatedImageRemoteUrl, isGenerating, setStatusWithAutoClear]);
 
   const copyGeneratedImageToClipboard = useCallback(async () => {
+    console.log('[copyGeneratedImageToClipboard] Called', {
+      hasBlob: !!generatedImageBlob,
+      hasUrl: !!generatedImageUrl,
+      isGenerating
+    });
+
     if ((!generatedImageBlob && !generatedImageUrl) || isGenerating) {
+      console.log('[copyGeneratedImageToClipboard] Exiting early - no image data or still generating');
       setGenerationError('No image data available to copy');
       return;
     }
@@ -177,6 +238,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
     try {
       setGenerationError('');
       setGenerationStatus('Copying image to clipboard...');
+      console.log('[copyGeneratedImageToClipboard] Starting copy process');
 
       const blob = generatedImageBlob ?? (generatedImageUrl
         ? await fetch(generatedImageUrl).then(res => res.blob())
@@ -206,7 +268,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
       const tauriImage = await TauriImage.new(rgba, canvas.width, canvas.height);
       await writeImage(tauriImage);
 
-      setGenerationStatus('Image copied to clipboard');
+      setStatusWithAutoClear('Image copied to clipboard');
     } catch (error) {
       console.error('Failed to copy image to clipboard:', error);
       setGenerationStatus('');
@@ -216,7 +278,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
         setGenerationError('Failed to copy image: Unknown error');
       }
     }
-  }, [generatedImageBlob, generatedImageUrl, isGenerating]);
+  }, [generatedImageBlob, generatedImageUrl, isGenerating, setStatusWithAutoClear]);
 
   const saveGeneratedImageToDirectory = useCallback(async (directoryPath: string) => {
     if ((!generatedImageBlob && !generatedImageUrl) || isGenerating) {
@@ -247,7 +309,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
       const filePath = await join(directoryPath, fileName);
       await writeFile(filePath, new Uint8Array(arrayBuffer));
 
-      setGenerationStatus(`Auto-saved!`);
+      setStatusWithAutoClear(`Auto-saved!`);
       return filePath;
     } catch (error) {
       console.error('Error auto-saving generated image:', error);
@@ -259,30 +321,51 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
       }
       throw error;
     }
-  }, [generatedImageBlob, generatedImageUrl, isGenerating]);
+  }, [generatedImageBlob, generatedImageUrl, isGenerating, setStatusWithAutoClear]);
 
   const clearGeneratedImage = useCallback(() => {
     if (isGenerating) {
       return;
     }
 
+    console.log('[useImageGeneration] Clearing generated image');
     setGeneratedImageRemoteUrl('');
     setGeneratedImageUrl(prev => {
       if (prev) {
         URL.revokeObjectURL(prev);
+        blobUrlsRef.current.delete(prev);
       }
       return '';
     });
     setGeneratedImageBlob(null);
-    setGenerationStatus('Generated image cleared');
+    setStatusWithAutoClear('Generated image cleared');
     setGenerationError('');
-  }, [isGenerating]);
+  }, [isGenerating, setStatusWithAutoClear]);
 
-  useEffect(() => () => {
-    if (generatedImageUrl) {
-      URL.revokeObjectURL(generatedImageUrl);
+  // Store blob URLs when created
+  useEffect(() => {
+    if (generatedImageUrl && generatedImageUrl.startsWith('blob:')) {
+      blobUrlsRef.current.add(generatedImageUrl);
+      console.log('[useImageGeneration] Tracking new blob URL:', generatedImageUrl);
     }
   }, [generatedImageUrl]);
+
+  // Cleanup all blob URLs and timeouts when component unmounts
+  useEffect(() => {
+    return () => {
+      console.log('[useImageGeneration] Component unmounting, revoking all blob URLs');
+      blobUrlsRef.current.forEach(url => {
+        URL.revokeObjectURL(url);
+      });
+      blobUrlsRef.current.clear();
+
+      // Clear any pending timeout
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+        statusTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   const getSessionSnapshot = useCallback((): ImageGenerationSessionSnapshot => ({
     aspectRatio,
@@ -300,6 +383,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
     setGeneratedImageUrl((prev) => {
       if (prev && prev !== snapshot.generatedImageUrl) {
         URL.revokeObjectURL(prev);
+        blobUrlsRef.current.delete(prev);
       }
       return snapshot.generatedImageUrl;
     });
@@ -311,6 +395,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
         setGeneratedImageUrl((prev) => {
           if (prev && prev !== objectUrl) {
             URL.revokeObjectURL(prev);
+            blobUrlsRef.current.delete(prev);
           }
           return objectUrl;
         });

@@ -449,16 +449,17 @@ const App = () => {
       if (ocrText) {
         setHasPerformedOcr(true);
       }
-      
-      // Reset dependent states when OCR text changes
+
+      // Reset prompt when OCR text changes, but keep the generated image
+      // Users may want to keep the generated image even if OCR text changes
       if (previousOcrText.current) {
         setOptimizedPrompt('');
-        resetGenerationState();
+        // Don't reset generation state - let users manually clear if needed
       }
-      
+
       previousOcrText.current = ocrText;
     }
-  }, [ocrText, resetGenerationState, setOptimizedPrompt]);
+  }, [ocrText, setOptimizedPrompt]);
   
   // Reset hasPerformedOcr when new image is selected (imagePath changes)
   const previousImagePath = useRef<string>('');

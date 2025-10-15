@@ -35,12 +35,18 @@
             "core:default",
             "dialog:default",
             "fs:default",
+            "fs:allow-write-file",
+            "fs:write-all",
             "clipboard-manager:default",
+            "clipboard-manager:allow-write-image",
             {
               "identifier": "http:default",
               "allow": [
                 {
-                  "url": "https://api.openai.com/**"
+                  "url": "https://**"
+                },
+                {
+                  "url": "http://**"
                 }
               ]
             }

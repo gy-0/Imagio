@@ -116,11 +116,31 @@ export class ImageGenerationClient {
 
       return { requestId: data.id, pollingUrl: data.polling_url };
     } catch (error) {
+      console.error('[ImageGenClient] Detailed error:', {
+        error,
+        errorType: error?.constructor?.name,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+      });
+
       if (error instanceof ImageGenerationError) {
         throw error;
       }
+
+      // Provide more detailed error message
+      let detailedMessage = 'Unknown error';
+      if (error instanceof Error) {
+        detailedMessage = error.message;
+        // Check for common network errors
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          detailedMessage = 'Network error: Cannot connect to BFL API. Please check your internet connection.';
+        } else if (error.message.includes('CORS')) {
+          detailedMessage = 'CORS error: Cross-origin request blocked.';
+        }
+      }
+
       throw new ImageGenerationError(
-        `Failed to create generation request: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to create generation request: ${detailedMessage}`,
         'REQUEST_FAILED'
       );
     }
