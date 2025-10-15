@@ -21,7 +21,8 @@
       "Bash(curl:*)",
       "Bash(magick:*)",
       "Bash(convert:*)",
-      "Bash(sips:*)"
+      "Bash(sips:*)",
+      "Read(//Users/gaoyuan/.config/**)"
     ],
     "deny": [],
     "ask": [],

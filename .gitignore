@@ -40,3 +40,4 @@ lerna-debug.log*
 /.claude
 /.claude
 \# Claude Code settings.md
+/.claude
