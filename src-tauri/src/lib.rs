@@ -16,6 +16,7 @@ struct ProcessingParams {
     bilateral_filter: bool,
     morphology: String, // "none", "erode", "dilate"
     language: String,
+    correct_skew: bool, // Deskew using Hough transform
 }
 
 #[derive(Debug, Serialize)]
@@ -26,6 +27,7 @@ struct ScreenshotResult {
 
 /// Apply image preprocessing based on parameters
 /// Following best practices for OCR preprocessing:
+/// 0. Geometric correction (deskewing) - FIRST, before any filtering
 /// 1. Noise reduction (Gaussian blur or bilateral filter)
 /// 2. Brightness/Contrast adjustment
 /// 3. Sharpening
@@ -35,6 +37,14 @@ struct ScreenshotResult {
 fn preprocess_image(img: DynamicImage, params: &ProcessingParams) -> Result<DynamicImage, String> {
     use std::time::Instant;
     let mut processed = img;
+
+    // Step 0: Deskew (FIRST - before any other processing)
+    // Based on Chinese-OCR3's Hough transform approach
+    if params.correct_skew {
+        let start = Instant::now();
+        processed = correct_skew(&processed)?;
+        println!("[Performance]   - Skew correction: {}ms", start.elapsed().as_millis());
+    }
 
     // Step 1: Noise reduction
     // Bilateral filter preserves edges better than Gaussian blur
@@ -369,6 +379,99 @@ fn apply_dilation(img: &DynamicImage) -> DynamicImage {
     DynamicImage::ImageRgba8(output)
 }
 
+/// Correct skew using Hough transform
+/// Based on Chinese-OCR3's approach: https://github.com/Vincent131499/Chinese-OCR3
+/// Steps:
+/// 1. Convert to grayscale
+/// 2. Apply Canny edge detection
+/// 3. Detect lines using Hough transform
+/// 4. Calculate average angle from detected lines
+/// 5. Rotate image to correct skew
+fn correct_skew(img: &DynamicImage) -> Result<DynamicImage, String> {
+    use imageproc::edges::canny;
+    use imageproc::hough::{detect_lines, LineDetectionOptions};
+    
+    // Convert to grayscale
+    let gray = img.to_luma8();
+    
+    // Apply Canny edge detection
+    // Using moderate thresholds to detect text edges
+    let edges = canny(&gray, 50.0, 150.0);
+    
+    // Detect lines using Hough transform
+    let options = LineDetectionOptions {
+        vote_threshold: 200,    // Higher threshold for stronger lines (following Chinese-OCR3)
+        suppression_radius: 8,
+    };
+    
+    let lines = detect_lines(&edges, options);
+    
+    // If no lines detected, return original image
+    if lines.is_empty() {
+        println!("[Deskew] No lines detected, skipping correction");
+        return Ok(img.clone());
+    }
+    
+    println!("[Deskew] Detected {} lines", lines.len());
+    
+    // Calculate angles from detected lines
+    let mut angles: Vec<f32> = Vec::new();
+    
+    for line in &lines {
+        // Extract angle from polar representation (rho, theta)
+        let theta = line.angle_in_degrees as f32;
+        
+        // Convert to standard angle range
+        // We want angles close to 0° (horizontal) or 90° (vertical)
+        let normalized_angle = if theta > 45.0 && theta < 135.0 {
+            theta - 90.0  // Vertical lines
+        } else if theta >= 135.0 {
+            theta - 180.0  // Normalize to [-45, 45] range
+        } else {
+            theta
+        };
+        
+        // Filter outliers - only keep angles close to horizontal (< 45 degrees deviation)
+        if normalized_angle.abs() < 45.0 {
+            angles.push(normalized_angle);
+        }
+    }
+    
+    // If no valid angles found, return original
+    if angles.is_empty() {
+        println!("[Deskew] No valid angles found after filtering");
+        return Ok(img.clone());
+    }
+    
+    // Calculate average angle (following Chinese-OCR3 approach)
+    let sum: f32 = angles.iter().sum();
+    let avg_angle = sum / angles.len() as f32;
+    
+    println!("[Deskew] Average skew angle: {:.2}°", avg_angle);
+    
+    // Only rotate if skew is significant (> 0.5 degrees)
+    if avg_angle.abs() < 0.5 {
+        println!("[Deskew] Skew angle too small, skipping correction");
+        return Ok(img.clone());
+    }
+    
+    // Rotate image to correct skew
+    // Using bilinear interpolation and white background (for documents)
+    use imageproc::geometric_transformations::{rotate_about_center, Interpolation};
+    
+    let rgba = img.to_rgba8();
+    let rotated = rotate_about_center(
+        &rgba,
+        -avg_angle.to_radians(),  // Negative to correct the skew
+        Interpolation::Bilinear,
+        Rgba([255u8, 255u8, 255u8, 255u8])  // White background
+    );
+    
+    println!("[Deskew] Image rotated by {:.2}° to correct skew", -avg_angle);
+    
+    Ok(DynamicImage::ImageRgba8(rotated))
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct OcrResult {
@@ -484,6 +587,7 @@ async fn take_screenshot() -> Result<ScreenshotResult, String> {
         bilateral_filter: false,    // Off by default (use Gaussian instead)
         morphology: "none".to_string(),
         language: "eng".to_string(),
+        correct_skew: true,         // 倾斜校正 (参考Chinese-OCR3)
     };
     
     let ocr_result = perform_ocr(path_str.clone(), params).unwrap_or(OcrResult {
@@ -588,6 +692,7 @@ async fn run_automated_test(test_image_path: Option<String>) -> Result<TestImage
         bilateral_filter: false,
         morphology: "none".to_string(),
         language: "eng".to_string(),
+        correct_skew: true,
     };
 
     match perform_ocr(image_path, params) {

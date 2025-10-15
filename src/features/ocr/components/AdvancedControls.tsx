@@ -94,7 +94,7 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
         />
       </div>
 
-      {/* Second row: Morphology dropdown + 3 checkboxes */}
+      {/* Second row: Morphology dropdown + 4 checkboxes */}
       <div className="controls-row-mixed">
         <div className="control-group">
           <label>
@@ -109,6 +109,12 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
             </select>
           </label>
         </div>
+
+        <Checkbox
+          label="📐 Deskew (Hough)"
+          checked={params.correctSkew}
+          onChange={(checked) => onParamChange('correctSkew', checked)}
+        />
 
         <Checkbox
           label="CLAHE"

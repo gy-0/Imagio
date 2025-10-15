@@ -41,3 +41,4 @@ lerna-debug.log*
 /.claude
 \# Claude Code settings.md
 /.claude
+DESKEW_FEATURE.md

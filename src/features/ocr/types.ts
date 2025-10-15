@@ -8,6 +8,7 @@ export interface ProcessingParams {
   bilateralFilter: boolean;
   morphology: string;
   language: string;
+  correctSkew: boolean;  // 倾斜校正
 }
 
 export interface OcrResult {

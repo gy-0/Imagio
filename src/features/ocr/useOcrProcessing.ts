@@ -34,7 +34,8 @@ const DEFAULT_PARAMS: ProcessingParams = {
   gaussianBlur: 0.5,
   bilateralFilter: false,
   morphology: 'none',
-  language: 'eng'
+  language: 'eng',
+  correctSkew: true  // 默认开启倾斜校正（参考Chinese-OCR3）
 };
 
 const reflowOcrText = (text: string): string => {
