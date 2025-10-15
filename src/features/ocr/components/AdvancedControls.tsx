@@ -94,8 +94,23 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
         />
       </div>
 
-      {/* Second row: Morphology dropdown + 4 checkboxes */}
+      {/* Second row: 2 dropdowns + 3 checkboxes */}
       <div className="controls-row-mixed">
+        <div className="control-group">
+          <label>
+            Binarization:
+            <select
+              value={params.binarizationMethod}
+              onChange={(event: ChangeEvent<HTMLSelectElement>) => onParamChange('binarizationMethod', event.target.value)}
+            >
+              <option value="none">None</option>
+              <option value="otsu">Otsu (Auto) ⭐</option>
+              <option value="adaptive">Adaptive</option>
+              <option value="mean">Mean</option>
+            </select>
+          </label>
+        </div>
+
         <div className="control-group">
           <label>
             Morphology:
@@ -106,12 +121,14 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
               <option value="none">None</option>
               <option value="erode">Erode (Thin)</option>
               <option value="dilate">Dilate (Thicken)</option>
+              <option value="opening">Opening (Denoise)</option>
+              <option value="closing">Closing (Fill)</option>
             </select>
           </label>
         </div>
 
         <Checkbox
-          label="📐 Deskew (Hough)"
+          label="📐 Deskew"
           checked={params.correctSkew}
           onChange={(checked) => onParamChange('correctSkew', checked)}
         />
@@ -123,15 +140,9 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
         />
 
         <Checkbox
-          label="Bilateral Filter"
+          label="Bilateral"
           checked={params.bilateralFilter}
           onChange={(checked) => onParamChange('bilateralFilter', checked)}
-        />
-
-        <Checkbox
-          label="Adaptive Threshold"
-          checked={params.useAdaptiveThreshold}
-          onChange={(checked) => onParamChange('useAdaptiveThreshold', checked)}
         />
       </div>
     </div>

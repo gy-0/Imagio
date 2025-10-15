@@ -10,11 +10,11 @@ struct ProcessingParams {
     contrast: f32,
     brightness: f32,
     sharpness: f32,
-    use_adaptive_threshold: bool,
+    binarization_method: String, // "none", "adaptive", "otsu", "mean"  
     use_clahe: bool,
     gaussian_blur: f32,
     bilateral_filter: bool,
-    morphology: String, // "none", "erode", "dilate"
+    morphology: String, // "none", "erode", "dilate", "opening", "closing"
     language: String,
     correct_skew: bool, // Deskew using Hough transform
 }
@@ -96,14 +96,38 @@ fn preprocess_image(img: DynamicImage, params: &ProcessingParams) -> Result<Dyna
         let start = Instant::now();
         processed = apply_dilation(&processed);
         println!("[Performance]   - Dilation: {}ms", start.elapsed().as_millis());
+    } else if params.morphology == "opening" {
+        let start = Instant::now();
+        processed = apply_opening(&processed);
+        println!("[Performance]   - Opening: {}ms", start.elapsed().as_millis());
+    } else if params.morphology == "closing" {
+        let start = Instant::now();
+        processed = apply_closing(&processed);
+        println!("[Performance]   - Closing: {}ms", start.elapsed().as_millis());
     }
 
     // Step 6: Binarization (always last step)
-    // Adaptive threshold converts to black/white for optimal OCR
-    if params.use_adaptive_threshold {
-        let start = Instant::now();
-        processed = apply_adaptive_threshold(&processed)?;
-        println!("[Performance]   - Adaptive threshold: {}ms", start.elapsed().as_millis());
+    // Different binarization methods for different scenarios
+    match params.binarization_method.as_str() {
+        "adaptive" => {
+            let start = Instant::now();
+            processed = apply_adaptive_threshold(&processed)?;
+            println!("[Performance]   - Adaptive threshold: {}ms", start.elapsed().as_millis());
+        },
+        "otsu" => {
+            // Otsu's method (Chinese-OCR3's approach)
+            let start = Instant::now();
+            processed = apply_otsu_threshold(&processed)?;
+            println!("[Performance]   - Otsu threshold: {}ms", start.elapsed().as_millis());
+        },
+        "mean" => {
+            let start = Instant::now();
+            processed = apply_mean_threshold(&processed)?;
+            println!("[Performance]   - Mean threshold: {}ms", start.elapsed().as_millis());
+        },
+        _ => {
+            // "none" or any other value - no binarization
+        }
     }
 
     Ok(processed)
@@ -379,6 +403,155 @@ fn apply_dilation(img: &DynamicImage) -> DynamicImage {
     DynamicImage::ImageRgba8(output)
 }
 
+/// Apply opening morphological operation (erode then dilate)
+/// 开运算 - 先腐蚀后膨胀，用于去除小的噪声点
+fn apply_opening(img: &DynamicImage) -> DynamicImage {
+    use imageproc::morphology::{erode, dilate};
+    use imageproc::distance_transform::Norm;
+
+    let gray = img.to_luma8();
+    let (width, height) = gray.dimensions();
+
+    // Opening = Erosion -> Dilation
+    let eroded = erode(&gray, Norm::LInf, 1);
+    let opened = dilate(&eroded, Norm::LInf, 1);
+
+    let mut output = ImageBuffer::new(width, height);
+    for (x, y, pixel) in opened.enumerate_pixels() {
+        let val = pixel.0[0];
+        output.put_pixel(x, y, Rgba([val, val, val, 255]));
+    }
+
+    DynamicImage::ImageRgba8(output)
+}
+
+/// Apply closing morphological operation (dilate then erode)
+/// 闭运算 - 先膨胀后腐蚀，用于填充文字中的小洞和裂缝
+fn apply_closing(img: &DynamicImage) -> DynamicImage {
+    use imageproc::morphology::{erode, dilate};
+    use imageproc::distance_transform::Norm;
+
+    let gray = img.to_luma8();
+    let (width, height) = gray.dimensions();
+
+    // Closing = Dilation -> Erosion
+    let dilated = dilate(&gray, Norm::LInf, 1);
+    let closed = erode(&dilated, Norm::LInf, 1);
+
+    let mut output = ImageBuffer::new(width, height);
+    for (x, y, pixel) in closed.enumerate_pixels() {
+        let val = pixel.0[0];
+        output.put_pixel(x, y, Rgba([val, val, val, 255]));
+    }
+
+    DynamicImage::ImageRgba8(output)
+}
+
+/// Apply Otsu's automatic threshold (Chinese-OCR3's method)
+/// Otsu算法 - 自动计算最优阈值进行二值化
+fn apply_otsu_threshold(img: &DynamicImage) -> Result<DynamicImage, String> {
+    use imageproc::contrast::{threshold, ThresholdType};
+    
+    // Convert to grayscale
+    let gray = img.to_luma8();
+    let (width, height) = gray.dimensions();
+    
+    // Calculate Otsu threshold
+    let threshold_value = calculate_otsu_threshold(&gray);
+    println!("[Otsu] Calculated threshold: {}", threshold_value);
+    
+    // Apply threshold
+    let thresholded = threshold(&gray, threshold_value, ThresholdType::Binary);
+    
+    // Convert back to RGBA
+    let mut output = ImageBuffer::new(width, height);
+    for (x, y, pixel) in thresholded.enumerate_pixels() {
+        let val = pixel.0[0];
+        output.put_pixel(x, y, Rgba([val, val, val, 255]));
+    }
+    
+    Ok(DynamicImage::ImageRgba8(output))
+}
+
+/// Calculate Otsu threshold value
+/// 实现Otsu算法计算最优阈值
+fn calculate_otsu_threshold(img: &image::GrayImage) -> u8 {
+    let (width, height) = img.dimensions();
+    let total_pixels = (width * height) as f64;
+    
+    // Calculate histogram
+    let mut histogram = [0u32; 256];
+    for pixel in img.pixels() {
+        histogram[pixel.0[0] as usize] += 1;
+    }
+    
+    // Calculate cumulative sums and means
+    let mut sum = 0.0;
+    for i in 0..256 {
+        sum += i as f64 * histogram[i] as f64;
+    }
+    
+    let mut sum_b = 0.0;
+    let mut w_b = 0.0;
+    let mut max_variance = 0.0;
+    let mut threshold = 0u8;
+    
+    for t in 0..256 {
+        w_b += histogram[t] as f64;
+        if w_b == 0.0 {
+            continue;
+        }
+        
+        let w_f = total_pixels - w_b;
+        if w_f == 0.0 {
+            break;
+        }
+        
+        sum_b += t as f64 * histogram[t] as f64;
+        
+        let m_b = sum_b / w_b;
+        let m_f = (sum - sum_b) / w_f;
+        
+        // Calculate between-class variance
+        let variance = w_b * w_f * (m_b - m_f) * (m_b - m_f);
+        
+        if variance > max_variance {
+            max_variance = variance;
+            threshold = t as u8;
+        }
+    }
+    
+    threshold
+}
+
+/// Apply mean threshold
+/// 均值阈值 - 使用图像平均灰度作为阈值
+fn apply_mean_threshold(img: &DynamicImage) -> Result<DynamicImage, String> {
+    use imageproc::contrast::{threshold, ThresholdType};
+    
+    // Convert to grayscale
+    let gray = img.to_luma8();
+    let (width, height) = gray.dimensions();
+    
+    // Calculate mean value
+    let sum: u64 = gray.pixels().map(|p| p.0[0] as u64).sum();
+    let mean = (sum / (width * height) as u64) as u8;
+    
+    println!("[Mean] Threshold: {}", mean);
+    
+    // Apply threshold
+    let thresholded = threshold(&gray, mean, ThresholdType::Binary);
+    
+    // Convert back to RGBA
+    let mut output = ImageBuffer::new(width, height);
+    for (x, y, pixel) in thresholded.enumerate_pixels() {
+        let val = pixel.0[0];
+        output.put_pixel(x, y, Rgba([val, val, val, 255]));
+    }
+    
+    Ok(DynamicImage::ImageRgba8(output))
+}
+
 /// Correct skew using Hough transform
 /// Based on Chinese-OCR3's approach: https://github.com/Vincent131499/Chinese-OCR3
 /// Steps:
@@ -581,7 +754,7 @@ async fn take_screenshot() -> Result<ScreenshotResult, String> {
         contrast: 1.3,              // Enhance text/background separation
         brightness: 0.0,            // No brightness adjustment by default
         sharpness: 1.2,             // Slight sharpening for text clarity
-        use_adaptive_threshold: true,  // Critical for OCR: binarize text
+        binarization_method: "otsu".to_string(),  // Otsu自动阈值 (Chinese-OCR3方法)
         use_clahe: true,            // Adaptive histogram equalization
         gaussian_blur: 0.5,         // Light noise reduction
         bilateral_filter: false,    // Off by default (use Gaussian instead)
@@ -686,7 +859,7 @@ async fn run_automated_test(test_image_path: Option<String>) -> Result<TestImage
         contrast: 1.3,
         brightness: 0.0,
         sharpness: 1.2,
-        use_adaptive_threshold: true,
+        binarization_method: "otsu".to_string(),
         use_clahe: true,
         gaussian_blur: 0.5,
         bilateral_filter: false,

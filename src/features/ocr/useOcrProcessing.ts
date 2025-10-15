@@ -29,7 +29,7 @@ const DEFAULT_PARAMS: ProcessingParams = {
   contrast: 1.3,
   brightness: 0.0,
   sharpness: 1.2,
-  useAdaptiveThreshold: false,
+  binarizationMethod: 'otsu',  // 使用Otsu二值化（参考Chinese-OCR3）
   useClahe: false,
   gaussianBlur: 0.5,
   bilateralFilter: false,

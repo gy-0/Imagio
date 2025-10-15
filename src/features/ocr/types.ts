@@ -2,11 +2,11 @@ export interface ProcessingParams {
   contrast: number;
   brightness: number;
   sharpness: number;
-  useAdaptiveThreshold: boolean;
+  binarizationMethod: string;  // "none" | "adaptive" | "otsu" | "mean"
   useClahe: boolean;
   gaussianBlur: number;
   bilateralFilter: boolean;
-  morphology: string;
+  morphology: string;  // "none" | "erode" | "dilate" | "opening" | "closing"
   language: string;
   correctSkew: boolean;  // 倾斜校正
 }
