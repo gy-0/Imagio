@@ -10,9 +10,7 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build && npm run copy-app",
-    "copy-app": "rm -rf /Applications/Imagio.app && cp -r src-tauri/target/release/bundle/macos/Imagio.app /Applications/ && echo '✅ Imagio.app installed to /Applications/'",
-    "test:e2e": "node tests/e2e-automation.js",
-    "test:auto": "npm run test:e2e"
+    "copy-app": "rm -rf /Applications/Imagio.app && cp -r src-tauri/target/release/bundle/macos/Imagio.app /Applications/ && echo '✅ Imagio.app installed to /Applications/'"
   },
   "keywords": [
     "tauri",
@@ -27,7 +25,6 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
     "@vitejs/plugin-react": "^5.0.4",
-    "puppeteer": "^24.24.1",
     "typescript": "^5.9.3",
     "vite": "^7.1.9"
   },

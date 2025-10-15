@@ -35,7 +35,6 @@ tauri-plugin-fs = "2.0"
 tauri-plugin-http = "2"
 tauri-plugin-clipboard-manager = "2"
 arboard = "3.6"
-reqwest = { version = "0.12", features = ["blocking"] }
 tesseract = "0.15"
 dirs = "5.0"
 image = { version = "0.25", features = ["png", "jpeg", "gif", "bmp", "tiff", "webp"] }
