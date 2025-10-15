@@ -75,6 +75,7 @@ const App = () => {
     }
 
     // Update the session directly with OCR results
+    // Keep the params from the session (including language setting)
     setSessions(prev => {
       const next = prev.map(session => {
         if (session.id !== sessionId) {
@@ -90,6 +91,7 @@ const App = () => {
             // 清空optimizedText，防止旧内容残留
             optimizedText: '',
             textDisplayMode: 'original' as const
+            // params remains from session.ocr.params - no change needed
           }
         };
       });
@@ -275,7 +277,8 @@ const App = () => {
         processedImageUrl: '',
         ocrText: '',
         optimizedText: '',
-        textDisplayMode: 'original'
+        textDisplayMode: 'original',
+        params
       },
       prompt: {
         imageStyle,
@@ -302,7 +305,7 @@ const App = () => {
 
     // Return the session ID so caller can update the session later
     return sessionId;
-  }, [aspectRatio, customDescription, deriveSessionTitle, generateSessionId, imageStyle]);
+  }, [aspectRatio, customDescription, deriveSessionTitle, generateSessionId, imageStyle, params]);
 
   useEffect(() => {
     onNewImageHandlerRef.current = handleNewImage;
@@ -353,7 +356,8 @@ const App = () => {
             processedImageUrl,
             ocrText,
             optimizedText,
-            textDisplayMode
+            textDisplayMode,
+            params
           }
         };
       });
@@ -364,7 +368,7 @@ const App = () => {
 
       return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
     });
-  }, [activeSessionId, imagePath, imagePreviewUrl, processedImageUrl, ocrText, optimizedText, textDisplayMode, isRestoringSessionRef, isOptimizingText]);
+  }, [activeSessionId, imagePath, imagePreviewUrl, processedImageUrl, ocrText, optimizedText, textDisplayMode, params, isRestoringSessionRef, isOptimizingText]);
 
   useEffect(() => {
     if (!activeSessionId || isRestoringSessionRef.current) {

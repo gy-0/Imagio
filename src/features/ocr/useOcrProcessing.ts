@@ -22,6 +22,7 @@ export interface OcrSessionSnapshot {
   ocrText: string;
   optimizedText: string;
   textDisplayMode: TextDisplayMode;
+  params: ProcessingParams;
 }
 
 const DEFAULT_PARAMS: ProcessingParams = {
@@ -369,8 +370,9 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     processedImageUrl,
     ocrText,
     optimizedText,
-    textDisplayMode
-  }), [imagePath, imagePreviewUrl, processedImageUrl, ocrText, optimizedText, textDisplayMode]);
+    textDisplayMode,
+    params
+  }), [imagePath, imagePreviewUrl, processedImageUrl, ocrText, optimizedText, textDisplayMode, params]);
 
   const loadSessionSnapshot = useCallback((snapshot: OcrSessionSnapshot) => {
     setImagePath(snapshot.imagePath);
@@ -379,6 +381,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     setOcrText(snapshot.ocrText);
     setOptimizedText(snapshot.optimizedText);
     setTextDisplayMode(snapshot.textDisplayMode);
+    setParams(snapshot.params);
   }, []);
 
   return {
