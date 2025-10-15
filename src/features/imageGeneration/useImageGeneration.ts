@@ -207,6 +207,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
       });
 
       if (!filePath) {
+        setGenerationStatus('');
         return;
       }
 
