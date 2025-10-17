@@ -306,6 +306,7 @@ const App = () => {
 
     setSessions(prev => [newSession, ...prev].sort((a, b) => b[sortBy] - a[sortBy]));
     setActiveSessionId(sessionId);
+    setHasPerformedOcr(false);
 
     // Track the mapping from image path to session ID
     imagePathToSessionIdRef.current.set(details.path, sessionId);
@@ -487,17 +488,6 @@ const App = () => {
       previousOcrText.current = ocrText;
     }
   }, [ocrText, setOptimizedPrompt]);
-  
-  // Reset hasPerformedOcr when new image is selected (imagePath changes)
-  const previousImagePath = useRef<string>('');
-  useEffect(() => {
-    if (previousImagePath.current !== imagePath) {
-      if (imagePath !== previousImagePath.current && previousImagePath.current !== '') {
-        setHasPerformedOcr(false);
-      }
-      previousImagePath.current = imagePath;
-    }
-  }, [imagePath]);
 
   const handleGenerateImage = useCallback(() => {
     if (!optimizedPrompt.trim()) {
