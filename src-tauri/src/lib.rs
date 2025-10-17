@@ -930,8 +930,47 @@ async fn copy_image_from_bytes(image_bytes: Vec<u8>) -> Result<(), String> {
     Ok(())
 }
 
+/// Clean up old temporary files created by the application
+/// This prevents disk space exhaustion from accumulated temp files
+fn cleanup_old_temp_files() {
+    use std::time::{SystemTime, Duration};
+
+    let temp_dir = std::env::temp_dir();
+    let max_age = Duration::from_secs(24 * 60 * 60); // 24 hours
+    let now = SystemTime::now();
+
+    // Clean up processed images
+    if let Ok(entries) = fs::read_dir(&temp_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let filename = path.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("");
+
+            // Only clean up our own temp files
+            if filename.starts_with("imagio_processed_") || filename.starts_with("imagio_screenshot_") {
+                // Check file age
+                if let Ok(metadata) = fs::metadata(&path) {
+                    if let Ok(modified) = metadata.modified() {
+                        if let Ok(age) = now.duration_since(modified) {
+                            if age > max_age {
+                                // File is older than max_age, delete it
+                                let _ = fs::remove_file(&path);
+                                println!("[Cleanup] Removed old temp file: {:?}", path);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+  // Clean up old temporary files on startup
+  cleanup_old_temp_files();
+
   tauri::Builder::default()
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_fs::init())
