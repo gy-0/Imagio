@@ -347,23 +347,32 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     }
   }, [processMultipleImages]);
 
+  // Note: Removed imagePath from dependencies to prevent duplicate processing
+  // processImageAtPath already calls performOcrOnPath when image changes
+  // This effect only re-processes when params change (e.g., user adjusts settings)
+  const imagePathRef = useRef(imagePath);
+  useEffect(() => {
+    imagePathRef.current = imagePath;
+  }, [imagePath]);
+
   useEffect(() => {
     if (suppressAutoProcessRef?.current) {
       return;
     }
 
-    if (!imagePath || isProcessingRef.current) {
+    const currentImagePath = imagePathRef.current;
+    if (!currentImagePath || isProcessingRef.current) {
       return;
     }
 
     const timer = setTimeout(() => {
-      if (!isProcessingRef.current) {
-        void performOcrOnPath(imagePath);
+      if (!isProcessingRef.current && imagePathRef.current === currentImagePath) {
+        void performOcrOnPath(currentImagePath);
       }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [imagePath, params, performOcrOnPath, suppressAutoProcessRef]);
+  }, [params, performOcrOnPath, suppressAutoProcessRef]);
 
   const dragAndDropHandlers = useMemo(() => ({
     onDragEnter: handleDragEnter,
