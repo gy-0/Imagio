@@ -73,46 +73,68 @@ export const useSessionStorage = (): UseSessionStorageResult => {
       return;
     }
 
+    const saveWithFallback = (sessionsToSave: AppSession[], attemptNumber: number = 1): boolean => {
+      try {
+        // Clean up blob URLs before saving (they won't be valid after restart)
+        const sanitizedSessions = sessionsToSave.map(session => ({
+          ...session,
+          generation: {
+            ...session.generation,
+            // Don't persist local blob URLs, only remote URLs
+            generatedImageUrl: ''
+          }
+        }));
+
+        const jsonString = JSON.stringify(sanitizedSessions);
+        const sizeInBytes = new Blob([jsonString]).size;
+        const sizeInKB = (sizeInBytes / 1024).toFixed(2);
+
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(STORAGE_KEY, jsonString);
+          console.log(`Saved ${sessionsToSave.length} sessions (${sizeInKB} KB)`);
+        }
+        return true;
+      } catch (error) {
+        // Handle quota exceeded errors with multi-level fallback
+        if (error instanceof Error && error.name === 'QuotaExceededError') {
+          const fallbackCounts = [25, 10, 5, 2];
+
+          if (attemptNumber <= fallbackCounts.length) {
+            const targetCount = fallbackCounts[attemptNumber - 1];
+            console.warn(
+              `localStorage quota exceeded (attempt ${attemptNumber}). ` +
+              `Reducing to ${targetCount} newest sessions...`
+            );
+
+            // Keep only newest sessions (sort by updatedAt descending)
+            const newestSessions = [...sessionsToSave]
+              .sort((a, b) => b.updatedAt - a.updatedAt)
+              .slice(0, targetCount);
+
+            return saveWithFallback(newestSessions, attemptNumber + 1);
+          } else {
+            console.error(
+              'localStorage quota still exceeded after all fallback attempts. ' +
+              'Unable to save sessions. Consider clearing browser data.'
+            );
+            return false;
+          }
+        } else {
+          console.error('Failed to persist sessions:', error);
+          return false;
+        }
+      }
+    };
+
     try {
       // Limit the number of sessions to prevent localStorage quota issues
-      const sessionsToSave = sessions.slice(0, MAX_SESSIONS);
+      // Sort by updatedAt to keep most recently used sessions
+      const sortedSessions = [...sessions].sort((a, b) => b.updatedAt - a.updatedAt);
+      const sessionsToSave = sortedSessions.slice(0, MAX_SESSIONS);
 
-      // Clean up blob URLs before saving (they won't be valid after restart)
-      const sanitizedSessions = sessionsToSave.map(session => ({
-        ...session,
-        generation: {
-          ...session.generation,
-          // Don't persist local blob URLs, only remote URLs
-          generatedImageUrl: ''
-        }
-      }));
-
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedSessions));
-      }
+      saveWithFallback(sessionsToSave);
     } catch (error) {
-      // Handle quota exceeded errors gracefully
-      if (error instanceof Error && error.name === 'QuotaExceededError') {
-        console.warn('localStorage quota exceeded. Reducing session count...');
-        try {
-          // Try saving with fewer sessions
-          const reducedSessions = sessions.slice(0, Math.floor(MAX_SESSIONS / 2));
-          const sanitizedSessions = reducedSessions.map(session => ({
-            ...session,
-            generation: {
-              ...session.generation,
-              generatedImageUrl: ''
-            }
-          }));
-          if (typeof window !== 'undefined') {
-            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedSessions));
-          }
-        } catch (retryError) {
-          console.error('Failed to save sessions even with reduced count:', retryError);
-        }
-      } else {
-        console.error('Failed to persist sessions:', error);
-      }
+      console.error('Unexpected error in session storage:', error);
     }
   }, [sessions, isLoading]);
 
