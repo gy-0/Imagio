@@ -466,6 +466,11 @@ const App = () => {
   // Track OCR state changes
   const previousOcrText = useRef<string>('');
   useEffect(() => {
+    // Don't reset prompt when restoring a session
+    if (isRestoringSessionRef.current) {
+      return;
+    }
+
     if (previousOcrText.current !== ocrText) {
       // OCR text changed - mark as performed if not empty
       if (ocrText) {
