@@ -614,10 +614,13 @@ const App = () => {
         // This ensures the effects know which session is being restored
         setActiveSessionId(sessionId);
 
-        // Then load all the snapshots
-        loadOcrSnapshot(session.ocr);
-        loadPromptSnapshot(session.prompt);
-        await loadGenerationSnapshot(session.generation);
+        // Wait for all snapshot loading operations to complete
+        // This ensures state is fully synchronized before resetting flags
+        await Promise.all([
+          Promise.resolve(loadOcrSnapshot(session.ocr)),
+          Promise.resolve(loadPromptSnapshot(session.prompt)),
+          loadGenerationSnapshot(session.generation)
+        ]);
 
         // Check if session has any OCR data (text or processed image)
         const hasOcrData = Boolean(session.ocr.ocrText || session.ocr.processedImageUrl);
@@ -627,14 +630,14 @@ const App = () => {
           ...session,
           updatedAt: Date.now()
         }), sortBy));
+
+        // Wait for next tick to ensure all setState calls have been processed
+        await new Promise(resolve => setTimeout(resolve, 0));
       } finally {
-        // Use setTimeout instead of requestAnimationFrame for more reliable timing
-        // Increase delay to ensure all state updates complete
-        setTimeout(() => {
-          suppressAutoProcessRef.current = false;
-          suppressPromptResetRef.current = false;
-          isRestoringSessionRef.current = false;
-        }, 300);
+        // Reset flags after all async operations complete
+        suppressAutoProcessRef.current = false;
+        suppressPromptResetRef.current = false;
+        isRestoringSessionRef.current = false;
       }
     };
 
