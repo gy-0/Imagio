@@ -475,20 +475,28 @@ fn apply_otsu_threshold(img: &DynamicImage) -> Result<DynamicImage, String> {
 
 /// Calculate Otsu threshold value
 /// 实现Otsu算法计算最优阈值
+/// Uses Kahan summation for improved numerical stability with large images
 fn calculate_otsu_threshold(img: &image::GrayImage) -> u8 {
     let (width, height) = img.dimensions();
     let total_pixels = (width * height) as f64;
-    
+
     // Calculate histogram
     let mut histogram = [0u32; 256];
     for pixel in img.pixels() {
         histogram[pixel.0[0] as usize] += 1;
     }
-    
-    // Calculate cumulative sums and means
+
+    // Calculate cumulative sums using Kahan summation algorithm
+    // This improves numerical stability for large images
     let mut sum = 0.0;
+    let mut compensation = 0.0; // Running compensation for lost low-order bits
+
     for i in 0..256 {
-        sum += i as f64 * histogram[i] as f64;
+        let value = i as f64 * histogram[i] as f64;
+        let y = value - compensation;
+        let t = sum + y;
+        compensation = (t - sum) - y;
+        sum = t;
     }
     
     let mut sum_b = 0.0;
