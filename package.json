@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build && npm run copy-app",
+    "tauri:build": "tauri build && npm run post-build && npm run copy-app",
+    "post-build": "cd src-tauri && ./add-icon-name.sh target/release/bundle/macos/Imagio.app",
     "copy-app": "rm -rf /Applications/Imagio.app && cp -r src-tauri/target/release/bundle/macos/Imagio.app /Applications/ && echo '✅ Imagio.app installed to /Applications/'"
   },
   "keywords": [
