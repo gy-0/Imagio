@@ -331,22 +331,24 @@ const App = () => {
     });
   }, [sortBy]);
 
-  useEffect(() => {
-    if (isAutomationLoading) {
-      return;
-    }
-
-    if (!automationSettings.autoOptimizeOcr || !ocrText.trim() || isRestoringSessionRef.current || isOptimizingText) {
-      return;
-    }
-
-    if (lastAutoOptimizedOcrRef.current === ocrText) {
-      return;
-    }
-
-    lastAutoOptimizedOcrRef.current = ocrText;
-    void optimizeOcrText();
-  }, [automationSettings.autoOptimizeOcr, isAutomationLoading, isOptimizingText, ocrText, optimizeOcrText]);
+  // Note: Auto-optimization is handled in handleOcrComplete for all sessions
+  // This useEffect is removed to prevent duplicate optimization calls
+  // useEffect(() => {
+  //   if (isAutomationLoading) {
+  //     return;
+  //   }
+  //
+  //   if (!automationSettings.autoOptimizeOcr || !ocrText.trim() || isRestoringSessionRef.current || isOptimizingText) {
+  //     return;
+  //   }
+  //
+  //   if (lastAutoOptimizedOcrRef.current === ocrText) {
+  //     return;
+  //   }
+  //
+  //   lastAutoOptimizedOcrRef.current = ocrText;
+  //   void optimizeOcrText();
+  // }, [automationSettings.autoOptimizeOcr, isAutomationLoading, isOptimizingText, ocrText, optimizeOcrText]);
 
   // Update the active session's OCR state
   useEffect(() => {
