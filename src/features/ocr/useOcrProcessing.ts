@@ -212,10 +212,8 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     const sessionId = onNewImage?.({ path, previewUrl: assetUrl, source });
 
     // Wait for OCR to complete before returning
+    // State updates will propagate through the onOcrComplete callback
     await performOcrOnPath(path);
-
-    // Add a small delay to ensure state updates propagate
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     return sessionId;
   }, [clearOptimizedText, onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview]);
