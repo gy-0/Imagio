@@ -361,8 +361,23 @@ const App = () => {
   }, []);
 
   // Re-sort sessions when sortBy changes
+  // Note: This only triggers when user explicitly changes sort option
+  // Performance: O(n log n) but n is typically small (<50 sessions)
   useEffect(() => {
-    setSessions(prev => sortSessions(prev, sortBy));
+    setSessions(prev => {
+      // Avoid unnecessary re-sort if already sorted by this criterion
+      // Check if first two elements are in correct order (heuristic)
+      if (prev.length >= 2 && prev[0][sortBy] >= prev[1][sortBy]) {
+        // Likely already sorted, but verify with full check
+        const isSorted = prev.every((session, i) =>
+          i === 0 || prev[i - 1][sortBy] >= session[sortBy]
+        );
+        if (isSorted) {
+          return prev; // No need to re-sort
+        }
+      }
+      return sortSessions(prev, sortBy);
+    });
   }, [sortBy, setSessions]);
 
   // Auto-optimize when setting is enabled and OCR text exists without optimization
