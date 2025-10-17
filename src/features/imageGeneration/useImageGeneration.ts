@@ -121,6 +121,8 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
       const { blob, objectUrl } = await downloadImageAsBlob(imageUrl);
 
       setGeneratedImageBlob(blob);
+      // Track blob URL immediately before setting state to prevent timing issues
+      blobUrlsRef.current.add(objectUrl);
       setGeneratedImageUrl(objectUrl);
       console.log('[useImageGeneration] Image generated successfully, objectUrl:', objectUrl);
       setGenerationStatus('');
@@ -334,11 +336,14 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
     setGenerationError('');
   }, [isGenerating, setStatusWithAutoClear]);
 
-  // Store blob URLs when created
+  // Store blob URLs when created (belt-and-suspenders with immediate tracking above)
   useEffect(() => {
     if (generatedImageUrl && generatedImageUrl.startsWith('blob:')) {
-      blobUrlsRef.current.add(generatedImageUrl);
-      console.log('[useImageGeneration] Tracking new blob URL:', generatedImageUrl);
+      // Double-check it's tracked (should already be tracked from immediate add above)
+      if (!blobUrlsRef.current.has(generatedImageUrl)) {
+        console.log('[useImageGeneration] Late-tracking blob URL:', generatedImageUrl);
+        blobUrlsRef.current.add(generatedImageUrl);
+      }
     }
   }, [generatedImageUrl]);
 
@@ -384,6 +389,8 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
       try {
         const { blob, objectUrl } = await downloadImageAsBlob(snapshot.generatedImageRemoteUrl);
         setGeneratedImageBlob(blob);
+        // Track blob URL immediately before setting state
+        blobUrlsRef.current.add(objectUrl);
         setGeneratedImageUrl((prev) => {
           if (prev && prev !== objectUrl) {
             URL.revokeObjectURL(prev);
