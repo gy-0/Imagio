@@ -423,7 +423,9 @@ const App = () => {
         }
       }), sortBy);
     });
-  }, [activeSessionId, imagePath, imagePreviewUrl, processedImageUrl, ocrText, optimizedText, textDisplayMode, params, isRestoringSessionRef, isOptimizingText, isSessionsLoading, sortBy]);
+    // Note: isRestoringSessionRef excluded from deps - refs don't trigger re-renders
+    // We read .current value inside the effect instead
+  }, [activeSessionId, imagePath, imagePreviewUrl, processedImageUrl, ocrText, optimizedText, textDisplayMode, params, isOptimizingText, isSessionsLoading, setSessions, sortBy]);
 
   useEffect(() => {
     if (!activeSessionId || isRestoringSessionRef.current || isSessionsLoading) {
@@ -450,7 +452,8 @@ const App = () => {
         }
       }), sortBy);
     });
-  }, [activeSessionId, imageStyle, customDescription, optimizedPrompt, isRestoringSessionRef, isOptimizing, isSessionsLoading, sortBy]);
+    // Note: isRestoringSessionRef excluded from deps - refs don't trigger re-renders
+  }, [activeSessionId, imageStyle, customDescription, optimizedPrompt, isOptimizing, isSessionsLoading, setSessions, sortBy]);
 
   useEffect(() => {
     if (!activeSessionId || isRestoringSessionRef.current || isSessionsLoading) {
@@ -479,7 +482,8 @@ const App = () => {
         }
       }), sortBy);
     });
-  }, [activeSessionId, aspectRatio, generatedImageRemoteUrl, isRestoringSessionRef, isGenerating, isSessionsLoading, sortBy]);
+    // Note: isRestoringSessionRef excluded from deps - refs don't trigger re-renders
+  }, [activeSessionId, aspectRatio, generatedImageRemoteUrl, isGenerating, isSessionsLoading, setSessions, sortBy]);
 
   // Track OCR state changes
   const previousOcrText = useRef<string>('');
@@ -504,6 +508,8 @@ const App = () => {
 
       previousOcrText.current = ocrText;
     }
+    // Note: isRestoringSessionRef, previousOcrText excluded from deps
+    // Refs don't trigger re-renders, we read .current inside effect
   }, [ocrText, setOptimizedPrompt]);
 
   const handleGenerateImage = useCallback(() => {
