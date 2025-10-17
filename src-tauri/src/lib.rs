@@ -968,8 +968,8 @@ fn cleanup_old_temp_files() {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-  // Clean up old temporary files on startup
-  cleanup_old_temp_files();
+  // Cleanup disabled - user has sufficient disk space and wants to preserve processed images
+  // cleanup_old_temp_files();
 
   tauri::Builder::default()
     .plugin(tauri_plugin_dialog::init())

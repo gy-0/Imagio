@@ -38,6 +38,7 @@ const App = () => {
   const lastAutoSavedImageRef = useRef<string>('');
   const onNewImageHandlerRef = useRef<((details: { path: string; previewUrl: string; source: 'file' | 'drop' | 'screenshot'; }) => string) | null>(null);
   const imagePathToSessionIdRef = useRef<Map<string, string>>(new Map());
+  const optimizeOcrTextRef = useRef<(() => Promise<void>) | null>(null);
 
   const {
     llmSettings,
@@ -104,67 +105,12 @@ const App = () => {
       return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
     });
 
-    // 自动优化：每个session独立触发
-    if (automationSettings.autoOptimizeOcr && details.ocrText.trim() && llmSettings && !isRestoringSessionRef.current) {
-      // 直接调用优化API，传递当前imagePath和ocrText
-      (async () => {
-        try {
-          let accumulatedText = '';
-          await import('./utils/llmClient').then(({ callChatCompletionStream }) =>
-            callChatCompletionStream({
-              baseUrl: llmSettings.apiBaseUrl,
-              model: llmSettings.modelName,
-              apiKey: llmSettings.apiKey,
-              temperature: llmSettings.temperature,
-              maxTokens: 8000,
-              reasoningEffort: 'minimal',
-              messages: [
-                { role: 'system', content: 'Clean and correct OCR text errors. Remove invalid characters, fix common OCR mistakes, keep original meaning. Return only the corrected text.' },
-                { role: 'user', content: details.ocrText }
-              ]
-            }, (chunk: any) => {
-              if (!chunk.isDone && chunk.content) {
-                accumulatedText += chunk.content;
-              }
-            })
-          );
-          if (accumulatedText.trim()) {
-            // 优化完成后，更新对应session
-            setSessions(prev => {
-              const next = prev.map(session => {
-                if (session.id !== sessionId) return session;
-                return {
-                  ...session,
-                  updatedAt: Date.now(),
-                  ocr: {
-                    ...session.ocr,
-                    optimizedText: accumulatedText,
-                    textDisplayMode: 'optimized' as const
-                  }
-                };
-              });
-              return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
-            });
-          }
-        } catch (error) {
-          // 失败时不影响主流程
-          setSessions(prev => {
-            const next = prev.map(session => {
-              if (session.id !== sessionId) return session;
-              return {
-                ...session,
-                updatedAt: Date.now(),
-                ocr: {
-                  ...session.ocr,
-                  optimizedText: `Error: ${error instanceof Error ? error.message : String(error)}`,
-                  textDisplayMode: 'original' as const
-                }
-              };
-            });
-            return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
-          });
-        }
-      })();
+    // 自动优化：只对当前活动session触发，以确保state正确同步
+    if (sessionId === activeSessionId && automationSettings.autoOptimizeOcr && details.ocrText.trim() && !isRestoringSessionRef.current) {
+      // Mark this text as being optimized to prevent duplicate optimization
+      lastAutoOptimizedOcrRef.current = details.ocrText;
+      // Use the hook's optimizeOcrText function to ensure all state updates are synchronized
+      void optimizeOcrTextRef.current?.();
     }
 
     // 自动生成prompt:如果这是当前active session且开启了auto-generate prompt
@@ -175,7 +121,7 @@ const App = () => {
 
     // Clean up the mapping
     imagePathToSessionIdRef.current.delete(details.imagePath);
-  }, [activeSessionId, automationSettings.autoOptimizeOcr, automationSettings.autoGeneratePrompt, llmSettings, sortBy]);
+  }, [activeSessionId, automationSettings.autoOptimizeOcr, automationSettings.autoGeneratePrompt, sortBy]);
 
   const handleOptimizeComplete = useCallback((details: { imagePath: string; optimizedText: string; }) => {
     // Find the session for this image path
@@ -331,6 +277,10 @@ const App = () => {
     onNewImageHandlerRef.current = handleNewImage;
   }, [handleNewImage]);
 
+  useEffect(() => {
+    optimizeOcrTextRef.current = optimizeOcrText;
+  }, [optimizeOcrText]);
+
   // Re-sort sessions when sortBy changes
   useEffect(() => {
     setSessions(prev => {
@@ -338,24 +288,32 @@ const App = () => {
     });
   }, [sortBy]);
 
-  // Note: Auto-optimization is handled in handleOcrComplete for all sessions
-  // This useEffect is removed to prevent duplicate optimization calls
-  // useEffect(() => {
-  //   if (isAutomationLoading) {
-  //     return;
-  //   }
-  //
-  //   if (!automationSettings.autoOptimizeOcr || !ocrText.trim() || isRestoringSessionRef.current || isOptimizingText) {
-  //     return;
-  //   }
-  //
-  //   if (lastAutoOptimizedOcrRef.current === ocrText) {
-  //     return;
-  //   }
-  //
-  //   lastAutoOptimizedOcrRef.current = ocrText;
-  //   void optimizeOcrText();
-  // }, [automationSettings.autoOptimizeOcr, isAutomationLoading, isOptimizingText, ocrText, optimizeOcrText]);
+  // Auto-optimize when setting is enabled and OCR text exists without optimization
+  // This works in conjunction with handleOcrComplete to support two scenarios:
+  // 1. Auto-optimize on OCR completion (handled in handleOcrComplete)
+  // 2. Auto-optimize when user enables the setting after OCR is complete (handled here)
+  useEffect(() => {
+    if (isAutomationLoading) {
+      return;
+    }
+
+    if (!automationSettings.autoOptimizeOcr || !ocrText.trim() || isRestoringSessionRef.current || isOptimizingText) {
+      return;
+    }
+
+    // Only auto-optimize if there's no optimized text yet
+    // This prevents duplicate optimization when handleOcrComplete already optimized
+    if (optimizedText.trim()) {
+      return;
+    }
+
+    if (lastAutoOptimizedOcrRef.current === ocrText) {
+      return;
+    }
+
+    lastAutoOptimizedOcrRef.current = ocrText;
+    void optimizeOcrText();
+  }, [automationSettings.autoOptimizeOcr, isAutomationLoading, isOptimizingText, ocrText, optimizedText, optimizeOcrText]);
 
   // Update the active session's OCR state
   useEffect(() => {

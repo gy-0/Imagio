@@ -106,11 +106,11 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
         messages: [
           {
             role: 'system',
-            content: 'Clean and correct OCR text errors. Remove invalid characters, fix common OCR mistakes, keep original meaning. Return only the corrected text.'
+            content: 'You are an OCR text correction expert. Your task is to clean and correct OCR-extracted text while preserving its original meaning and structure. Common OCR errors include: character misrecognition (0/O, 1/l/I, rn/m), missing spaces, extra line breaks, garbled symbols, and mixed language artifacts. Fix these issues intelligently based on context. Preserve intentional formatting like paragraphs and lists. Return ONLY the corrected text without any explanations, comments, or meta-text.'
           },
           {
             role: 'user',
-            content: ocrText
+            content: `Please correct the following OCR-extracted text:\n\n${ocrText}`
           }
         ]
       }, (chunk) => {
