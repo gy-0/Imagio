@@ -353,6 +353,9 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     imagePathRef.current = imagePath;
   }, [imagePath]);
 
+  // Serialize params to avoid re-triggering on object reference changes
+  const paramsStr = JSON.stringify(params);
+
   useEffect(() => {
     if (suppressAutoProcessRef?.current) {
       return;
@@ -363,14 +366,18 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
       return;
     }
 
+    // Increased debounce delay to 1000ms to prevent excessive OCR calls
+    // when user is actively adjusting multiple parameters
     const timer = setTimeout(() => {
       if (!isProcessingRef.current && imagePathRef.current === currentImagePath) {
         void performOcrOnPath(currentImagePath);
       }
-    }, 500);
+    }, 1000);
 
     return () => clearTimeout(timer);
-  }, [params, performOcrOnPath, suppressAutoProcessRef]);
+    // Using paramsStr instead of params to avoid triggering on reference changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramsStr, suppressAutoProcessRef]);
 
   const dragAndDropHandlers = useMemo(() => ({
     onDragEnter: handleDragEnter,
