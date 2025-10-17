@@ -22,15 +22,18 @@
       }
     ],
     "security": {
+      "_comment_csp": "CSP disabled: allows loading remote images from BFL API and flexible LLM endpoint configuration. All network requests are user-initiated. Consider enabling CSP with appropriate allowlist in production.",
       "csp": null,
       "assetProtocol": {
         "enable": true,
+        "_comment_scope": "Wide scope needed for loading processed images from temp directory",
         "scope": ["**"]
       },
       "capabilities": [
         {
           "identifier": "default",
           "windows": ["main"],
+          "_comment_permissions": "Broad filesystem permissions required for: (1) saving OCR results to user-selected locations, (2) writing temp files to system temp dir, (3) auto-saving generated images. User always controls file locations through dialogs or settings.",
           "permissions": [
             "core:default",
             "dialog:default",
