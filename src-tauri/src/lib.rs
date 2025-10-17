@@ -748,7 +748,7 @@ async fn take_screenshot() -> Result<ScreenshotResult, String> {
     }
     
     let path_str = screenshot_path.to_string_lossy().to_string();
-    
+
     // Automatically perform OCR on the screenshot with best practice defaults
     let params = ProcessingParams {
         contrast: 1.3,              // Enhance text/background separation
@@ -762,11 +762,10 @@ async fn take_screenshot() -> Result<ScreenshotResult, String> {
         language: "eng".to_string(),
         correct_skew: true,         // 倾斜校正 (参考Chinese-OCR3)
     };
-    
-    let ocr_result = perform_ocr(path_str.clone(), params).unwrap_or(OcrResult {
-        text: String::new(),
-        processed_image_path: String::new(),
-    });
+
+    // Perform OCR and properly propagate errors instead of silently failing
+    let ocr_result = perform_ocr(path_str.clone(), params)
+        .map_err(|e| format!("Screenshot OCR failed: {}", e))?;
 
     Ok(ScreenshotResult {
         path: path_str,
