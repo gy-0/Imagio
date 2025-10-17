@@ -21,6 +21,60 @@ import type { SortOption } from './components/OverlaySidebar';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import './App.css';
 
+// Optimized session array management utilities
+const sortSessions = (sessions: AppSession[], sortBy: SortOption): AppSession[] => {
+  return [...sessions].sort((a, b) => b[sortBy] - a[sortBy]);
+};
+
+// Insert session maintaining sort order - O(n) instead of O(n log n)
+const insertSessionSorted = (
+  sessions: AppSession[],
+  newSession: AppSession,
+  sortBy: SortOption
+): AppSession[] => {
+  const sortValue = newSession[sortBy];
+  let insertIndex = 0;
+
+  // Find insertion point (sessions are sorted descending)
+  while (insertIndex < sessions.length && sessions[insertIndex][sortBy] > sortValue) {
+    insertIndex++;
+  }
+
+  const result = [...sessions];
+  result.splice(insertIndex, 0, newSession);
+  return result;
+};
+
+// Update session and reposition if needed - avoids full sort
+const updateSessionInPlace = (
+  sessions: AppSession[],
+  sessionId: string,
+  updater: (session: AppSession) => AppSession,
+  sortBy: SortOption
+): AppSession[] => {
+  const index = sessions.findIndex(s => s.id === sessionId);
+  if (index === -1) return sessions;
+
+  const updated = updater(sessions[index]);
+  const newSortValue = updated[sortBy];
+
+  // Check if position needs to change
+  const needsReposition =
+    (index > 0 && sessions[index - 1][sortBy] < newSortValue) ||
+    (index < sessions.length - 1 && sessions[index + 1][sortBy] > newSortValue);
+
+  if (!needsReposition) {
+    // Simple in-place update
+    const result = [...sessions];
+    result[index] = updated;
+    return result;
+  }
+
+  // Remove and reinsert
+  const withoutSession = sessions.filter(s => s.id !== sessionId);
+  return insertSessionSorted(withoutSession, updated, sortBy);
+};
+
 const App = () => {
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [hasPerformedOcr, setHasPerformedOcr] = useState<boolean>(false);
@@ -83,27 +137,19 @@ const App = () => {
 
     // Update the session directly with OCR results
     // Keep the params from the session (including language setting)
-    setSessions(prev => {
-      const next = prev.map(session => {
-        if (session.id !== sessionId) {
-          return session;
-        }
-        return {
-          ...session,
-          updatedAt: Date.now(),
-          ocr: {
-            ...session.ocr,
-            processedImageUrl: details.processedImageUrl,
-            ocrText: details.ocrText,
-            // 清空optimizedText，防止旧内容残留
-            optimizedText: '',
-            textDisplayMode: 'original' as const
-            // params remains from session.ocr.params - no change needed
-          }
-        };
-      });
-      return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
-    });
+    setSessions(prev => updateSessionInPlace(prev, sessionId, session => ({
+      ...session,
+      updatedAt: Date.now(),
+      ocr: {
+        ...session.ocr,
+        processedImageUrl: details.processedImageUrl,
+        ocrText: details.ocrText,
+        // 清空optimizedText，防止旧内容残留
+        optimizedText: '',
+        textDisplayMode: 'original' as const
+        // params remains from session.ocr.params - no change needed
+      }
+    }), sortBy));
 
     // 自动优化：只对当前活动session触发，以确保state正确同步
     if (sessionId === activeSessionId && automationSettings.autoOptimizeOcr && details.ocrText.trim() && !isRestoringSessionRef.current) {
@@ -126,23 +172,20 @@ const App = () => {
   const handleOptimizeComplete = useCallback((details: { imagePath: string; optimizedText: string; }) => {
     // Find the session for this image path
     setSessions(prev => {
-      const next = prev.map(session => {
-        if (session.ocr.imagePath !== details.imagePath) {
-          return session;
+      const session = prev.find(s => s.ocr.imagePath === details.imagePath);
+      if (!session) return prev;
+
+      return updateSessionInPlace(prev, session.id, s => ({
+        ...s,
+        updatedAt: Date.now(),
+        ocr: {
+          ...s.ocr,
+          optimizedText: details.optimizedText,
+          textDisplayMode: 'optimized' as const
         }
-        return {
-          ...session,
-          updatedAt: Date.now(),
-          ocr: {
-            ...session.ocr,
-            optimizedText: details.optimizedText,
-            textDisplayMode: 'optimized' as const
-          }
-        };
-      });
-      return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
+      }), sortBy);
     });
-  }, []);
+  }, [sortBy]);
 
   const handleOcrError = useCallback((details: { imagePath: string; error: string; }) => {
     // Clean up the mapping to prevent memory leak
@@ -257,7 +300,7 @@ const App = () => {
       }
     };
 
-    setSessions(prev => [newSession, ...prev].sort((a, b) => b[sortBy] - a[sortBy]));
+    setSessions(prev => insertSessionSorted(prev, newSession, sortBy));
     setActiveSessionId(sessionId);
     setHasPerformedOcr(false);
 
@@ -283,10 +326,8 @@ const App = () => {
 
   // Re-sort sessions when sortBy changes
   useEffect(() => {
-    setSessions(prev => {
-      return [...prev].sort((a, b) => b[sortBy] - a[sortBy]);
-    });
-  }, [sortBy]);
+    setSessions(prev => sortSessions(prev, sortBy));
+  }, [sortBy, setSessions]);
 
   // Auto-optimize when setting is enabled and OCR text exists without optimization
   // This works in conjunction with handleOcrComplete to support two scenarios:
@@ -328,34 +369,25 @@ const App = () => {
     }
 
     setSessions(prev => {
-      let didUpdate = false;
-      const next = prev.map(session => {
-        if (session.id !== activeSessionId) {
-          return session;
-        }
-        didUpdate = true;
-        return {
-          ...session,
-          updatedAt: Date.now(),
-          ocr: {
-            imagePath,
-            imagePreviewUrl,
-            processedImageUrl,
-            ocrText,
-            optimizedText,
-            textDisplayMode,
-            params
-          }
-        };
-      });
-
-      if (!didUpdate) {
+      if (!prev.find(s => s.id === activeSessionId)) {
         return prev;
       }
 
-      return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
+      return updateSessionInPlace(prev, activeSessionId, session => ({
+        ...session,
+        updatedAt: Date.now(),
+        ocr: {
+          imagePath,
+          imagePreviewUrl,
+          processedImageUrl,
+          ocrText,
+          optimizedText,
+          textDisplayMode,
+          params
+        }
+      }), sortBy);
     });
-  }, [activeSessionId, imagePath, imagePreviewUrl, processedImageUrl, ocrText, optimizedText, textDisplayMode, params, isRestoringSessionRef, isOptimizingText, isSessionsLoading]);
+  }, [activeSessionId, imagePath, imagePreviewUrl, processedImageUrl, ocrText, optimizedText, textDisplayMode, params, isRestoringSessionRef, isOptimizingText, isSessionsLoading, sortBy]);
 
   useEffect(() => {
     if (!activeSessionId || isRestoringSessionRef.current || isSessionsLoading) {
@@ -368,30 +400,21 @@ const App = () => {
     }
 
     setSessions(prev => {
-      let didUpdate = false;
-      const next = prev.map(session => {
-        if (session.id !== activeSessionId) {
-          return session;
-        }
-        didUpdate = true;
-        return {
-          ...session,
-          updatedAt: Date.now(),
-          prompt: {
-            imageStyle,
-            customDescription,
-            optimizedPrompt
-          }
-        };
-      });
-
-      if (!didUpdate) {
+      if (!prev.find(s => s.id === activeSessionId)) {
         return prev;
       }
 
-      return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
+      return updateSessionInPlace(prev, activeSessionId, session => ({
+        ...session,
+        updatedAt: Date.now(),
+        prompt: {
+          imageStyle,
+          customDescription,
+          optimizedPrompt
+        }
+      }), sortBy);
     });
-  }, [activeSessionId, imageStyle, customDescription, optimizedPrompt, isRestoringSessionRef, isOptimizing, isSessionsLoading]);
+  }, [activeSessionId, imageStyle, customDescription, optimizedPrompt, isRestoringSessionRef, isOptimizing, isSessionsLoading, sortBy]);
 
   useEffect(() => {
     if (!activeSessionId || isRestoringSessionRef.current || isSessionsLoading) {
@@ -404,32 +427,23 @@ const App = () => {
     }
 
     setSessions(prev => {
-      let didUpdate = false;
-      const next = prev.map(session => {
-        if (session.id !== activeSessionId) {
-          return session;
-        }
-        didUpdate = true;
-        return {
-          ...session,
-          updatedAt: Date.now(),
-          generation: {
-            aspectRatio,
-            // Don't save the temporary blob URL, only save the remote URL
-            // The blob URL will be recreated when loading the session
-            generatedImageUrl: '',
-            generatedImageRemoteUrl
-          }
-        };
-      });
-
-      if (!didUpdate) {
+      if (!prev.find(s => s.id === activeSessionId)) {
         return prev;
       }
 
-      return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
+      return updateSessionInPlace(prev, activeSessionId, session => ({
+        ...session,
+        updatedAt: Date.now(),
+        generation: {
+          aspectRatio,
+          // Don't save the temporary blob URL, only save the remote URL
+          // The blob URL will be recreated when loading the session
+          generatedImageUrl: '',
+          generatedImageRemoteUrl
+        }
+      }), sortBy);
     });
-  }, [activeSessionId, aspectRatio, generatedImageRemoteUrl, isRestoringSessionRef, isGenerating, isSessionsLoading]);
+  }, [activeSessionId, aspectRatio, generatedImageRemoteUrl, isRestoringSessionRef, isGenerating, isSessionsLoading, sortBy]);
 
   // Track OCR state changes
   const previousOcrText = useRef<string>('');
@@ -609,12 +623,10 @@ const App = () => {
         const hasOcrData = Boolean(session.ocr.ocrText || session.ocr.processedImageUrl);
         setHasPerformedOcr(hasOcrData);
 
-        setSessions(prev => {
-          const next = prev.map(item => item.id === sessionId
-            ? { ...item, updatedAt: Date.now() }
-            : item);
-          return [...next].sort((a, b) => b[sortBy] - a[sortBy]);
-        });
+        setSessions(prev => updateSessionInPlace(prev, sessionId, session => ({
+          ...session,
+          updatedAt: Date.now()
+        }), sortBy));
       } finally {
         // Use setTimeout instead of requestAnimationFrame for more reliable timing
         // Increase delay to ensure all state updates complete
@@ -635,7 +647,8 @@ const App = () => {
     loadPromptSnapshot,
     loadGenerationSnapshot,
     suppressAutoProcessRef,
-    suppressPromptResetRef
+    suppressPromptResetRef,
+    sortBy
   ]);
 
   const handleDeleteSession = useCallback((sessionId: string) => {
