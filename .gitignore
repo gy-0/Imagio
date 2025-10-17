@@ -42,3 +42,4 @@ lerna-debug.log*
 \# Claude Code settings.md
 /.claude
 DESKEW_FEATURE.md
+.claude/settings.local.json
