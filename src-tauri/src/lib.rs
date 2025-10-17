@@ -968,8 +968,16 @@ fn cleanup_old_temp_files() {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-  // Cleanup disabled - user has sufficient disk space and wants to preserve processed images
+  // Temp file cleanup intentionally disabled by user preference
+  // User has confirmed sufficient disk space and prefers to preserve
+  // processed images for debugging/reference purposes.
+  //
+  // To re-enable automatic cleanup, uncomment the following line:
   // cleanup_old_temp_files();
+  //
+  // Note: Processed images are stored in system temp directory with
+  // prefix "imagio_processed_" and "imagio_screenshot_".
+  // Monitor disk usage with: du -sh $TMPDIR/imagio_*
 
   tauri::Builder::default()
     .plugin(tauri_plugin_dialog::init())
