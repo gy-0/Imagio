@@ -216,6 +216,7 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
+			signal: controller.signal,
 		});
 
 		const contentType = response.headers.get('content-type') ?? '';
@@ -399,6 +400,7 @@ export async function callChatCompletionStream(
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
+			signal: controller.signal,
 		});
 
 		if (!response.ok) {
