@@ -939,6 +939,8 @@ async fn copy_image_from_bytes(image_bytes: Vec<u8>) -> Result<(), String> {
 
 /// Clean up old temporary files created by the application
 /// This prevents disk space exhaustion from accumulated temp files
+/// Currently disabled by user preference - see comments in run() function
+#[allow(dead_code)]
 fn cleanup_old_temp_files() {
     use std::time::{SystemTime, Duration};
 
