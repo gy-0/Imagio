@@ -629,8 +629,7 @@ const App = () => {
 
   const toggleAdvanced = () => setShowAdvanced(prev => !prev);
 
-  const shouldShowGeneratedPanel = isGenerating || Boolean(generatedImageUrl);
-  const gridClassName = `main-content-three-column${shouldShowGeneratedPanel ? ' has-generated' : ''}`;
+  const gridClassName = 'main-content-three-column has-generated';
 
   useKeyboardShortcuts({
     onSelectImage: () => { void selectImage(); },
@@ -828,20 +827,18 @@ const App = () => {
                 />
               </div>
 
-              {shouldShowGeneratedPanel && (
-                <div className="generated-panel">
-                  <GeneratedImagePanel
-                    generatedImageUrl={generatedImageUrl}
-                    isGenerating={isGenerating}
-                    generationStatus={generationStatus}
-                    onSaveGeneratedImage={() => saveGeneratedImage()}
-                    onCopyGeneratedImage={() => copyGeneratedImageToClipboard()}
-                    onCopyGeneratedImageUrl={() => copyGeneratedImageUrl()}
-                    onClearGeneratedImage={clearGeneratedImage}
-                    hasRemoteImageUrl={Boolean(generatedImageRemoteUrl)}
-                  />
-                </div>
-              )}
+              <div className="generated-panel">
+                <GeneratedImagePanel
+                  generatedImageUrl={generatedImageUrl}
+                  isGenerating={isGenerating}
+                  generationStatus={generationStatus}
+                  onSaveGeneratedImage={() => saveGeneratedImage()}
+                  onCopyGeneratedImage={() => copyGeneratedImageToClipboard()}
+                  onCopyGeneratedImageUrl={() => copyGeneratedImageUrl()}
+                  onClearGeneratedImage={clearGeneratedImage}
+                  hasRemoteImageUrl={Boolean(generatedImageRemoteUrl)}
+                />
+              </div>
             </>
           )}
         </div>

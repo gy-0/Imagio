@@ -21,10 +21,7 @@ export const GeneratedImagePanel: FC<GeneratedImagePanelProps> = ({
   onClearGeneratedImage,
   hasRemoteImageUrl
 }) => {
-  // Don't show panel if no image and not generating
-  if (!generatedImageUrl && !isGenerating) {
-    return null;
-  }
+  // Always show the panel (no early return)
 
   // Determine if we should show the status message
   const showStatus = isGenerating || (generationStatus && !generationStatus.startsWith('Auto-saved'));
