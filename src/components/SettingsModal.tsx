@@ -1,5 +1,7 @@
-import { type FC, type ChangeEvent, useState } from 'react';
-import type { LLMSettings } from '../features/promptOptimization/types';
+import { type FC, type ChangeEvent, useState, useMemo } from 'react';
+import type { LLMSettings, ImageGenModel } from '../features/promptOptimization/types';
+import { IMAGE_GEN_MODELS, getModelProvider } from '../features/promptOptimization/modelConfig';
+import { Select } from './Select';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -8,6 +10,12 @@ interface SettingsModalProps {
   onLLMSettingChange: <K extends keyof LLMSettings>(key: K, value: LLMSettings[K]) => void;
   bflApiKey: string;
   onBflApiKeyChange: (value: string) => void;
+  geminiApiKey: string;
+  onGeminiApiKeyChange: (value: string) => void;
+  bltcyApiKey: string;
+  onBltcyApiKeyChange: (value: string) => void;
+  selectedModel: ImageGenModel;
+  onSelectedModelChange: (value: ImageGenModel) => void;
 }
 
 export const SettingsModal: FC<SettingsModalProps> = ({
@@ -16,10 +24,21 @@ export const SettingsModal: FC<SettingsModalProps> = ({
   llmSettings,
   onLLMSettingChange,
   bflApiKey,
-  onBflApiKeyChange
+  onBflApiKeyChange,
+  geminiApiKey,
+  onGeminiApiKeyChange,
+  bltcyApiKey,
+  onBltcyApiKeyChange,
+  selectedModel,
+  onSelectedModelChange
 }) => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [showBflApiKey, setShowBflApiKey] = useState(false);
+  const [showGeminiApiKey, setShowGeminiApiKey] = useState(false);
+  const [showBltcyApiKey, setShowBltcyApiKey] = useState(false);
+
+  // Determine which provider is needed based on selected model
+  const modelProvider = useMemo(() => getModelProvider(selectedModel), [selectedModel]);
 
   if (!isOpen) {
     return null;
@@ -112,35 +131,121 @@ export const SettingsModal: FC<SettingsModalProps> = ({
 
           <div className="settings-field">
             <label>
-              BFL API Key (for image generation)
-              <div className="password-input-wrapper">
-                <input
-                  type={showBflApiKey ? "text" : "password"}
-                  value={bflApiKey}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => onBflApiKeyChange(event.target.value)}
-                  placeholder="Enter BFL API key"
-                />
-                <button
-                  type="button"
-                  className="password-toggle-btn"
-                  onClick={() => setShowBflApiKey(!showBflApiKey)}
-                  aria-label={showBflApiKey ? "Hide BFL API key" : "Show BFL API key"}
-                >
-                  {showBflApiKey ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                      <line x1="1" y1="1" x2="23" y2="23"></line>
-                    </svg>
-                  ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                  )}
-                </button>
-              </div>
+              Image Generation Model
+              <Select
+                value={selectedModel}
+                onChange={(value) => onSelectedModelChange(value as ImageGenModel)}
+              >
+                {IMAGE_GEN_MODELS.map(model => (
+                  <option key={model.id} value={model.id}>
+                    {model.displayName}
+                  </option>
+                ))}
+              </Select>
             </label>
           </div>
+
+          {modelProvider === 'bltcy' && (
+            <div className="settings-field">
+              <label>
+                BLTCY API Key
+                <div className="password-input-wrapper">
+                  <input
+                    type={showBltcyApiKey ? "text" : "password"}
+                    value={bltcyApiKey}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => onBltcyApiKeyChange(event.target.value)}
+                    placeholder="Enter BLTCY API key"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowBltcyApiKey(!showBltcyApiKey)}
+                    aria-label={showBltcyApiKey ? "Hide BLTCY API key" : "Show BLTCY API key"}
+                  >
+                    {showBltcyApiKey ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </label>
+            </div>
+          )}
+
+          {modelProvider === 'bfl' && (
+            <div className="settings-field">
+              <label>
+                FLUX API Key (BFL)
+                <div className="password-input-wrapper">
+                  <input
+                    type={showBflApiKey ? "text" : "password"}
+                    value={bflApiKey}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => onBflApiKeyChange(event.target.value)}
+                    placeholder="Enter BFL API key"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowBflApiKey(!showBflApiKey)}
+                    aria-label={showBflApiKey ? "Hide BFL API key" : "Show BFL API key"}
+                  >
+                    {showBflApiKey ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </label>
+            </div>
+          )}
+
+          {modelProvider === 'gemini' && (
+            <div className="settings-field">
+              <label>
+                Gemini API Key (Google)
+                <div className="password-input-wrapper">
+                  <input
+                    type={showGeminiApiKey ? "text" : "password"}
+                    value={geminiApiKey}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => onGeminiApiKeyChange(event.target.value)}
+                    placeholder="Enter Gemini API key"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowGeminiApiKey(!showGeminiApiKey)}
+                    aria-label={showGeminiApiKey ? "Hide Gemini API key" : "Show Gemini API key"}
+                  >
+                    {showGeminiApiKey ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </label>
+            </div>
+          )}
         </div>
 
         <div className="settings-modal-footer">

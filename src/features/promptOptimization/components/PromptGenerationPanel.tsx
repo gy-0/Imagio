@@ -75,10 +75,13 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
               <option value="21:9">21:9 (Ultrawide)</option>
               <option value="16:9">16:9 (Widescreen)</option>
               <option value="4:3">4:3 (Standard)</option>
+              <option value="5:4">5:4</option>
               <option value="1:1">1:1 (Square)</option>
+              <option value="4:5">4:5</option>
               <option value="3:4">3:4 (Portrait)</option>
+              <option value="3:2">3:2</option>
+              <option value="2:3">2:3</option>
               <option value="9:16">9:16 (Mobile)</option>
-              <option value="9:21">9:21 (Tall)</option>
             </Select>
           </label>
         </div>

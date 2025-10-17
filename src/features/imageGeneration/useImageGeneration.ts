@@ -4,10 +4,17 @@ import { writeFile, mkdir, exists } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
 import { join } from '@tauri-apps/api/path';
 import { downloadImageAsBlob, ImageGenerationClient, ImageGenerationError } from '../../utils/imageGenClient';
+import { GeminiImageClient } from '../../utils/geminiImageClient';
+import { BltcyImageClient } from '../../utils/bltcyImageClient';
 import { detectImageFormat, generateImageFilename } from '../../utils/imageFormat';
+import { getModelProvider, getModelDisplayName, getApiModelName } from '../promptOptimization/modelConfig';
+import type { ImageGenModel } from '../promptOptimization/types';
 
 interface UseImageGenerationOptions {
   bflApiKey: string;
+  geminiApiKey: string;
+  bltcyApiKey: string;
+  selectedModel: ImageGenModel;
 }
 
 export interface ImageGenerationSessionSnapshot {
@@ -16,7 +23,7 @@ export interface ImageGenerationSessionSnapshot {
   generatedImageRemoteUrl: string;
 }
 
-export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => {
+export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selectedModel }: UseImageGenerationOptions) => {
   const [aspectRatio, setAspectRatio] = useState<string>('9:16');
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('');
   const [generatedImageBlob, setGeneratedImageBlob] = useState<Blob | null>(null);
@@ -89,8 +96,21 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
       return;
     }
 
-    if (!bflApiKey.trim()) {
-      setGenerationError('Please configure BFL API Key (set bflApiKey in config.local.json).');
+    // Validate API key based on selected model provider
+    const provider = getModelProvider(selectedModel);
+
+    if (provider === 'bfl' && !bflApiKey.trim()) {
+      setGenerationError('Please configure FLUX API Key (BFL) in settings.');
+      return;
+    }
+
+    if (provider === 'gemini' && !geminiApiKey.trim()) {
+      setGenerationError('Please configure Gemini API Key in settings.');
+      return;
+    }
+
+    if (provider === 'bltcy' && !bltcyApiKey.trim()) {
+      setGenerationError('Please configure BLTCY API Key in settings.');
       return;
     }
 
@@ -108,17 +128,54 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
     setGeneratedImageBlob(null);
 
     try {
-      const client = new ImageGenerationClient(bflApiKey);
+      let blob: Blob;
+      let objectUrl: string;
 
-      setGenerationStatus('Creating generation request...');
-      const imageUrl = await client.generateImage({
-        prompt,
-        aspectRatio: aspectRatio || undefined
-      });
+      const provider = getModelProvider(selectedModel);
+      const modelDisplayName = getModelDisplayName(selectedModel);
 
-      setGeneratedImageRemoteUrl(imageUrl);
-      setGenerationStatus('Downloading image...');
-      const { blob, objectUrl } = await downloadImageAsBlob(imageUrl);
+      if (provider === 'bfl') {
+        // FLUX generation flow (BFL official)
+        const client = new ImageGenerationClient(bflApiKey);
+
+        setGenerationStatus('Creating generation request...');
+        const imageUrl = await client.generateImage({
+          prompt,
+          aspectRatio: aspectRatio || undefined
+        });
+
+        setGeneratedImageRemoteUrl(imageUrl);
+        setGenerationStatus('Downloading image...');
+        const result = await downloadImageAsBlob(imageUrl);
+        blob = result.blob;
+        objectUrl = result.objectUrl;
+      } else if (provider === 'gemini') {
+        // Gemini generation flow (official Nano Banana)
+        const client = new GeminiImageClient(geminiApiKey);
+
+        setGenerationStatus(`Generating with ${modelDisplayName}...`);
+        const result = await client.generateImage({
+          prompt,
+          aspectRatio: aspectRatio || undefined
+        });
+        blob = result.blob;
+        objectUrl = result.objectUrl;
+        // Gemini doesn't provide a remote URL, image is generated inline
+      } else {
+        // BLTCY generation flow (proxy provider)
+        const client = new BltcyImageClient(bltcyApiKey);
+        const apiModel = getApiModelName(selectedModel);
+
+        setGenerationStatus(`Generating with ${modelDisplayName}...`);
+        const result = await client.generateImage({
+          prompt,
+          model: apiModel as any,
+          aspectRatio: aspectRatio || undefined
+        });
+        blob = result.blob;
+        objectUrl = result.objectUrl;
+        // BLTCY doesn't provide a remote URL, image is generated inline
+      }
 
       setGeneratedImageBlob(blob);
       // Track blob URL immediately before setting state to prevent timing issues
@@ -140,7 +197,7 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
     } finally {
       setIsGenerating(false);
     }
-  }, [aspectRatio, bflApiKey, isGenerating]);
+  }, [aspectRatio, bflApiKey, geminiApiKey, bltcyApiKey, selectedModel, isGenerating]);
 
   const saveGeneratedImage = useCallback(async () => {
     console.log('[saveGeneratedImage] Called', {

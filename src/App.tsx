@@ -100,7 +100,13 @@ const App = () => {
     llmSettings,
     updateLLMSetting,
     bflApiKey,
-    setBflApiKey
+    setBflApiKey,
+    geminiApiKey,
+    setGeminiApiKey,
+    bltcyApiKey,
+    setBltcyApiKey,
+    selectedModel,
+    setSelectedModel
   } = useApplicationConfig();
   const {
     settings: automationSettings,
@@ -122,7 +128,7 @@ const App = () => {
     clearGeneratedImage,
     saveGeneratedImageToDirectory,
     loadSessionSnapshot: loadGenerationSnapshot
-  } = useImageGeneration({ bflApiKey });
+  } = useImageGeneration({ bflApiKey, geminiApiKey, bltcyApiKey, selectedModel });
 
   // Cleanup stale mapping entries
   const cleanupStaleMappings = useCallback(() => {
@@ -758,6 +764,12 @@ const App = () => {
         onLLMSettingChange={updateLLMSetting}
         bflApiKey={bflApiKey}
         onBflApiKeyChange={setBflApiKey}
+        geminiApiKey={geminiApiKey}
+        onGeminiApiKeyChange={setGeminiApiKey}
+        bltcyApiKey={bltcyApiKey}
+        onBltcyApiKeyChange={setBltcyApiKey}
+        selectedModel={selectedModel}
+        onSelectedModelChange={setSelectedModel}
       />
 
       <Toolbar

@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_LLM_SETTINGS } from '../features/promptOptimization/constants';
-import type { LLMSettings, LocalConfig } from '../features/promptOptimization/types';
+import type { LLMSettings, LocalConfig, ImageGenModel } from '../features/promptOptimization/types';
 
 type UpdateLLMSetting<T extends keyof LLMSettings> = (key: T, value: LLMSettings[T]) => void;
 
 export const useApplicationConfig = () => {
   const [llmSettings, setLLMSettings] = useState<LLMSettings>(DEFAULT_LLM_SETTINGS);
   const [bflApiKey, setBflApiKey] = useState<string>('');
+  const [geminiApiKey, setGeminiApiKey] = useState<string>('');
+  const [bltcyApiKey, setBltcyApiKey] = useState<string>('');
+  const [selectedModel, setSelectedModel] = useState<ImageGenModel>('flux');
   const [configError, setConfigError] = useState<string>('');
   const [isConfigLoading, setIsConfigLoading] = useState<boolean>(true);
 
@@ -59,6 +62,18 @@ export const useApplicationConfig = () => {
         if (parsed.bflApiKey) {
           setBflApiKey(parsed.bflApiKey);
         }
+
+        if (parsed.geminiApiKey) {
+          setGeminiApiKey(parsed.geminiApiKey);
+        }
+
+        if (parsed.bltcyApiKey) {
+          setBltcyApiKey(parsed.bltcyApiKey);
+        }
+
+        if (parsed.selectedModel) {
+          setSelectedModel(parsed.selectedModel);
+        }
       } catch (error) {
         console.error('Error loading local config:', error);
         if (error instanceof Error) {
@@ -87,6 +102,12 @@ export const useApplicationConfig = () => {
     updateLLMSetting,
     bflApiKey,
     setBflApiKey,
+    geminiApiKey,
+    setGeminiApiKey,
+    bltcyApiKey,
+    setBltcyApiKey,
+    selectedModel,
+    setSelectedModel,
     configError,
     isConfigLoading
   };
