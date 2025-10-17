@@ -456,34 +456,53 @@ export async function callChatCompletionStream(
 
 				for (const line of lines) {
 					const trimmed = line.trim();
-					
+
 					if (!trimmed || trimmed.startsWith(':')) {
-						// Skip empty lines and comments
+						// Skip empty lines and comments (standard SSE behavior)
 						continue;
 					}
 
-					if (trimmed === 'data: [DONE]') {
+					if (trimmed === 'data: [DONE]' || trimmed === 'data:[DONE]') {
 						onChunk({ content: '', isDone: true });
 						return;
 					}
 
-					if (trimmed.startsWith('data: ')) {
-						const jsonStr = trimmed.slice(6); // Remove 'data: ' prefix
-						
+					// More flexible data prefix detection (handles "data:" and "data: ")
+					const dataMatch = trimmed.match(/^data:\s*(.+)$/);
+					if (dataMatch) {
+						const jsonStr = dataMatch[1];
+
+						if (!jsonStr || jsonStr === '[DONE]') {
+							// Handle edge case: "data: " followed by [DONE] without space
+							onChunk({ content: '', isDone: true });
+							return;
+						}
+
 						try {
 							const parsed = JSON.parse(jsonStr);
-							
+
 							// Extract content from the delta
 							const delta = parsed?.choices?.[0]?.delta;
 							const content = delta?.content || '';
-							
+
 							if (content) {
 								onChunk({ content, isDone: false });
 							}
+							// Note: empty content is valid (can occur at stream end)
 						} catch (error) {
-							console.warn('Failed to parse SSE JSON:', jsonStr, error);
+							// Distinguish between malformed JSON and empty chunks
+							if (jsonStr.trim().length > 0) {
+								console.error('Failed to parse SSE JSON chunk:', {
+									line: trimmed,
+									jsonStr,
+									error: error instanceof Error ? error.message : String(error)
+								});
+							}
 							// Continue processing other chunks
 						}
+					} else if (trimmed.length > 0) {
+						// Non-empty line that doesn't match expected format
+						console.warn('Unexpected SSE line format:', trimmed);
 					}
 				}
 			}
