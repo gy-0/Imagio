@@ -4,6 +4,7 @@ import { writeFile, mkdir, exists } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
 import { join } from '@tauri-apps/api/path';
 import { downloadImageAsBlob, ImageGenerationClient, ImageGenerationError } from '../../utils/imageGenClient';
+import { detectImageFormat, generateImageFilename } from '../../utils/imageFormat';
 
 interface UseImageGenerationOptions {
   bflApiKey: string;
@@ -167,37 +168,16 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
       const arrayBuffer = await blobCandidate.arrayBuffer();
 
       // Detect actual image format from blob type and magic bytes
-      const mimeType = blobCandidate.type;
       const bytes = new Uint8Array(arrayBuffer);
+      const extension = detectImageFormat(bytes, blobCandidate.type);
 
-      // Check magic bytes to detect actual format
-      let extension = 'png';
-      if (bytes.length > 3) {
-        // JPEG magic bytes: FF D8 FF
-        if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
-          extension = 'jpg';
-        }
-        // PNG magic bytes: 89 50 4E 47
-        else if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
-          extension = 'png';
-        }
-        // WebP magic bytes: RIFF ... WEBP
-        else if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
-                 bytes.length > 11 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
-          extension = 'webp';
-        }
-        // Fallback to MIME type if magic bytes don't match
-        else if (mimeType) {
-          if (mimeType.includes('jpeg') || mimeType.includes('jpg')) {
-            extension = 'jpg';
-          } else if (mimeType.includes('webp')) {
-            extension = 'webp';
-          }
-        }
-      }
-      console.log('[saveGeneratedImage] Detected image format:', { mimeType, extension, firstBytes: Array.from(bytes.slice(0, 12)).map(b => b.toString(16).padStart(2, '0')).join(' ') });
+      console.log('[saveGeneratedImage] Detected image format:', {
+        mimeType: blobCandidate.type,
+        extension,
+        firstBytes: Array.from(bytes.slice(0, 12)).map(b => b.toString(16).padStart(2, '0')).join(' ')
+      });
 
-      const defaultFileName = `imagio-${new Date().toISOString().replace(/[:.]/g, '-')}.${extension}`;
+      const defaultFileName = generateImageFilename(extension);
       const filePath = await save({
         filters: [{
           name: 'Images',
@@ -307,38 +287,11 @@ export const useImageGeneration = ({ bflApiKey }: UseImageGenerationOptions) => 
       }
 
       const arrayBuffer = await blobCandidate.arrayBuffer();
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
       // Detect actual image format from blob type and magic bytes
-      const mimeType = blobCandidate.type;
       const bytes = new Uint8Array(arrayBuffer);
-
-      // Check magic bytes to detect actual format
-      let extension = 'png';
-      if (bytes.length > 3) {
-        // JPEG magic bytes: FF D8 FF
-        if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
-          extension = 'jpg';
-        }
-        // PNG magic bytes: 89 50 4E 47
-        else if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
-          extension = 'png';
-        }
-        // WebP magic bytes: RIFF ... WEBP
-        else if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
-                 bytes.length > 11 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
-          extension = 'webp';
-        }
-        // Fallback to MIME type if magic bytes don't match
-        else if (mimeType) {
-          if (mimeType.includes('jpeg') || mimeType.includes('jpg')) {
-            extension = 'jpg';
-          } else if (mimeType.includes('webp')) {
-            extension = 'webp';
-          }
-        }
-      }
-      const fileName = `imagio-${timestamp}.${extension}`;
+      const extension = detectImageFormat(bytes, blobCandidate.type);
+      const fileName = generateImageFilename(extension);
 
       const directoryExists = await exists(directoryPath);
       if (!directoryExists) {
