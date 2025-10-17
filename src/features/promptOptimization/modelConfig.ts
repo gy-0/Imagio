@@ -14,8 +14,9 @@ export interface ModelInfo {
 
 export const IMAGE_GEN_MODELS: ModelInfo[] = [
   // BLTCY models (no provider suffix in display)
-  // Note: 'flux' uses BFL proxy API format, others use Chat Completions format
-  { id: 'flux', displayName: 'FLUX', provider: 'bltcy', apiModel: 'flux-pro-1.1-ultra' },
+  // Note: flux-dev and flux-pro use BFL proxy format (supports aspect_ratio)
+  { id: 'flux-dev', displayName: 'FLUX-DEV', provider: 'bltcy', apiModel: 'flux-dev' },
+  { id: 'flux-pro', displayName: 'FLUX-Pro', provider: 'bltcy', apiModel: 'flux-pro' },
   { id: 'nano-banana', displayName: 'Nano Banana🍌', provider: 'bltcy', apiModel: 'nano-banana' },
   { id: 'nano-banana-hd', displayName: 'Nano Banana HD🍌', provider: 'bltcy', apiModel: 'nano-banana-hd' },
   { id: 'dall-e-3', displayName: 'DALL-E 3', provider: 'bltcy', apiModel: 'dall-e-3' },

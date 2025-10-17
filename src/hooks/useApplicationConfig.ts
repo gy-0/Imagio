@@ -9,7 +9,7 @@ export const useApplicationConfig = () => {
   const [bflApiKey, setBflApiKey] = useState<string>('');
   const [geminiApiKey, setGeminiApiKey] = useState<string>('');
   const [bltcyApiKey, setBltcyApiKey] = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<ImageGenModel>('flux');
+  const [selectedModel, setSelectedModel] = useState<ImageGenModel>('flux-dev');
   const [configError, setConfigError] = useState<string>('');
   const [isConfigLoading, setIsConfigLoading] = useState<boolean>(true);
 

@@ -8,7 +8,8 @@ export interface LLMSettings {
 // Unified image generation model type
 export type ImageGenModel =
   // BLTCY models (no provider suffix)
-  | 'flux'
+  | 'flux-dev'
+  | 'flux-pro'
   | 'nano-banana'
   | 'nano-banana-hd'
   | 'dall-e-3'

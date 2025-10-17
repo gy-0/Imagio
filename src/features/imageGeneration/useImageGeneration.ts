@@ -6,6 +6,7 @@ import { join } from '@tauri-apps/api/path';
 import { downloadImageAsBlob, ImageGenerationClient, ImageGenerationError } from '../../utils/imageGenClient';
 import { GeminiImageClient } from '../../utils/geminiImageClient';
 import { BltcyImageClient } from '../../utils/bltcyImageClient';
+import { SeedreamImageClient } from '../../utils/seedreamImageClient';
 import { detectImageFormat, generateImageFilename } from '../../utils/imageFormat';
 import { getModelProvider, getModelDisplayName, getApiModelName } from '../promptOptimization/modelConfig';
 import type { ImageGenModel } from '../promptOptimization/types';
@@ -161,6 +162,28 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
         blob = result.blob;
         objectUrl = result.objectUrl;
         // Gemini doesn't provide a remote URL, image is generated inline
+      } else if (selectedModel === 'doubao-seedream-4-0') {
+        // 即梦4 (Seedream 4) - Use specialized client with advanced features
+        const client = new SeedreamImageClient(bltcyApiKey);
+
+        setGenerationStatus(`Generating with ${modelDisplayName}...`);
+        const result = await client.generateImage(
+          {
+            prompt,
+            aspectRatio: aspectRatio || undefined,
+            count: 1, // Single image by default
+            watermark: true,
+            size: '2K' // Use 2K resolution by default for best quality
+          },
+          (message) => {
+            setGenerationStatus(message);
+          }
+        );
+
+        // Use the first image (in case batch generation is added later)
+        blob = result.blobs[0];
+        objectUrl = result.objectUrls[0];
+        console.log('[useImageGeneration] Seedream 4 generation completed, tokens:', result.totalTokens);
       } else {
         // BLTCY generation flow (proxy provider)
         const client = new BltcyImageClient(bltcyApiKey);

@@ -73,15 +73,20 @@ export class BltcyImageClient {
    * Determine which API format to use based on model
    */
   private getApiFormat(model: string): 'bfl-proxy' | 'dalle' | 'chat' {
-    // BFL proxy format for FLUX models
-    if (model.startsWith('flux-pro') || model === 'flux-pro-1.1-ultra') {
+    // BFL proxy format for FLUX Pro/Dev models only
+    // BLTCY's BFL proxy supports: flux-kontext-pro, flux-kontext-max,
+    // flux-pro-1.1-ultra, flux-pro-1.1, flux-pro, flux-dev
+    // Note: 'flux' (without suffix) is NOT supported by BFL proxy
+    if (model === 'flux-kontext-pro' || model === 'flux-kontext-max' ||
+        model === 'flux-pro-1.1-ultra' || model === 'flux-pro-1.1' ||
+        model === 'flux-pro' || model === 'flux-dev') {
       return 'bfl-proxy';
     }
     // DALL-E format for nano-banana models
     if (model === 'nano-banana' || model === 'nano-banana-hd') {
       return 'dalle';
     }
-    // Chat Completions format for everything else
+    // Chat Completions format for everything else (including 'flux')
     return 'chat';
   }
 
@@ -105,8 +110,28 @@ export class BltcyImageClient {
   }
 
   /**
+   * Convert aspect ratio string to width/height dimensions
+   * BFL API requires explicit width/height instead of aspect_ratio
+   */
+  private aspectRatioToWidthHeight(aspectRatio: string): { width: number; height: number } {
+    const ratioMap: Record<string, { width: number; height: number }> = {
+      '1:1': { width: 1024, height: 1024 },
+      '16:9': { width: 1344, height: 768 },
+      '9:16': { width: 768, height: 1344 },
+      '21:9': { width: 1536, height: 640 },
+      '9:21': { width: 640, height: 1536 },
+      '4:3': { width: 1152, height: 896 },
+      '3:4': { width: 896, height: 1152 },
+      '3:2': { width: 1216, height: 832 },
+      '2:3': { width: 832, height: 1216 }
+    };
+
+    return ratioMap[aspectRatio] || { width: 1024, height: 1024 };
+  }
+
+  /**
    * Generate image using BFL proxy API (compatible with BFL official API)
-   * Used for FLUX models with aspect_ratio support
+   * Used for FLUX models with width/height support
    */
   private async generateImageBflProxy(
     prompt: string,
@@ -116,17 +141,23 @@ export class BltcyImageClient {
     try {
       console.log('[BltcyImageClient] Creating BFL proxy request:', { prompt, model, aspectRatio });
 
+      // Convert aspect ratio to width/height
+      const dimensions = aspectRatio
+        ? this.aspectRatioToWidthHeight(aspectRatio)
+        : { width: 1024, height: 1024 };
+
       // Step 1: Create generation request
       const requestBody: any = {
         prompt,
-        output_format: 'jpeg',
-        safety_tolerance: 2
+        width: dimensions.width,
+        height: dimensions.height,
+        steps: 28,
+        prompt_upsampling: false,
+        seed: Math.floor(Math.random() * 1000000),
+        guidance: 3.5,
+        safety_tolerance: 2,
+        output_format: 'jpeg'
       };
-
-      // Add aspect_ratio if provided
-      if (aspectRatio) {
-        requestBody.aspect_ratio = aspectRatio;
-      }
 
       console.log('[BltcyImageClient] BFL request body:', JSON.stringify(requestBody, null, 2));
 
