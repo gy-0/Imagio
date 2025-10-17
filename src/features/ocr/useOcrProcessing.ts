@@ -10,6 +10,7 @@ interface UseOcrProcessingOptions {
   onTextChange?: (text: string) => void;
   onNewImage?: (details: { path: string; previewUrl: string; source: 'file' | 'drop' | 'screenshot'; }) => string;
   onOcrComplete?: (details: { imagePath: string; ocrText: string; processedImageUrl: string; }) => void;
+  onOcrError?: (details: { imagePath: string; error: string; }) => void;
   onOptimizeComplete?: (details: { imagePath: string; optimizedText: string; }) => void;
   llmSettings?: LLMSettings;
   suppressAutoProcessRef?: MutableRefObject<boolean>;
@@ -45,7 +46,7 @@ const reflowOcrText = (text: string): string => {
 };
 
 export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
-  const { onTextChange, onNewImage, onOcrComplete, onOptimizeComplete, llmSettings, suppressAutoProcessRef } = options;
+  const { onTextChange, onNewImage, onOcrComplete, onOcrError, onOptimizeComplete, llmSettings, suppressAutoProcessRef } = options;
 
   const [imagePath, setImagePath] = useState<string>('');
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
@@ -183,13 +184,19 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
       const message = error instanceof Error ? error.message : String(error);
       setOcrText(`Error: ${message}`);
       onTextChange?.(`Error: ${message}`);
+
+      // Notify error to allow cleanup of resources (e.g., imagePathToSessionIdRef)
+      onOcrError?.({
+        imagePath: path,
+        error: message
+      });
     } finally {
       setTimeout(() => {
         setIsProcessing(false);
         setProcessingStatus('');
       }, 500);
     }
-  }, [onTextChange, onOcrComplete, params]);
+  }, [onTextChange, onOcrComplete, onOcrError, params]);
 
   const processImageAtPath = useCallback(async (path: string, source: 'file' | 'drop' | 'screenshot' = 'file') => {
     setImagePath(path);

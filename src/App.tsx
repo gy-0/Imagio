@@ -198,6 +198,12 @@ const App = () => {
     });
   }, []);
 
+  const handleOcrError = useCallback((details: { imagePath: string; error: string; }) => {
+    // Clean up the mapping to prevent memory leak
+    imagePathToSessionIdRef.current.delete(details.imagePath);
+    console.error('OCR processing failed:', details.error, 'for image:', details.imagePath);
+  }, []);
+
   const {
     imagePath,
     imagePreviewUrl,
@@ -229,6 +235,7 @@ const App = () => {
       return onNewImageHandlerRef.current?.(details) ?? '';
     },
     onOcrComplete: handleOcrComplete,
+    onOcrError: handleOcrError,
     onOptimizeComplete: handleOptimizeComplete
   });
 
