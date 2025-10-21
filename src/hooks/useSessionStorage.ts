@@ -81,7 +81,8 @@ export const useSessionStorage = (): UseSessionStorageResult => {
           generation: {
             ...session.generation,
             // Don't persist local blob URLs, only remote URLs
-            generatedImageUrl: ''
+            generatedImageUrl: '',
+            generatedImageLocalPath: session.generation.generatedImageLocalPath || ''
           }
         }));
 

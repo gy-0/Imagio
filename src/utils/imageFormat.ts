@@ -69,3 +69,20 @@ export function generateImageFilename(format: ImageFormat, prefix: string = 'ima
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   return `${prefix}-${timestamp}.${format}`;
 }
+
+/**
+ * Map an image format to the corresponding MIME type.
+ * @param format - The image format extension
+ * @returns The MIME type string
+ */
+export function formatToMimeType(format: ImageFormat): string {
+  switch (format) {
+    case 'jpg':
+      return 'image/jpeg';
+    case 'webp':
+      return 'image/webp';
+    case 'png':
+    default:
+      return 'image/png';
+  }
+}

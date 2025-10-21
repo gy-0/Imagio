@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { save } from '@tauri-apps/plugin-dialog';
-import { writeFile, mkdir, exists } from '@tauri-apps/plugin-fs';
+import { writeFile, mkdir, exists, readFile, remove } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
-import { join } from '@tauri-apps/api/path';
+import { join, appLocalDataDir } from '@tauri-apps/api/path';
 import { downloadImageAsBlob, ImageGenerationClient, ImageGenerationError } from '../../utils/imageGenClient';
 import { GeminiImageClient } from '../../utils/geminiImageClient';
 import { BltcyImageClient } from '../../utils/bltcyImageClient';
 import { SeedreamImageClient } from '../../utils/seedreamImageClient';
-import { detectImageFormat, generateImageFilename } from '../../utils/imageFormat';
+import { detectImageFormat, formatToMimeType, generateImageFilename } from '../../utils/imageFormat';
 import { getModelProvider, getModelDisplayName, getApiModelName } from '../promptOptimization/modelConfig';
 import type { ImageGenModel } from '../promptOptimization/types';
 
@@ -22,13 +22,17 @@ export interface ImageGenerationSessionSnapshot {
   aspectRatio: string;
   generatedImageUrl: string;
   generatedImageRemoteUrl: string;
+  generatedImageLocalPath: string;
 }
+
+const LOCAL_IMAGE_DIR_NAME = 'generated-images';
 
 export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selectedModel }: UseImageGenerationOptions) => {
   const [aspectRatio, setAspectRatio] = useState<string>('9:16');
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('');
   const [generatedImageBlob, setGeneratedImageBlob] = useState<Blob | null>(null);
   const [generatedImageRemoteUrl, setGeneratedImageRemoteUrl] = useState<string>('');
+  const [generatedImageLocalPath, setGeneratedImageLocalPath] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generationStatus, setGenerationStatus] = useState<string>('');
   const [generationError, setGenerationError] = useState<string>('');
@@ -37,6 +41,64 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
   const blobUrlsRef = useRef<Set<string>>(new Set());
   // Track timeout for auto-clearing status messages
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const ensureLocalImageDirectory = useCallback(async (): Promise<string> => {
+    const appDir = await appLocalDataDir();
+    const imagesDir = await join(appDir, LOCAL_IMAGE_DIR_NAME);
+
+    try {
+      const directoryExists = await exists(imagesDir);
+      if (!directoryExists) {
+        await mkdir(imagesDir, { recursive: true });
+      }
+    } catch (error) {
+      console.error('Failed to ensure local generated image directory:', error);
+      throw error;
+    }
+
+    return imagesDir;
+  }, []);
+
+  const deleteLocalImageFile = useCallback(async (filePath: string) => {
+    if (!filePath) {
+      return;
+    }
+
+    try {
+      const fileExists = await exists(filePath);
+      if (fileExists) {
+        await remove(filePath);
+      }
+    } catch (error) {
+      console.warn('Failed to delete local generated image file:', filePath, error);
+    }
+  }, []);
+
+  const persistGeneratedImageBlob = useCallback(async (blob: Blob): Promise<string> => {
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      const format = detectImageFormat(bytes, blob.type);
+      const directory = await ensureLocalImageDirectory();
+      const fileName = generateImageFilename(format, 'imagio-generated');
+      const filePath = await join(directory, fileName);
+
+      await writeFile(filePath, bytes);
+      return filePath;
+    } catch (error) {
+      console.error('Failed to persist generated image locally:', error);
+      return '';
+    }
+  }, [ensureLocalImageDirectory]);
+
+  const loadLocalImageAsBlob = useCallback(async (filePath: string): Promise<{ blob: Blob; objectUrl: string }> => {
+    const bytes = await readFile(filePath);
+    const format = detectImageFormat(bytes);
+    const mimeType = formatToMimeType(format);
+    const blob = new Blob([bytes], { type: mimeType });
+    const objectUrl = URL.createObjectURL(blob);
+    return { blob, objectUrl };
+  }, []);
 
   // Helper function to set status with auto-clear for success messages
   const setStatusWithAutoClear = useCallback((message: string) => {
@@ -73,6 +135,8 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
     setGenerationError('');
     setGeneratedImageRemoteUrl('');
     setGeneratedImageBlob(null);
+    void deleteLocalImageFile(generatedImageLocalPath);
+    setGeneratedImageLocalPath('');
     setGeneratedImageUrl(prev => {
       if (prev) {
         URL.revokeObjectURL(prev);
@@ -80,7 +144,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
       }
       return '';
     });
-  }, []);
+  }, [deleteLocalImageFile, generatedImageLocalPath]);
 
   const generateImage = useCallback(async (prompt: string) => {
     // Prevent duplicate generation if already generating
@@ -129,6 +193,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
     setGeneratedImageBlob(null);
 
     try {
+      const previousLocalPath = generatedImageLocalPath;
       let blob: Blob;
       let objectUrl: string;
 
@@ -200,6 +265,17 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
         // BLTCY doesn't provide a remote URL, image is generated inline
       }
 
+      const persistedPath = await persistGeneratedImageBlob(blob);
+      if (persistedPath) {
+        setGeneratedImageLocalPath(persistedPath);
+        if (previousLocalPath && previousLocalPath !== persistedPath) {
+          void deleteLocalImageFile(previousLocalPath);
+        }
+      } else {
+        console.warn('Generated image could not be persisted locally; session history may not restore this image later.');
+        setGeneratedImageLocalPath('');
+      }
+
       setGeneratedImageBlob(blob);
       // Track blob URL immediately before setting state to prevent timing issues
       blobUrlsRef.current.add(objectUrl);
@@ -220,7 +296,17 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
     } finally {
       setIsGenerating(false);
     }
-  }, [aspectRatio, bflApiKey, geminiApiKey, bltcyApiKey, selectedModel, isGenerating]);
+  }, [
+    aspectRatio,
+    bflApiKey,
+    geminiApiKey,
+    bltcyApiKey,
+    selectedModel,
+    generatedImageLocalPath,
+    isGenerating,
+    persistGeneratedImageBlob,
+    deleteLocalImageFile
+  ]);
 
   const saveGeneratedImage = useCallback(async () => {
     console.log('[saveGeneratedImage] Called', {
@@ -404,6 +490,8 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
 
     console.log('[useImageGeneration] Clearing generated image');
     setGeneratedImageRemoteUrl('');
+    void deleteLocalImageFile(generatedImageLocalPath);
+    setGeneratedImageLocalPath('');
     setGeneratedImageUrl(prev => {
       if (prev) {
         URL.revokeObjectURL(prev);
@@ -414,7 +502,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
     setGeneratedImageBlob(null);
     setStatusWithAutoClear('Generated image cleared');
     setGenerationError('');
-  }, [isGenerating, setStatusWithAutoClear]);
+  }, [deleteLocalImageFile, generatedImageLocalPath, isGenerating, setStatusWithAutoClear]);
 
   // Store blob URLs when created (belt-and-suspenders with immediate tracking above)
   useEffect(() => {
@@ -446,9 +534,10 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
 
   const getSessionSnapshot = useCallback((): ImageGenerationSessionSnapshot => ({
     aspectRatio,
-    generatedImageUrl,
-    generatedImageRemoteUrl
-  }), [aspectRatio, generatedImageRemoteUrl, generatedImageUrl]);
+    generatedImageUrl: '',
+    generatedImageRemoteUrl,
+    generatedImageLocalPath
+  }), [aspectRatio, generatedImageLocalPath, generatedImageRemoteUrl]);
 
   const loadSessionSnapshot = useCallback(async (snapshot: ImageGenerationSessionSnapshot) => {
     setAspectRatio(snapshot.aspectRatio);
@@ -456,16 +545,49 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
     setGenerationError('');
     setGeneratedImageRemoteUrl(snapshot.generatedImageRemoteUrl);
     setGeneratedImageBlob(null);
+    setGeneratedImageLocalPath('');
 
-    setGeneratedImageUrl((prev) => {
-      if (prev && prev !== snapshot.generatedImageUrl) {
+    setGeneratedImageUrl(prev => {
+      if (prev) {
         URL.revokeObjectURL(prev);
         blobUrlsRef.current.delete(prev);
       }
-      return snapshot.generatedImageUrl;
+      return '';
     });
 
-    if (!snapshot.generatedImageUrl && snapshot.generatedImageRemoteUrl) {
+    let restored = false;
+
+    if (snapshot.generatedImageLocalPath) {
+      try {
+        const { blob, objectUrl } = await loadLocalImageAsBlob(snapshot.generatedImageLocalPath);
+        setGeneratedImageBlob(blob);
+        blobUrlsRef.current.add(objectUrl);
+        setGeneratedImageUrl(prev => {
+          if (prev && prev !== objectUrl) {
+            URL.revokeObjectURL(prev);
+            blobUrlsRef.current.delete(prev);
+          }
+          return objectUrl;
+        });
+        setGeneratedImageLocalPath(snapshot.generatedImageLocalPath);
+        restored = true;
+      } catch (error) {
+        console.error('Error restoring generated image from local file:', error);
+      }
+    }
+
+    if (!restored && snapshot.generatedImageUrl) {
+      setGeneratedImageUrl(prev => {
+        if (prev && prev !== snapshot.generatedImageUrl) {
+          URL.revokeObjectURL(prev);
+          blobUrlsRef.current.delete(prev);
+        }
+        return snapshot.generatedImageUrl;
+      });
+      restored = true;
+    }
+
+    if (!restored && snapshot.generatedImageRemoteUrl) {
       try {
         const { blob, objectUrl } = await downloadImageAsBlob(snapshot.generatedImageRemoteUrl);
         setGeneratedImageBlob(blob);
@@ -478,17 +600,23 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
           }
           return objectUrl;
         });
+        const persistedPath = await persistGeneratedImageBlob(blob);
+        if (persistedPath) {
+          setGeneratedImageLocalPath(persistedPath);
+        }
+        restored = true;
       } catch (error) {
         console.error('Error restoring generated image from remote URL:', error);
       }
     }
-  }, []);
+  }, [loadLocalImageAsBlob, persistGeneratedImageBlob]);
 
   return {
     aspectRatio,
     setAspectRatio,
     generatedImageUrl,
     generatedImageRemoteUrl,
+    generatedImageLocalPath,
     isGenerating,
     generationStatus,
     generationError,

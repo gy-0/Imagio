@@ -19,6 +19,7 @@ import { usePromptOptimization } from './features/promptOptimization/usePromptOp
 import type { AppSession, SessionSource } from './types/appSession';
 import type { SortOption } from './components/OverlaySidebar';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
+import { exists as fsExists, remove as fsRemove } from '@tauri-apps/plugin-fs';
 import './App.css';
 
 // Optimized session array management utilities
@@ -119,6 +120,7 @@ const App = () => {
     setAspectRatio,
     generatedImageUrl,
     generatedImageRemoteUrl,
+    generatedImageLocalPath,
     isGenerating,
     generationStatus,
     generateImage,
@@ -129,6 +131,21 @@ const App = () => {
     saveGeneratedImageToDirectory,
     loadSessionSnapshot: loadGenerationSnapshot
   } = useImageGeneration({ bflApiKey, geminiApiKey, bltcyApiKey, selectedModel });
+
+  const deleteSessionImageFile = useCallback(async (filePath: string) => {
+    if (!filePath) {
+      return;
+    }
+
+    try {
+      const fileExists = await fsExists(filePath);
+      if (fileExists) {
+        await fsRemove(filePath);
+      }
+    } catch (error) {
+      console.warn('Failed to delete generated image file:', filePath, error);
+    }
+  }, []);
 
   // Cleanup stale mapping entries
   const cleanupStaleMappings = useCallback(() => {
@@ -326,7 +343,8 @@ const App = () => {
       generation: {
         aspectRatio,
         generatedImageUrl: '',
-        generatedImageRemoteUrl: ''
+        generatedImageRemoteUrl: '',
+        generatedImageLocalPath: ''
       }
     };
 
@@ -496,15 +514,23 @@ const App = () => {
         updatedAt: Date.now(),
         generation: {
           aspectRatio,
-          // Don't save the temporary blob URL, only save the remote URL
-          // The blob URL will be recreated when loading the session
           generatedImageUrl: '',
-          generatedImageRemoteUrl
+          generatedImageRemoteUrl,
+          generatedImageLocalPath
         }
       }), sortBy);
     });
     // Note: isRestoringSessionRef excluded from deps - refs don't trigger re-renders
-  }, [activeSessionId, aspectRatio, generatedImageRemoteUrl, isGenerating, isSessionsLoading, setSessions, sortBy]);
+  }, [
+    activeSessionId,
+    aspectRatio,
+    generatedImageLocalPath,
+    generatedImageRemoteUrl,
+    isGenerating,
+    isSessionsLoading,
+    setSessions,
+    sortBy
+  ]);
 
   // Track OCR state changes
   const previousOcrText = useRef<string>('');
@@ -717,14 +743,21 @@ const App = () => {
   ]);
 
   const handleDeleteSession = useCallback((sessionId: string) => {
-    setSessions(prev => prev.filter(session => session.id !== sessionId));
+    setSessions(prev => {
+      const sessionToDelete = prev.find(session => session.id === sessionId);
+      if (sessionToDelete?.generation.generatedImageLocalPath) {
+        void deleteSessionImageFile(sessionToDelete.generation.generatedImageLocalPath);
+      }
+      return prev.filter(session => session.id !== sessionId);
+    });
 
     // If we deleted the active session, clear the active session
     if (sessionId === activeSessionId) {
       setActiveSessionId(null);
       setHasPerformedOcr(false);
+      clearGeneratedImage();
     }
-  }, [activeSessionId]);
+  }, [activeSessionId, clearGeneratedImage, deleteSessionImageFile, setSessions]);
 
   return (
     <div
