@@ -48,6 +48,13 @@ h1 {
   background-clip: text;
 }
 
+h1 .emoji {
+  -webkit-text-fill-color: initial;
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+}
+
 .shortcuts-hint {
   text-align: center;
   font-size: 0.85em;

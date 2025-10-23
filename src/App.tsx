@@ -764,7 +764,7 @@ const App = () => {
       className="container"
       {...dragAndDropHandlers}
     >
-      <h1>📷Imagio✨</h1>
+      <h1><span className="emoji">🪄</span> Imagio<span className="emoji">✨</span></h1>
 
       <div className="shortcuts-hint">
         ⌨️ Shortcuts: <kbd>⌘O</kbd> Open | <kbd>⌘⇧S</kbd> Screenshot | <kbd>⌘C</kbd> Copy | <kbd>⌘S</kbd> Save | <kbd>⌘,</kbd> Settings
