@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { LoaderAnimation } from '../../../components/LoaderAnimation';
 
 interface GeneratedImagePanelProps {
   generatedImageUrl: string;
@@ -36,8 +37,7 @@ export const GeneratedImagePanel: FC<GeneratedImagePanelProps> = ({
       <div className={`generated-image-container${generatedImageUrl ? ' has-image' : ''}`}>
         {isGenerating ? (
           <div className="generation-loading">
-            <div className="spinner"></div>
-            <p><span className="btn-shine">{generationStatus}</span></p>
+            <LoaderAnimation text="Generating" />
           </div>
         ) : generatedImageUrl ? (
           <img
