@@ -1,5 +1,5 @@
 import type { FC, ChangeEvent, MouseEvent } from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { AutomationSettings } from '../hooks/useAutomationSettings';
 import type { AppSession } from '../types/appSession';
 import { ContextMenu } from './ContextMenu';
@@ -49,6 +49,21 @@ export const OverlaySidebar: FC<OverlaySidebarProps> = ({
   onSortByChange
 }) => {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; sessionId: string } | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsClosing(false);
+    }
+  }, [isOpen]);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 200); // 匹配动画时长
+  };
 
   const handleContextMenu = (event: MouseEvent<HTMLButtonElement>, sessionId: string) => {
     event.preventDefault();
@@ -72,24 +87,24 @@ export const OverlaySidebar: FC<OverlaySidebarProps> = ({
     }
   };
 
-  if (!isOpen) {
+  if (!isOpen && !isClosing) {
     return null;
   }
 
   return (
     <div className="overlay-sidebar-root">
       <div
-        className="overlay-sidebar-backdrop"
+        className={`overlay-sidebar-backdrop${isClosing ? ' closing' : ''}`}
         onClick={() => {
           if (!contextMenu) {
-            onClose();
+            handleClose();
           }
         }}
       />
-      <aside className="overlay-sidebar-panel">
+      <aside className={`overlay-sidebar-panel${isClosing ? ' closing' : ''}`}>
         <div className="overlay-sidebar-header">
           <h2>Imagio</h2>
-          <button className="overlay-close-btn" onClick={onClose} aria-label="Close sidebar">
+          <button className="overlay-close-btn" onClick={handleClose} aria-label="Close sidebar">
             ✕
           </button>
         </div>
@@ -203,7 +218,10 @@ export const OverlaySidebar: FC<OverlaySidebarProps> = ({
           <button
             type="button"
             className="overlay-settings-btn"
-            onClick={onOpenSettings}
+            onClick={() => {
+              handleClose();
+              setTimeout(onOpenSettings, 250);
+            }}
           >
             ⚙️ LLM Settings
           </button>
