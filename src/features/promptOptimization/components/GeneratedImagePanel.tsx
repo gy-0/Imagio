@@ -37,7 +37,7 @@ export const GeneratedImagePanel: FC<GeneratedImagePanelProps> = ({
         {isGenerating ? (
           <div className="generation-loading">
             <div className="spinner"></div>
-            <p>{generationStatus}</p>
+            <p><span className="btn-shine">{generationStatus}</span></p>
           </div>
         ) : generatedImageUrl ? (
           <img

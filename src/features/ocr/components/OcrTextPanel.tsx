@@ -116,7 +116,13 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
               className={`toggle-btn ${textDisplayMode === 'optimized' ? 'active' : ''}`}
               onClick={() => handleViewModeChange('optimized')}
             >
-              {isOptimizing ? 'Optimized (Generating...)' : 'Optimized'}
+              {isOptimizing ? (
+                <>
+                  Optimized (<span className="btn-shine">Generating...</span>)
+                </>
+              ) : (
+                'Optimized'
+              )}
             </button>
           </div>
         )}
@@ -137,12 +143,18 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
           💾 Save
         </button>
         {onOptimize && (
-          <button 
-            onClick={() => { void handleOptimize(); }} 
+          <button
+            onClick={() => { void handleOptimize(); }}
             className="secondary-btn"
             disabled={isOptimizing || !value.trim()}
           >
-            {isOptimizing ? '🔄 Optimizing...' : '✨ Optimize'}
+            {isOptimizing ? (
+              <>
+                🔄 <span className="btn-shine">Optimizing...</span>
+              </>
+            ) : (
+              '✨ Optimize'
+            )}
           </button>
         )}
       </div>

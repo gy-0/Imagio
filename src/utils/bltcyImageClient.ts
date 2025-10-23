@@ -541,6 +541,12 @@ export class BltcyImageClient {
     } else if (status === 429) {
       errorCode = 'RATE_LIMIT';
       errorMessage = 'Rate limit exceeded. Please try again later.';
+    } else if (status === 503) {
+      errorCode = 'REQUEST_FAILED';
+      errorMessage = 'The image generation service is temporarily unavailable. This is likely due to high demand or maintenance on the upstream provider (Black Forest Labs). Please try again in a few minutes, or switch to a different model that doesn\'t use the BFL proxy (e.g., "flux", "nano-banana", "gpt-image-1").';
+    } else if (status >= 500) {
+      errorCode = 'REQUEST_FAILED';
+      errorMessage = `The image generation service encountered an error (HTTP ${status}). Please try again later or switch to a different model.`;
     }
 
     return new ImageGenerationError(errorMessage, errorCode);

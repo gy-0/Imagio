@@ -105,7 +105,13 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
         className="primary-btn optimize-btn"
         disabled={isOptimizing || isOptimizeDisabled}
       >
-        {isOptimizing ? '⏳ Generating...' : '✨ Generate Prompt'}
+        {isOptimizing ? (
+          <>
+            ⏳ <span className="btn-shine">Generating...</span>
+          </>
+        ) : (
+          '✨ Generate Prompt'
+        )}
       </button>
 
       {/* Hide success status to save space */}
@@ -142,7 +148,13 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
           className="primary-btn"
           disabled={isGenerating || isOptimizing || !optimizedPrompt.trim()}
         >
-          {isGenerating ? '⏳ Generating...' : '🎨 Generate Image'}
+          {isGenerating ? (
+            <>
+              ⏳ <span className="btn-shine">Generating...</span>
+            </>
+          ) : (
+            '🎨 Generate Image'
+          )}
         </button>
       </div>
 

@@ -10,5 +10,9 @@ export const ProcessingStatus: FC<ProcessingStatusProps> = ({ isProcessing, stat
     return null;
   }
 
-  return <div className="processing-status">{statusMessage}</div>;
+  return (
+    <div className="processing-status">
+      <span className="btn-shine">{statusMessage}</span>
+    </div>
+  );
 };
