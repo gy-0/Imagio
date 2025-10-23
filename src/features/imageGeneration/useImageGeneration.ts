@@ -179,7 +179,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
       return;
     }
 
-    setGenerationStatus('Generating image...');
+    setGenerationStatus('Generating image');
     setGenerationError('');
     setIsGenerating(true);
     setGeneratedImageRemoteUrl('');
@@ -204,14 +204,14 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
         // FLUX generation flow (BFL official)
         const client = new ImageGenerationClient(bflApiKey);
 
-        setGenerationStatus('Creating generation request...');
+        setGenerationStatus('Creating generation request');
         const imageUrl = await client.generateImage({
           prompt,
           aspectRatio: aspectRatio || undefined
         });
 
         setGeneratedImageRemoteUrl(imageUrl);
-        setGenerationStatus('Downloading image...');
+        setGenerationStatus('Downloading image');
         const result = await downloadImageAsBlob(imageUrl);
         blob = result.blob;
         objectUrl = result.objectUrl;
@@ -219,7 +219,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
         // Gemini generation flow (official Nano Banana)
         const client = new GeminiImageClient(geminiApiKey);
 
-        setGenerationStatus(`Generating with ${modelDisplayName}...`);
+        setGenerationStatus(`Generating with ${modelDisplayName}`);
         const result = await client.generateImage({
           prompt,
           aspectRatio: aspectRatio || undefined
@@ -231,7 +231,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
         // 即梦4 (Seedream 4) - Use specialized client with advanced features
         const client = new SeedreamImageClient(bltcyApiKey);
 
-        setGenerationStatus(`Generating with ${modelDisplayName}...`);
+        setGenerationStatus(`Generating with ${modelDisplayName}`);
         const result = await client.generateImage(
           {
             prompt,
@@ -254,7 +254,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
         const client = new BltcyImageClient(bltcyApiKey);
         const apiModel = getApiModelName(selectedModel);
 
-        setGenerationStatus(`Generating with ${modelDisplayName}...`);
+        setGenerationStatus(`Generating with ${modelDisplayName}`);
         const result = await client.generateImage({
           prompt,
           model: apiModel as any,
@@ -322,7 +322,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
 
     try {
       setGenerationError('');
-      setGenerationStatus('Saving image...');
+      setGenerationStatus('Saving image');
       console.log('[saveGeneratedImage] Starting save process');
 
       const blobCandidate = generatedImageBlob ?? (generatedImageUrl
@@ -408,7 +408,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
 
     try {
       setGenerationError('');
-      setGenerationStatus('Copying image...');
+      setGenerationStatus('Copying image');
 
       // 获取 blob
       const blob = generatedImageBlob ?? (generatedImageUrl
@@ -444,7 +444,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
 
     try {
       setGenerationError('');
-      setGenerationStatus('Auto-saving image...');
+      setGenerationStatus('Auto-saving image');
 
       const blobCandidate = generatedImageBlob ?? (generatedImageUrl
         ? await fetch(generatedImageUrl).then(res => res.blob())

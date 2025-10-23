@@ -135,7 +135,7 @@ export class SeedreamImageClient {
 
       console.log('[SeedreamImageClient] Request body:', JSON.stringify(requestBody, null, 2));
 
-      onProgress?.('Generating images with 即梦4...');
+      onProgress?.('Generating images with 即梦4');
 
       const response = await resolveFetch()(`${this.baseURL}/v1/images/generations`, {
         method: 'POST',
@@ -172,7 +172,7 @@ export class SeedreamImageClient {
 
       for (let i = 0; i < data.data.length; i++) {
         const imageData = data.data[i];
-        onProgress?.(`Downloading image ${i + 1}/${data.data.length}...`);
+        onProgress?.(`Downloading image ${i + 1}/${data.data.length}`);
 
         let blob: Blob;
         let objectUrl: string;
@@ -339,7 +339,7 @@ export class SeedreamImageClient {
 
       for (let i = 0; i < finalData.data.length; i++) {
         const imageData = finalData.data[i];
-        onProgress(`Downloading image ${i + 1}/${finalData.data.length}...`);
+        onProgress(`Downloading image ${i + 1}/${finalData.data.length}`);
 
         if (imageData.url) {
           const imageResponse = await resolveFetch()(imageData.url);

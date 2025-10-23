@@ -117,9 +117,7 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
               onClick={() => handleViewModeChange('optimized')}
             >
               {isOptimizing ? (
-                <>
-                  Optimized (<span className="btn-shine">Generating...</span>)
-                </>
+                <span className="btn-shine">Optimizing</span>
               ) : (
                 'Optimized'
               )}
@@ -131,8 +129,8 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
         ref={textareaRef}
         value={displayText}
         onChange={handleChange}
-        placeholder={isOptimizing && isShowingOptimizedView ? "Generating optimized text..." : "OCR results will appear here..."}
-        className="text-area-unified text-area-large"
+        placeholder={isOptimizing && isShowingOptimizedView ? "Generating optimized text" : "OCR results will appear here..."}
+        className={`text-area-unified text-area-large${isOptimizing && isShowingOptimizedView ? ' shine-placeholder' : ''}`}
         disabled={isOptimizing && isShowingOptimizedView}
       />
       <div className="button-group extracted-actions">
@@ -148,13 +146,7 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
             className="secondary-btn"
             disabled={isOptimizing || !value.trim()}
           >
-            {isOptimizing ? (
-              <>
-                🔄 <span className="btn-shine">Optimizing...</span>
-              </>
-            ) : (
-              '✨ Optimize'
-            )}
+            ✨ Optimize
           </button>
         )}
       </div>

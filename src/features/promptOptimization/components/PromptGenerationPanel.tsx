@@ -107,7 +107,7 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
       >
         {isOptimizing ? (
           <>
-            ⏳ <span className="btn-shine">Generating...</span>
+            ⏳ <span className="btn-shine">Generating</span>
           </>
         ) : (
           '✨ Generate Prompt'
@@ -150,7 +150,7 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
         >
           {isGenerating ? (
             <>
-              ⏳ <span className="btn-shine">Generating...</span>
+              ⏳ <span className="btn-shine">Generating</span>
             </>
           ) : (
             '🎨 Generate Image'
