@@ -11,9 +11,23 @@ rust-version = "1.77.2"
 # Enable sccache for faster builds
 [profile.dev]
 incremental = true
+# 为开发模式启用部分优化，以提高图像处理性能
+# opt-level = 1: 轻量级优化，编译速度快，但性能提升明显
+opt-level = 1
 
 [profile.release]
 incremental = true
+# Release 模式全优化
+opt-level = 3
+lto = true
+codegen-units = 1
+
+# 可选：如果 opt-level=1 仍然太慢，可以尝试 opt-level=2
+# 这会提供接近 release 的性能，但编译时间稍长
+# 使用方法: CARGO_PROFILE_DEV_OPT_LEVEL=2 pnpm run tauri:dev
+# 或者取消下面的注释:
+# [profile.dev]
+# opt-level = 2
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

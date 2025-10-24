@@ -1,33 +1,35 @@
 {
   "name": "imagio",
   "version": "1.0.0",
-  "description": "Tauri-based OCR application for macOS",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build && npm run post-build && npm run copy-app",
-    "post-build": "cd src-tauri && ./add-icon-name.sh target/release/bundle/macos/Imagio.app",
-    "copy-app": "rm -rf /Applications/Imagio.app && cp -r src-tauri/target/release/bundle/macos/Imagio.app /Applications/ && echo '✅ Imagio.app installed to /Applications/'"
-  },
+  "description": "Tauri-based OCR and Image Generation App for macOS",
   "keywords": [
     "tauri",
     "ocr",
     "tesseract",
     "macos"
   ],
-  "author": "",
+  "homepage": "https://github.com/gy-0/Imagio#readme",
+  "bugs": {
+    "url": "https://github.com/gy-0/Imagio/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gy-0/Imagio.git"
+  },
   "license": "MIT",
-  "devDependencies": {
-    "@tauri-apps/cli": "^2.8.4",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.1",
-    "@vitejs/plugin-react": "^5.0.4",
-    "typescript": "^5.9.3",
-    "vite": "^7.1.9"
+  "author": "Yuan Gao",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:dev:fast": "CARGO_PROFILE_DEV_OPT_LEVEL=2 tauri dev",
+    "tauri:build": "tauri build && npm run post-build && npm run copy-app",
+    "post-build": "cd src-tauri && ./add-icon-name.sh target/release/bundle/macos/Imagio.app",
+    "copy-app": "rm -rf /Applications/Imagio.app && cp -r src-tauri/target/release/bundle/macos/Imagio.app /Applications/ && echo '✅ Imagio.app installed to /Applications/'"
   },
   "dependencies": {
     "@google/genai": "^1.25.0",
@@ -38,5 +40,13 @@
     "@tauri-apps/plugin-http": "^2.5.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.8.4",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.1",
+    "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9"
   }
 }
