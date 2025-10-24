@@ -14,6 +14,9 @@
     "fs:allow-write-file",
     "fs:allow-mkdir",
     "fs:allow-exists",
+    "fs:allow-read",
+    "fs:allow-read-file",
+    "fs:allow-remove",
     {
       "identifier": "fs:scope",
       "allow": [
@@ -22,7 +25,9 @@
         { "path": "$DOCUMENT/**" },
         { "path": "$PICTURE/**" },
         { "path": "$DOWNLOAD/**" },
-        { "path": "$HOME/Pictures/**" }
+        { "path": "$HOME/Pictures/**" },
+        { "path": "$APPLOCALDATA/**" },
+        { "path": "$APPLOCALDATA" }
       ]
     },
     "core:path:default",

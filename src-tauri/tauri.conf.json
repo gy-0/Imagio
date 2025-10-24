@@ -36,9 +36,32 @@
             "dialog:default",
             "fs:default",
             "fs:allow-write-file",
+            "fs:allow-read-file",
+            "fs:allow-read",
+            "fs:allow-create",
+            "fs:allow-write",
+            "fs:allow-mkdir",
+            "fs:allow-exists",
+            "fs:allow-remove",
             "fs:write-all",
             "clipboard-manager:default",
             "clipboard-manager:allow-write-image",
+            "core:path:default",
+            "core:image:default",
+            {
+              "identifier": "fs:scope",
+              "allow": [
+                { "path": "$HOME/**" },
+                { "path": "$DESKTOP/**" },
+                { "path": "$DOCUMENT/**" },
+                { "path": "$PICTURE/**" },
+                { "path": "$DOWNLOAD/**" },
+                { "path": "$APPLOCALDATA/**" },
+                { "path": "$APPLOCALDATA" },
+                { "path": "$APPDATA/**" },
+                { "path": "$APPDATA" }
+              ]
+            },
             {
               "identifier": "http:default",
               "allow": [
