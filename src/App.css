@@ -2375,3 +2375,200 @@ textarea:focus {
     background-position: 180px;
   }
 }
+
+/* Settings Tabs */
+.settings-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.settings-tab {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.settings-tab:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.settings-tab.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+/* Keyboard Shortcuts Display */
+.shortcuts-content {
+  padding: 0.5rem 0;
+}
+
+.shortcuts-intro {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(102, 126, 234, 0.1);
+  border-left: 3px solid #667eea;
+  border-radius: 4px;
+}
+
+.shortcuts-intro p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.shortcuts-category {
+  margin-bottom: 2rem;
+}
+
+.shortcuts-category-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.shortcut-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.shortcut-description {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9rem;
+  font-weight: 400;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.shortcut-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', 'Source Code Pro', monospace;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  user-select: text;
+  -webkit-user-select: text;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.shortcuts-note {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.shortcuts-note p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.shortcuts-note strong {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: light) {
+  .settings-tabs {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .settings-tab {
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .settings-tab:hover {
+    color: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .settings-tab.active {
+    color: #667eea;
+  }
+
+  .shortcuts-intro {
+    background: rgba(102, 126, 234, 0.08);
+  }
+
+  .shortcuts-intro p {
+    color: rgba(0, 0, 0, 0.85);
+  }
+
+  .shortcuts-category-title {
+    color: rgba(0, 0, 0, 0.5);
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .shortcut-item {
+    background: rgba(0, 0, 0, 0.03);
+  }
+
+  .shortcut-item:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  .shortcut-description {
+    color: rgba(0, 0, 0, 0.85);
+  }
+
+  .shortcut-keys {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: rgba(0, 0, 0, 0.85);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .shortcuts-note {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .shortcuts-note p {
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .shortcuts-note strong {
+    color: rgba(0, 0, 0, 0.85);
+  }
+}

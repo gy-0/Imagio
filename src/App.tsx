@@ -671,6 +671,13 @@ const App = () => {
     onSaveText: () => { void saveOcrText(); },
     onToggleAdvanced: toggleAdvanced,
     onOpenSettings: () => setIsSettingsOpen(true),
+    onCloseModal: () => {
+      if (isSettingsOpen) {
+        setIsSettingsOpen(false);
+      } else if (isSidebarOpen) {
+        setIsSidebarOpen(false);
+      }
+    },
     canPerformOcr: Boolean(imagePath),
     hasOcrText: Boolean(ocrText.trim())
   });
@@ -764,7 +771,7 @@ const App = () => {
       className="container"
       {...dragAndDropHandlers}
     >
-      <h1><span className="emoji">🪄</span> Imagio<span className="emoji">✨</span></h1>
+      <h1><span className="emoji">🪄</span> Imagio  <span className="emoji">✨</span></h1>
 
       <div className="shortcuts-hint">
         ⌨️ Shortcuts: <kbd>⌘O</kbd> Open | <kbd>⌘⇧S</kbd> Screenshot | <kbd>⌘C</kbd> Copy | <kbd>⌘S</kbd> Save | <kbd>⌘,</kbd> Settings
