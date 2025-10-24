@@ -26,7 +26,53 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  overflow-y: auto;
+  overflow: hidden; /* Prevent bounce scrolling and full-screen scroll */
+  user-select: none !important; /* Prevent text selection for native app feel */
+  -webkit-user-select: none !important; /* Safari */
+  -moz-user-select: none !important; /* Firefox */
+  -ms-user-select: none !important; /* IE/Edge */
+  cursor: default;
+}
+
+#root {
+  height: 100vh;
+  overflow: hidden; /* Root should not scroll */
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* Prevent text selection on all elements by default */
+* {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* Native app: buttons should use default cursor, not pointer */
+button,
+.toolbar-btn,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+a,
+[role="button"] {
+  cursor: default !important;
+}
+
+/* Allow text selection ONLY in input fields and textareas */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="url"],
+textarea {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  cursor: text;
 }
 
 .container {
@@ -35,6 +81,12 @@ body {
   max-width: 1600px;
   margin: 0 auto;
   padding: 2rem;
+  box-sizing: border-box;
+  height: 100vh;
+  overflow-y: auto; /* Allow vertical scrolling when content overflows */
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+  display: flex;
+  flex-direction: column;
 }
 
 h1 {
@@ -119,7 +171,6 @@ h3 {
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
   color: white;
-  cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
   position: relative;
@@ -176,7 +227,6 @@ h3 {
   color: white;
   font-size: 1rem;
   font-weight: 400;
-  cursor: pointer;
   outline: none;
   padding: 0;
   border-radius: 0;
@@ -214,7 +264,6 @@ h3 {
   background: rgba(102, 126, 234, 0.15);
   border: 1px solid rgba(102, 126, 234, 0.3);
   border-radius: 12px;
-  cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -501,7 +550,6 @@ h3 {
 .control-group input[type="range"] {
   padding: 0;
   height: 5px;
-  cursor: pointer;
 }
 
 .llm-status {
@@ -531,13 +579,11 @@ h3 {
   display: flex !important;
   align-items: center;
   gap: 0.4rem;
-  cursor: pointer;
   font-size: 0.9em;
 }
 
 .checkbox-label input[type="checkbox"] {
   width: auto;
-  cursor: pointer;
 }
 
 /* Action Section */
@@ -595,7 +641,6 @@ button {
   font-weight: 500;
   font-family: inherit;
   background-color: #1a1a1a;
-  cursor: pointer;
   transition: all 0.25s;
   display: inline-flex;
   align-items: center;
@@ -1059,7 +1104,6 @@ textarea:focus {
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.08);
   color: inherit;
-  cursor: pointer;
 }
 
 .style-select option {
@@ -1172,7 +1216,6 @@ textarea:focus {
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.08);
   color: inherit;
-  cursor: pointer;
 }
 
 .aspect-ratio-select option {
@@ -1422,7 +1465,6 @@ textarea:focus {
   padding: 0.3rem 0.6rem;
   border-radius: 4px;
   font-size: 0.85rem;
-  cursor: pointer;
   transition: all 0.2s ease;
 }
 
@@ -1576,7 +1618,6 @@ textarea:focus {
   height: 36px;
   border-radius: 50%;
   font-size: 1rem;
-  cursor: pointer;
   transition: background 0.2s ease;
 }
 
@@ -1621,7 +1662,6 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.1);
   color: inherit;
   font-size: 0.85rem;
-  cursor: pointer;
   min-width: 120px;
 }
 
@@ -1701,7 +1741,6 @@ textarea:focus {
   align-items: center;
   gap: 0.6rem;
   font-size: 0.95rem;
-  cursor: pointer;
 }
 
 .overlay-toggle input[type="checkbox"] {
@@ -1734,7 +1773,6 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.24);
   color: inherit;
-  cursor: pointer;
   transition: background 0.2s ease;
 }
 
@@ -1765,7 +1803,6 @@ textarea:focus {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid transparent;
-  cursor: pointer;
   transition: border 0.2s ease, background 0.2s ease;
   text-align: left;
   color: inherit;
@@ -1813,7 +1850,6 @@ textarea:focus {
   color: inherit;
   font-size: 1rem;
   font-weight: 500;
-  cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -1996,7 +2032,6 @@ textarea:focus {
   height: 36px;
   border-radius: 50%;
   font-size: 1rem;
-  cursor: pointer;
   transition: background 0.2s ease;
   padding: 0;
 }
@@ -2120,7 +2155,6 @@ textarea:focus {
   background: transparent;
   color: rgba(255, 255, 255, 0.6);
   font-size: 1.2rem;
-  cursor: pointer;
   padding: 0.25rem;
   transition: color 0.2s ease;
   display: flex;
@@ -2181,7 +2215,6 @@ textarea:focus {
   color: rgba(255, 255, 255, 0.9);
   font-size: 0.9rem;
   text-align: left;
-  cursor: pointer !important;
   transition: all 0.2s ease;
   outline: none;
   user-select: none;
@@ -2218,7 +2251,6 @@ textarea:focus {
 
   .context-menu-item {
     color: rgba(0, 0, 0, 0.8) !important;
-    cursor: pointer !important;
   }
 
   .context-menu-item:hover {
@@ -2229,7 +2261,6 @@ textarea:focus {
 
   .context-menu-item.delete {
     color: rgba(235, 87, 87, 0.8) !important;
-    cursor: pointer !important;
   }
 
   .context-menu-item.delete:hover {
