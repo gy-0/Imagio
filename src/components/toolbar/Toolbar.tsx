@@ -5,8 +5,7 @@ interface ToolbarProps {
   onTakeScreenshot: () => void;
   language: string;
   onLanguageChange: (language: string) => void;
-  showAdvanced: boolean;
-  onToggleAdvanced: () => void;
+  onOpenSettings: () => void;
   onToggleSidebar: () => void;
 }
 
@@ -15,8 +14,7 @@ export const Toolbar: FC<ToolbarProps> = ({
   onTakeScreenshot,
   language,
   onLanguageChange,
-  showAdvanced,
-  onToggleAdvanced,
+  onOpenSettings,
   onToggleSidebar
 }) => {
   return (
@@ -57,9 +55,9 @@ export const Toolbar: FC<ToolbarProps> = ({
           <option value="spa">Español</option>
         </select>
       </div>
-      <button onClick={onToggleAdvanced} className="toolbar-btn advanced-btn">
+      <button onClick={onOpenSettings} className="toolbar-btn settings-btn">
         <span className="btn-icon">⚙️</span>
-        <span className="btn-text">{showAdvanced ? 'Hide' : 'Show'} Advanced</span>
+        <span className="btn-text">Settings</span>
       </button>
       </div>
     </>

@@ -336,7 +336,7 @@ h3 {
 
   .style-select,
   .custom-description-area {
-    background: #f5f5f5;
+    background: transparent;
     border-color: #ddd;
     color: #213547;
   }
@@ -699,7 +699,7 @@ textarea {
   padding: 1rem;
   font-family: 'SF Mono', 'Monaco', 'Courier New', Courier, monospace;
   font-size: 0.9em;
-  background: rgba(0, 0, 0, 0.3);
+  background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   color: inherit;
@@ -779,7 +779,7 @@ textarea:focus {
   }
 
   textarea {
-    background: #f5f5f5;
+    background: transparent;
     border-color: #ddd;
     color: #213547;
   }
@@ -797,7 +797,7 @@ textarea:focus {
   .custom-description-area,
   .advanced-controls input[type="text"],
   .advanced-controls input[type="password"] {
-    background: #f5f5f5;
+    background: transparent;
     border-color: #ddd;
     color: #213547;
   }
@@ -1247,7 +1247,7 @@ textarea:focus {
   justify-content: center;
   align-items: center;
   flex: 1;
-  background: rgba(0, 0, 0, 0.2);
+  background: transparent;
   border-radius: 8px;
   padding: 1rem;
   min-height: 300px;
@@ -1982,7 +1982,7 @@ textarea:focus {
 .settings-modal-dialog {
   position: relative;
   width: 90%;
-  max-width: 600px;
+  max-width: 900px;
   max-height: 85vh;
   background: rgba(20, 20, 26, 0.98);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2009,8 +2009,8 @@ textarea:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  margin-bottom: 0rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -2380,32 +2380,151 @@ textarea:focus {
 .settings-tabs {
   display: flex;
   gap: 0.5rem;
-  padding: 0 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 1.5rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  margin: 0 1.5rem 1.5rem 1.5rem;
+  backdrop-filter: blur(10px);
 }
 
 .settings-tab {
-  padding: 0.75rem 1.5rem;
+  flex: 1;
+  padding: 0.625rem 1.25rem;
   background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.9rem;
+  border-radius: 7px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .settings-tab:hover {
   color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .settings-tab.active {
   color: #667eea;
-  border-bottom-color: #667eea;
+  background: rgba(102, 126, 234, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 
+              0 1px 2px rgba(0, 0, 0, 0.08),
+              inset 0 0 0 1px rgba(102, 126, 234, 0.2);
+}
+
+/* Advanced Processing Settings */
+.advanced-processing-content {
+  padding: 0.5rem 0;
+}
+
+.advanced-intro {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(102, 126, 234, 0.1);
+  border-left: 3px solid #667eea;
+  border-radius: 4px;
+}
+
+.advanced-intro p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+}
+
+.settings-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.settings-row-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.settings-row-mixed {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.settings-row-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.checkbox-label {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.75rem !important;
+  cursor: pointer;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.checkbox-label:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+@media (max-width: 1200px) {
+  .settings-row-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .settings-row-4,
+  .settings-row-mixed {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .advanced-intro {
+    background: rgba(102, 126, 234, 0.08);
+  }
+
+  .advanced-intro p {
+    color: rgba(0, 0, 0, 0.85);
+  }
+
+  .settings-section h3 {
+    color: rgba(0, 0, 0, 0.9);
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .checkbox-label {
+    background: rgba(0, 0, 0, 0.03);
+  }
+
+  .checkbox-label:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
 }
 
 /* Keyboard Shortcuts Display */
@@ -2511,20 +2630,24 @@ textarea:focus {
 
 @media (prefers-color-scheme: light) {
   .settings-tabs {
-    border-bottom-color: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.04);
   }
 
   .settings-tab {
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(0, 0, 0, 0.65);
   }
 
   .settings-tab:hover {
     color: rgba(0, 0, 0, 0.9);
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(0, 0, 0, 0.06);
   }
 
   .settings-tab.active {
     color: #667eea;
+    background: rgba(102, 126, 234, 0.12);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 
+                0 1px 2px rgba(0, 0, 0, 0.04),
+                inset 0 0 0 1px rgba(102, 126, 234, 0.15);
   }
 
   .shortcuts-intro {

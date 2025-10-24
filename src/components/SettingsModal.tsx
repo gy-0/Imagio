@@ -1,5 +1,6 @@
 import { type FC, type ChangeEvent, useState, useMemo } from 'react';
 import type { LLMSettings, ImageGenModel } from '../features/promptOptimization/types';
+import type { ProcessingParams } from '../features/ocr/types';
 import { IMAGE_GEN_MODELS, getModelProvider } from '../features/promptOptimization/modelConfig';
 import { Select } from './Select';
 import { KEYBOARD_SHORTCUTS, formatShortcutDisplay } from '../hooks/useKeyboardShortcuts';
@@ -17,6 +18,8 @@ interface SettingsModalProps {
   onBltcyApiKeyChange: (value: string) => void;
   selectedModel: ImageGenModel;
   onSelectedModelChange: (value: ImageGenModel) => void;
+  processingParams: ProcessingParams;
+  onProcessingParamChange: (key: keyof ProcessingParams, value: number | boolean | string) => void;
 }
 
 export const SettingsModal: FC<SettingsModalProps> = ({
@@ -31,13 +34,15 @@ export const SettingsModal: FC<SettingsModalProps> = ({
   bltcyApiKey,
   onBltcyApiKeyChange,
   selectedModel,
-  onSelectedModelChange
+  onSelectedModelChange,
+  processingParams,
+  onProcessingParamChange
 }) => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [showBflApiKey, setShowBflApiKey] = useState(false);
   const [showGeminiApiKey, setShowGeminiApiKey] = useState(false);
   const [showBltcyApiKey, setShowBltcyApiKey] = useState(false);
-  const [activeTab, setActiveTab] = useState<'llm' | 'shortcuts'>('llm');
+  const [activeTab, setActiveTab] = useState<'llm' | 'advanced' | 'shortcuts'>('llm');
 
   const modelProvider = useMemo(() => getModelProvider(selectedModel), [selectedModel]);
 
@@ -77,6 +82,12 @@ export const SettingsModal: FC<SettingsModalProps> = ({
             onClick={() => setActiveTab('llm')}
           >
             LLM Settings
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'advanced' ? 'active' : ''}`}
+            onClick={() => setActiveTab('advanced')}
+          >
+            Image Processing
           </button>
           <button
             className={`settings-tab ${activeTab === 'shortcuts' ? 'active' : ''}`}
@@ -280,12 +291,156 @@ export const SettingsModal: FC<SettingsModalProps> = ({
                 </div>
               )}
             </>
-          ) : (
-            <div className="shortcuts-content">
-              <div className="shortcuts-intro">
-                <p>Use these keyboard shortcuts to quickly navigate and perform actions in Imagio.</p>
+          ) : activeTab === 'advanced' ? (
+            <div className="advanced-processing-content">
+              {/* First row: 4 sliders */}
+              <div className="settings-section">
+                <h3>Basic Adjustments</h3>
+                <div className="settings-row-4">
+                  <div className="settings-field">
+                    <label>
+                      <span className="field-label-row">
+                        Contrast
+                        <span className="slider-value-inline">{processingParams.contrast.toFixed(1)}</span>
+                      </span>
+                      <input
+                        type="range"
+                        min={0.5}
+                        max={2.0}
+                        step={0.1}
+                        value={processingParams.contrast}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => onProcessingParamChange('contrast', parseFloat(event.target.value))}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="settings-field">
+                    <label>
+                      <span className="field-label-row">
+                        Brightness
+                        <span className="slider-value-inline">{processingParams.brightness.toFixed(1)}</span>
+                      </span>
+                      <input
+                        type="range"
+                        min={-0.5}
+                        max={0.5}
+                        step={0.1}
+                        value={processingParams.brightness}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => onProcessingParamChange('brightness', parseFloat(event.target.value))}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="settings-field">
+                    <label>
+                      <span className="field-label-row">
+                        Sharpness
+                        <span className="slider-value-inline">{processingParams.sharpness.toFixed(1)}</span>
+                      </span>
+                      <input
+                        type="range"
+                        min={0.5}
+                        max={2.0}
+                        step={0.1}
+                        value={processingParams.sharpness}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => onProcessingParamChange('sharpness', parseFloat(event.target.value))}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="settings-field">
+                    <label>
+                      <span className="field-label-row">
+                        Gaussian Blur
+                        <span className="slider-value-inline">{processingParams.gaussianBlur.toFixed(1)}</span>
+                      </span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={5.0}
+                        step={0.5}
+                        value={processingParams.gaussianBlur}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => onProcessingParamChange('gaussianBlur', parseFloat(event.target.value))}
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
 
+              {/* Second row: Dropdowns and checkboxes */}
+              <div className="settings-section">
+                <h3>Advanced Options</h3>
+                <div className="settings-row-mixed">
+                  <div className="settings-field">
+                    <label>
+                      Binarization Method
+                      <Select
+                        value={processingParams.binarizationMethod}
+                        onChange={(value) => onProcessingParamChange('binarizationMethod', value)}
+                      >
+                        <option value="none">None</option>
+                        <option value="otsu">Otsu (Auto) ⭐</option>
+                        <option value="adaptive">Adaptive</option>
+                        <option value="mean">Mean</option>
+                      </Select>
+                    </label>
+                  </div>
+
+                  <div className="settings-field">
+                    <label>
+                      Morphology Operation
+                      <Select
+                        value={processingParams.morphology}
+                        onChange={(value) => onProcessingParamChange('morphology', value)}
+                      >
+                        <option value="none">None</option>
+                        <option value="erode">Erode (Thin)</option>
+                        <option value="dilate">Dilate (Thicken)</option>
+                        <option value="opening">Opening (Denoise)</option>
+                        <option value="closing">Closing (Fill)</option>
+                      </Select>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="settings-row-checkboxes">
+                  <div className="settings-field">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={processingParams.correctSkew}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => onProcessingParamChange('correctSkew', event.target.checked)}
+                      />
+                      📐 Deskew (Correct image rotation)
+                    </label>
+                  </div>
+
+                  <div className="settings-field">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={processingParams.useClahe}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => onProcessingParamChange('useClahe', event.target.checked)}
+                      />
+                      CLAHE (Contrast enhancement)
+                    </label>
+                  </div>
+
+                  <div className="settings-field">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={processingParams.bilateralFilter}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => onProcessingParamChange('bilateralFilter', event.target.checked)}
+                      />
+                      Bilateral Filter (Edge-preserving smoothing)
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="shortcuts-content">
               {Object.entries(shortcutsByCategory).map(([category, shortcuts]) => (
                 shortcuts.length > 0 && (
                   <div key={category} className="shortcuts-category">

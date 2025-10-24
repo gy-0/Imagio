@@ -8,7 +8,6 @@ import { useApplicationConfig } from './hooks/useApplicationConfig';
 import { useAutomationSettings } from './hooks/useAutomationSettings';
 import { useSessionStorage } from './hooks/useSessionStorage';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { AdvancedControls } from './features/ocr/components/AdvancedControls';
 import { OcrPreviewPanel } from './features/ocr/components/OcrPreviewPanel';
 import { OcrTextPanel } from './features/ocr/components/OcrTextPanel';
 import { useOcrProcessing } from './features/ocr/useOcrProcessing';
@@ -77,7 +76,6 @@ const updateSessionInPlace = (
 };
 
 const App = () => {
-  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [hasPerformedOcr, setHasPerformedOcr] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
@@ -659,8 +657,6 @@ const App = () => {
     updateParam('language', language);
   };
 
-  const toggleAdvanced = () => setShowAdvanced(prev => !prev);
-
   const gridClassName = 'main-content-three-column has-generated';
 
   useKeyboardShortcuts({
@@ -668,8 +664,14 @@ const App = () => {
     onTakeScreenshot: () => { void takeScreenshot(); },
     onPerformOcr: () => { void performOCR(); },
     onCopyText: () => { void copyOcrText(); },
-    onSaveText: () => { void saveOcrText(); },
-    onToggleAdvanced: toggleAdvanced,
+    onSaveText: () => {
+      // Prioritize saving generated image, then OCR text
+      if (generatedImageUrl) {
+        void saveGeneratedImage();
+      } else if (ocrText.trim()) {
+        void saveOcrText();
+      }
+    },
     onOpenSettings: () => setIsSettingsOpen(true),
     onCloseModal: () => {
       if (isSettingsOpen) {
@@ -679,7 +681,8 @@ const App = () => {
       }
     },
     canPerformOcr: Boolean(imagePath),
-    hasOcrText: Boolean(ocrText.trim())
+    hasOcrText: Boolean(ocrText.trim()),
+    hasGeneratedImage: Boolean(generatedImageUrl)
   });
 
   const handleSelectSession = useCallback((sessionId: string) => {
@@ -773,10 +776,6 @@ const App = () => {
     >
       <h1><span className="emoji">🪄</span> Imagio  <span className="emoji">✨</span></h1>
 
-      <div className="shortcuts-hint">
-        ⌨️ Shortcuts: <kbd>⌘O</kbd> Open | <kbd>⌘⇧S</kbd> Screenshot | <kbd>⌘C</kbd> Copy | <kbd>⌘S</kbd> Save | <kbd>⌘,</kbd> Settings
-      </div>
-
       <DropOverlay isVisible={isDragging} />
 
       <OverlaySidebar
@@ -810,6 +809,8 @@ const App = () => {
         onBltcyApiKeyChange={setBltcyApiKey}
         selectedModel={selectedModel}
         onSelectedModelChange={setSelectedModel}
+        processingParams={params}
+        onProcessingParamChange={updateParam}
       />
 
       <Toolbar
@@ -817,17 +818,9 @@ const App = () => {
         onTakeScreenshot={() => { void takeScreenshot(); }}
         language={params.language}
         onLanguageChange={handleLanguageChange}
-        showAdvanced={showAdvanced}
-        onToggleAdvanced={toggleAdvanced}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         onToggleSidebar={() => setIsSidebarOpen(true)}
       />
-
-      {showAdvanced && (
-        <AdvancedControls
-          params={params}
-          onParamChange={updateParam}
-        />
-      )}
 
       <ProcessingStatus isProcessing={isProcessing} statusMessage={processingStatus} />
 

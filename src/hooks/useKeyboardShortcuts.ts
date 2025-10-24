@@ -39,14 +39,8 @@ export const KEYBOARD_SHORTCUTS: Record<string, ShortcutConfig> = {
   saveText: {
     key: 's',
     ctrlOrCmd: true,
-    description: 'Save OCR text',
+    description: 'Save generated image or OCR text',
     category: 'file',
-  },
-  toggleAdvanced: {
-    key: 'a',
-    ctrlOrCmd: true,
-    description: 'Toggle advanced settings',
-    category: 'view',
   },
   openSettings: {
     key: ',',
@@ -68,11 +62,11 @@ interface KeyboardShortcutHandlers {
   onPerformOcr: () => void;
   onCopyText: () => void;
   onSaveText: () => void;
-  onToggleAdvanced: () => void;
   onOpenSettings: () => void;
   onCloseModal?: () => void;
   canPerformOcr: boolean;
   hasOcrText: boolean;
+  hasGeneratedImage: boolean;
 }
 
 /**
@@ -85,11 +79,11 @@ export const useKeyboardShortcuts = ({
   onPerformOcr,
   onCopyText,
   onSaveText,
-  onToggleAdvanced,
   onOpenSettings,
   onCloseModal,
   canPerformOcr,
   hasOcrText,
+  hasGeneratedImage,
 }: KeyboardShortcutHandlers) => {
   // Memoize the handler to prevent unnecessary re-renders
   const handleKeyDown = useCallback(
@@ -167,17 +161,13 @@ export const useKeyboardShortcuts = ({
         return;
       }
 
-      // Save text - only if there's OCR text
-      if (matchesShortcut(KEYBOARD_SHORTCUTS.saveText) && hasOcrText) {
-        event.preventDefault();
-        onSaveText();
+      // Save - prioritize generated image, then OCR text
+      if (matchesShortcut(KEYBOARD_SHORTCUTS.saveText)) {
+        if (hasGeneratedImage || hasOcrText) {
+          event.preventDefault();
+          onSaveText();
+        }
         return;
-      }
-
-      // Toggle advanced - only when no OCR text (to avoid conflict with save)
-      if (matchesShortcut(KEYBOARD_SHORTCUTS.toggleAdvanced) && !hasOcrText) {
-        event.preventDefault();
-        onToggleAdvanced();
       }
     },
     [
@@ -186,11 +176,11 @@ export const useKeyboardShortcuts = ({
       onPerformOcr,
       onCopyText,
       onSaveText,
-      onToggleAdvanced,
       onOpenSettings,
       onCloseModal,
       canPerformOcr,
       hasOcrText,
+      hasGeneratedImage,
     ]
   );
 
