@@ -83,8 +83,7 @@ textarea {
   padding: 2rem;
   box-sizing: border-box;
   height: 100vh;
-  overflow-y: auto; /* Allow vertical scrolling when content overflows */
-  overflow-x: hidden; /* Prevent horizontal scrolling */
+  overflow: hidden; /* Prevent scrolling for native app feel */
   display: flex;
   flex-direction: column;
 }
