@@ -17,6 +17,7 @@ interface PromptGenerationPanelProps {
   onCopyPrompt: () => void;
   onGenerateImage: () => Promise<void> | void;
   isGenerating: boolean;
+  isGenerationLocked: boolean;
 }
 
 export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
@@ -34,7 +35,8 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
   isOptimizeDisabled,
   onCopyPrompt,
   onGenerateImage,
-  isGenerating
+  isGenerating,
+  isGenerationLocked
 }) => (
   <div className="result-card prompt-generation-card">
     <div className="result-header">
@@ -146,7 +148,7 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
           type="button"
           onClick={() => { void onGenerateImage(); }}
           className="primary-btn"
-          disabled={isGenerating || isOptimizing || !optimizedPrompt.trim()}
+          disabled={isGenerationLocked || isOptimizing || !optimizedPrompt.trim()}
         >
           {isGenerating ? (
             <>
