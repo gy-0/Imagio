@@ -140,9 +140,10 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
         <button
           type="button"
           onClick={onCopyPrompt}
-          className="secondary-btn"
+          className="secondary-btn icon-only"
+          title="Copy"
         >
-          📋 Copy
+          📋
         </button>
         <button
           type="button"

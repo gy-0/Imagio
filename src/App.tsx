@@ -81,7 +81,7 @@ const App = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const { sessions, setSessions, isLoading: isSessionsLoading } = useSessionStorage();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>('updatedAt');
+  const [sortBy, setSortBy] = useState<SortOption>('createdAt');
   const [currentGenerationSessionId, setCurrentGenerationSessionId] = useState<string | null>(null);
   const [generatedImageOwnerSessionId, setGeneratedImageOwnerSessionId] = useState<string | null>(null);
   const suppressAutoProcessRef = useRef<boolean>(false);

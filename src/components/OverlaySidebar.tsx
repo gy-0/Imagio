@@ -223,7 +223,7 @@ export const OverlaySidebar: FC<OverlaySidebarProps> = ({
               setTimeout(onOpenSettings, 250);
             }}
           >
-            ⚙️ LLM Settings
+            ⚙️ Settings
           </button>
         </div>
       </aside>

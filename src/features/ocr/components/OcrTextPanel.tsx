@@ -134,11 +134,11 @@ export const OcrTextPanel: FC<OcrTextPanelProps> = ({
         disabled={isOptimizing && isShowingOptimizedView}
       />
       <div className="button-group extracted-actions">
-        <button onClick={handleCopy} className="secondary-btn">
-          📋 Copy
+        <button onClick={handleCopy} className="secondary-btn icon-only" title="Copy">
+          📋
         </button>
-        <button onClick={() => { void onSave(); }} className="secondary-btn">
-          💾 Save
+        <button onClick={() => { void onSave(); }} className="secondary-btn icon-only" title="Save">
+          💾
         </button>
         {onOptimize && (
           <button
