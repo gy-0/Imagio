@@ -92,12 +92,12 @@ export const PromptGenerationPanel: FC<PromptGenerationPanelProps> = ({
       <div className="prompt-control-group">
         <label>
           Additional Description:
-          <textarea
+          <input
+            type="text"
             value={customDescription}
-            onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onCustomDescriptionChange(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => onCustomDescriptionChange(event.target.value)}
             placeholder="Add custom description or modifications..."
             className="text-area-unified text-area-small"
-            rows={2}
           />
         </label>
       </div>

@@ -44,6 +44,9 @@ const App = () => {
   const MAPPING_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
   const optimizeOcrTextRef = useRef<(() => Promise<void>) | null>(null);
   const currentGenerationSessionIdRef = useRef<string | null>(null);
+  // Use refs to avoid stale closure values in async callbacks
+  const activeSessionIdRef = useRef<string | null>(null);
+  // automationSettingsRef will be initialized after automationSettings is declared
 
   const {
     llmSettings,
@@ -62,6 +65,9 @@ const App = () => {
     updateSetting: updateAutomationSetting,
     isLoading: isAutomationLoading
   } = useAutomationSettings();
+  
+  // Initialize automationSettingsRef after automationSettings is declared
+  const automationSettingsRef = useRef(automationSettings);
 
   const {
     aspectRatio,
@@ -125,8 +131,12 @@ const App = () => {
     }
     const sessionId = entry.sessionId;
 
+    // Use ref to get the latest activeSessionId to avoid stale closure values
+    const currentActiveSessionId = activeSessionIdRef.current;
+    const currentAutomationSettings = automationSettingsRef.current;
+
     // Update hasPerformedOcr if this is the active session
-    if (sessionId === activeSessionId) {
+    if (sessionId === currentActiveSessionId) {
       setHasPerformedOcr(true);
     }
 
@@ -147,7 +157,8 @@ const App = () => {
     }), sortBy));
 
     // 自动优化：只对当前活动session触发，以确保state正确同步
-    if (sessionId === activeSessionId && automationSettings.autoOptimizeOcr && details.ocrText.trim() && !isRestoringSessionRef.current) {
+    // Use refs to check latest values instead of closure values
+    if (sessionId === currentActiveSessionId && currentAutomationSettings.autoOptimizeOcr && details.ocrText.trim() && !isRestoringSessionRef.current) {
       // Mark this text as being optimized to prevent duplicate optimization
       lastAutoOptimizedOcrRef.current = details.ocrText;
       // Use the hook's optimizeOcrText function to ensure all state updates are synchronized
@@ -155,14 +166,15 @@ const App = () => {
     }
 
     // 自动生成prompt:如果这是当前active session且开启了auto-generate prompt
-    if (sessionId === activeSessionId && automationSettings.autoGeneratePrompt && details.ocrText.trim() && !isRestoringSessionRef.current) {
+    // Use refs to check latest values instead of closure values
+    if (sessionId === currentActiveSessionId && currentAutomationSettings.autoGeneratePrompt && details.ocrText.trim() && !isRestoringSessionRef.current) {
       // Reset the lastAutoPromptRef to allow auto-generation for the new image
       lastAutoPromptRef.current = '';
     }
 
     // Clean up the mapping
     imagePathToSessionIdRef.current.delete(details.imagePath);
-  }, [activeSessionId, automationSettings.autoOptimizeOcr, automationSettings.autoGeneratePrompt, setSessions, sortBy]);
+  }, [setSessions, sortBy]);
 
   const handleOptimizeComplete = useCallback((details: { imagePath: string; optimizedText: string; }) => {
     // Find the session for this image path
@@ -326,6 +338,15 @@ const App = () => {
   useEffect(() => {
     optimizeOcrTextRef.current = optimizeOcrText;
   }, [optimizeOcrText]);
+
+  // Keep refs in sync with state to avoid stale closures
+  useEffect(() => {
+    activeSessionIdRef.current = activeSessionId;
+  }, [activeSessionId]);
+
+  useEffect(() => {
+    automationSettingsRef.current = automationSettings;
+  }, [automationSettings]);
 
   // Cleanup mapping table on unmount
   useEffect(() => {
@@ -739,6 +760,22 @@ const App = () => {
 
         // Wait for next tick to ensure all setState calls have been processed
         await new Promise(resolve => setTimeout(resolve, 0));
+
+        // After restoring session, check if auto-processing is needed
+        // This handles the case where OCR completed while this session was not active
+        const sessionOcrText = session.ocr.ocrText?.trim() || '';
+        const sessionOptimizedText = session.ocr.optimizedText?.trim() || '';
+        const sessionOptimizedPrompt = session.prompt.optimizedPrompt?.trim() || '';
+
+        // Reset auto-processing refs to allow processing for this restored session
+        // This ensures that if OCR completed while session was inactive, auto-processing will trigger now
+        // The useEffect hooks will check automationSettings and trigger auto-processing if needed
+        if (sessionOcrText && !sessionOptimizedText) {
+          lastAutoOptimizedOcrRef.current = '';
+        }
+        if (sessionOcrText && !sessionOptimizedPrompt) {
+          lastAutoPromptRef.current = '';
+        }
       } finally {
         // Reset flags after all async operations complete
         suppressAutoProcessRef.current = false;

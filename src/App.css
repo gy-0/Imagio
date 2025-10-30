@@ -836,20 +836,25 @@ button.compact,
 }
 
 /* Textarea */
-textarea {
+textarea,
+input[type="text"] {
   width: 100%;
   padding: 1rem;
   font-family: 'SF Mono', 'Monaco', 'Courier New', Courier, monospace;
   font-size: 0.9em;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 8px;
   color: inherit;
-  resize: vertical;
   line-height: 1.6;
 }
 
-textarea:focus {
+textarea {
+  resize: vertical;
+}
+
+textarea:focus,
+input[type="text"]:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
@@ -982,7 +987,8 @@ textarea:focus {
     color: #a01818;
   }
 
-  textarea {
+  textarea,
+  input[type="text"] {
     background: transparent;
     border-color: #ddd;
     color: #213547;

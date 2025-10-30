@@ -199,11 +199,15 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
   }, [onTextChange, onOcrComplete, onOcrError, params]);
 
   const processImageAtPath = useCallback(async (path: string, source: 'file' | 'drop' | 'screenshot' = 'file') => {
-    setImagePath(path);
-    resetProcessedPreview();
-    setOcrText('');
-    clearOptimizedText();
-    onTextChange?.('');
+    // Only clear state if this is a different image path to avoid unnecessary resets
+    // This prevents UI flickering when processing multiple images sequentially
+    if (imagePath !== path) {
+      setImagePath(path);
+      resetProcessedPreview();
+      setOcrText('');
+      clearOptimizedText();
+      onTextChange?.('');
+    }
 
     const assetUrl = convertFileSrc(path);
     setImagePreviewUrl(assetUrl);
@@ -216,7 +220,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     await performOcrOnPath(path);
 
     return sessionId;
-  }, [clearOptimizedText, onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview]);
+  }, [clearOptimizedText, imagePath, onNewImage, onTextChange, performOcrOnPath, resetProcessedPreview]);
 
   const processMultipleImages = useCallback(async (paths: string[], source: 'file' | 'drop' = 'file') => {
     for (const path of paths) {
