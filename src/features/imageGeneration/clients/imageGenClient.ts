@@ -3,7 +3,7 @@
  * Based on the FLUX Pro 1.1 Ultra API
  */
 
-import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
+import { resolveFetch } from '../../../utils/fetchUtils';
 
 export interface ImageGenerationOptions {
   prompt: string;
@@ -241,9 +241,3 @@ export async function downloadImageAsBlob(imageUrl: string): Promise<DownloadedI
   }
 }
 
-function resolveFetch(): typeof fetch {
-  const isTauri =
-    typeof window !== 'undefined' &&
-    typeof (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== 'undefined';
-  return isTauri ? (tauriFetch as unknown as typeof fetch) : fetch;
-}

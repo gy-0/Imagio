@@ -6,7 +6,7 @@
  * Base URL: https://api.bltcy.ai
  */
 
-import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
+import { resolveFetch } from '../../../utils/fetchUtils';
 import { ImageGenerationError } from './imageGenClient';
 
 export type BltcyModel =
@@ -586,9 +586,3 @@ export class BltcyImageClient {
   }
 }
 
-function resolveFetch(): typeof fetch {
-  const isTauri =
-    typeof window !== 'undefined' &&
-    typeof (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== 'undefined';
-  return isTauri ? (tauriFetch as unknown as typeof fetch) : fetch;
-}

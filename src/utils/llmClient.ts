@@ -1,5 +1,7 @@
 export type ChatRole = 'system' | 'user' | 'assistant';
 
+import { resolveFetch } from './fetchUtils';
+
 export interface ChatMessage {
 	role: ChatRole;
 	content: string;
@@ -211,8 +213,8 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 
 	try {
 		// Use Tauri's HTTP plugin to avoid CORS preflight issues
-		const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http');
-		const response = await tauriFetch(url, {
+		const fetch = resolveFetch();
+		const response = await fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
@@ -395,8 +397,8 @@ export async function callChatCompletionStream(
 
 	try {
 		// Use Tauri's HTTP plugin to avoid CORS preflight issues
-		const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http');
-		const response = await tauriFetch(url, {
+		const fetch = resolveFetch();
+		const response = await fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),

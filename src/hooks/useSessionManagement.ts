@@ -32,7 +32,7 @@ const MAPPING_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
 export const useSessionManagement = ({
   sessions,
   setSessions,
-  isLoading,
+  isLoading: _isLoading,
   sortBy,
   loadOcrSnapshot,
   loadPromptSnapshot,

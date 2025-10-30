@@ -7,8 +7,6 @@ import { SettingsModal } from './components/SettingsModal';
 import { useApplicationConfig } from './hooks/useApplicationConfig';
 import { useAutomationSettings } from './hooks/useAutomationSettings';
 import { useSessionStorage } from './hooks/useSessionStorage';
-import { useSessionManagement } from './hooks/useSessionManagement';
-import { useAutoProcessing } from './hooks/useAutoProcessing';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { OcrPreviewPanel } from './features/ocr/components/OcrPreviewPanel';
 import { OcrTextPanel } from './features/ocr/components/OcrTextPanel';
