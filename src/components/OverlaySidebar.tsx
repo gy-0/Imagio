@@ -2,9 +2,8 @@ import type { FC, ChangeEvent, MouseEvent } from 'react';
 import { useState, useEffect } from 'react';
 import type { AutomationSettings } from '../hooks/useAutomationSettings';
 import type { AppSession } from '../types/appSession';
+import type { SortOption } from '../utils/sessionUtils';
 import { ContextMenu } from './ContextMenu';
-
-export type SortOption = 'createdAt' | 'updatedAt';
 
 interface OverlaySidebarProps {
   isOpen: boolean;

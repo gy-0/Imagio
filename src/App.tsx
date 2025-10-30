@@ -7,6 +7,8 @@ import { SettingsModal } from './components/SettingsModal';
 import { useApplicationConfig } from './hooks/useApplicationConfig';
 import { useAutomationSettings } from './hooks/useAutomationSettings';
 import { useSessionStorage } from './hooks/useSessionStorage';
+import { useSessionManagement } from './hooks/useSessionManagement';
+import { useAutoProcessing } from './hooks/useAutoProcessing';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { OcrPreviewPanel } from './features/ocr/components/OcrPreviewPanel';
 import { OcrTextPanel } from './features/ocr/components/OcrTextPanel';
@@ -15,65 +17,12 @@ import { useImageGeneration } from './features/imageGeneration/useImageGeneratio
 import { PromptGenerationPanel } from './features/promptOptimization/components/PromptGenerationPanel';
 import { GeneratedImagePanel } from './features/promptOptimization/components/GeneratedImagePanel';
 import { usePromptOptimization } from './features/promptOptimization/usePromptOptimization';
-import type { AppSession, SessionSource } from './types/appSession';
-import type { SortOption } from './components/OverlaySidebar';
+import { updateSessionInPlace, sortSessions, insertSessionSorted } from './utils/sessionUtils';
+import type { SessionSource, AppSession } from './types/appSession';
+import type { SortOption } from './utils/sessionUtils';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { exists as fsExists, remove as fsRemove } from '@tauri-apps/plugin-fs';
 import './App.css';
-
-// Optimized session array management utilities
-const sortSessions = (sessions: AppSession[], sortBy: SortOption): AppSession[] => {
-  return [...sessions].sort((a, b) => b[sortBy] - a[sortBy]);
-};
-
-// Insert session maintaining sort order - O(n) instead of O(n log n)
-const insertSessionSorted = (
-  sessions: AppSession[],
-  newSession: AppSession,
-  sortBy: SortOption
-): AppSession[] => {
-  const sortValue = newSession[sortBy];
-  let insertIndex = 0;
-
-  // Find insertion point (sessions are sorted descending)
-  while (insertIndex < sessions.length && sessions[insertIndex][sortBy] > sortValue) {
-    insertIndex++;
-  }
-
-  const result = [...sessions];
-  result.splice(insertIndex, 0, newSession);
-  return result;
-};
-
-// Update session and reposition if needed - avoids full sort
-const updateSessionInPlace = (
-  sessions: AppSession[],
-  sessionId: string,
-  updater: (session: AppSession) => AppSession,
-  sortBy: SortOption
-): AppSession[] => {
-  const index = sessions.findIndex(s => s.id === sessionId);
-  if (index === -1) return sessions;
-
-  const updated = updater(sessions[index]);
-  const newSortValue = updated[sortBy];
-
-  // Check if position needs to change
-  const needsReposition =
-    (index > 0 && sessions[index - 1][sortBy] < newSortValue) ||
-    (index < sessions.length - 1 && sessions[index + 1][sortBy] > newSortValue);
-
-  if (!needsReposition) {
-    // Simple in-place update
-    const result = [...sessions];
-    result[index] = updated;
-    return result;
-  }
-
-  // Remove and reinsert
-  const withoutSession = sessions.filter(s => s.id !== sessionId);
-  return insertSessionSorted(withoutSession, updated, sortBy);
-};
 
 const App = () => {
   const [hasPerformedOcr, setHasPerformedOcr] = useState<boolean>(false);

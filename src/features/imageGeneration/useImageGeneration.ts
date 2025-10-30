@@ -3,11 +3,11 @@ import { save } from '@tauri-apps/plugin-dialog';
 import { writeFile, mkdir, exists, readFile, remove } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
 import { join, appLocalDataDir } from '@tauri-apps/api/path';
-import { downloadImageAsBlob, ImageGenerationClient, ImageGenerationError } from '../../utils/imageGenClient';
-import { GeminiImageClient } from '../../utils/geminiImageClient';
-import { BltcyImageClient } from '../../utils/bltcyImageClient';
-import { SeedreamImageClient } from '../../utils/seedreamImageClient';
-import { detectImageFormat, formatToMimeType, generateImageFilename } from '../../utils/imageFormat';
+import { downloadImageAsBlob, ImageGenerationClient, ImageGenerationError } from './clients/imageGenClient';
+import { GeminiImageClient } from './clients/geminiImageClient';
+import { BltcyImageClient } from './clients/bltcyImageClient';
+import { SeedreamImageClient } from './clients/seedreamImageClient';
+import { detectImageFormat, formatToMimeType, generateImageFilename } from './utils/imageFormat';
 import { getModelProvider, getModelDisplayName, getApiModelName } from '../promptOptimization/modelConfig';
 import type { ImageGenModel } from '../promptOptimization/types';
 
