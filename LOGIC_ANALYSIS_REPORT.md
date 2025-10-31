@@ -258,3 +258,4 @@ const restoreSession = async () => {
 3. 确保多图片处理时，只有最后一张图片被设置为active（但这会改变当前行为）
 
 
+
