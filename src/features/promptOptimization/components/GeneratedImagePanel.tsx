@@ -31,7 +31,7 @@ export const GeneratedImagePanel: FC<GeneratedImagePanelProps> = ({
   return (
     <div className="result-card generated-image-panel">
       <div className="result-header">
-        <h2>Generated Image</h2>
+        <h2 className="panel-title">Generated Image</h2>
       </div>
 
       <div className={`generated-image-container${generatedImageUrl ? ' has-image' : ''}`}>
