@@ -61,7 +61,7 @@ export const OverlaySidebar: FC<OverlaySidebarProps> = ({
     setTimeout(() => {
       setIsClosing(false);
       onClose();
-    }, 200); // 匹配动画时长
+    }, 200); // Match animation duration
   };
 
   const handleContextMenu = (event: MouseEvent<HTMLButtonElement>, sessionId: string) => {

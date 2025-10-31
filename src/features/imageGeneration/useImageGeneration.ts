@@ -228,7 +228,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
         objectUrl = result.objectUrl;
         // Gemini doesn't provide a remote URL, image is generated inline
       } else if (selectedModel === 'doubao-seedream-4-0') {
-        // 即梦4 (Seedream 4) - Use specialized client with advanced features
+        // Seedream 4 - Use specialized client with advanced features
         const client = new SeedreamImageClient(bltcyApiKey);
 
         setGenerationStatus(`Generating with ${modelDisplayName}`);
@@ -410,7 +410,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
       setGenerationError('');
       setGenerationStatus('Copying image');
 
-      // 获取 blob
+      // Get blob
       const blob = generatedImageBlob ?? (generatedImageUrl
         ? await fetch(generatedImageUrl).then(res => res.blob())
         : null);
@@ -419,7 +419,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
         throw new Error('Unable to access image data');
       }
 
-      // 转成字节数组传给 Rust
+      // Convert to byte array and pass to Rust
       const arrayBuffer = await blob.arrayBuffer();
       const bytes = Array.from(new Uint8Array(arrayBuffer));
 

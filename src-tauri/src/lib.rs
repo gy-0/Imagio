@@ -404,7 +404,7 @@ fn apply_dilation(img: &DynamicImage) -> DynamicImage {
 }
 
 /// Apply opening morphological operation (erode then dilate)
-/// 开运算 - 先腐蚀后膨胀，用于去除小的噪声点
+/// Opening - Erosion followed by dilation, used to remove small noise points
 fn apply_opening(img: &DynamicImage) -> DynamicImage {
     use imageproc::morphology::{erode, dilate};
     use imageproc::distance_transform::Norm;
@@ -426,7 +426,7 @@ fn apply_opening(img: &DynamicImage) -> DynamicImage {
 }
 
 /// Apply closing morphological operation (dilate then erode)
-/// 闭运算 - 先膨胀后腐蚀，用于填充文字中的小洞和裂缝
+/// Closing - Dilation followed by erosion, used to fill small holes and cracks in text
 fn apply_closing(img: &DynamicImage) -> DynamicImage {
     use imageproc::morphology::{erode, dilate};
     use imageproc::distance_transform::Norm;
@@ -448,7 +448,7 @@ fn apply_closing(img: &DynamicImage) -> DynamicImage {
 }
 
 /// Apply Otsu's automatic threshold (Chinese-OCR3's method)
-/// Otsu算法 - 自动计算最优阈值进行二值化
+/// Otsu algorithm - Automatically calculates optimal threshold for binarization
 fn apply_otsu_threshold(img: &DynamicImage) -> Result<DynamicImage, String> {
     use imageproc::contrast::{threshold, ThresholdType};
     
@@ -474,7 +474,7 @@ fn apply_otsu_threshold(img: &DynamicImage) -> Result<DynamicImage, String> {
 }
 
 /// Calculate Otsu threshold value
-/// 实现Otsu算法计算最优阈值
+/// Implements Otsu algorithm to calculate optimal threshold
 /// Uses Kahan summation for improved numerical stability with large images
 fn calculate_otsu_threshold(img: &image::GrayImage) -> u8 {
     let (width, height) = img.dimensions();
@@ -533,7 +533,7 @@ fn calculate_otsu_threshold(img: &image::GrayImage) -> u8 {
 }
 
 /// Apply mean threshold
-/// 均值阈值 - 使用图像平均灰度作为阈值
+/// Mean threshold - Uses image average grayscale as threshold
 fn apply_mean_threshold(img: &DynamicImage) -> Result<DynamicImage, String> {
     use imageproc::contrast::{threshold, ThresholdType};
     
@@ -762,13 +762,13 @@ async fn take_screenshot() -> Result<ScreenshotResult, String> {
         contrast: 1.3,              // Enhance text/background separation
         brightness: 0.0,            // No brightness adjustment by default
         sharpness: 1.2,             // Slight sharpening for text clarity
-        binarization_method: "otsu".to_string(),  // Otsu自动阈值 (Chinese-OCR3方法)
+        binarization_method: "otsu".to_string(),  // Otsu automatic threshold (Chinese-OCR3 method)
         use_clahe: true,            // Adaptive histogram equalization
         gaussian_blur: 0.5,         // Light noise reduction
         bilateral_filter: false,    // Off by default (use Gaussian instead)
         morphology: "none".to_string(),
         language: "eng".to_string(),
-        correct_skew: true,         // 倾斜校正 (参考Chinese-OCR3)
+        correct_skew: true,         // Skew correction (referencing Chinese-OCR3)
     };
 
     // Perform OCR and properly propagate errors instead of silently failing
@@ -790,7 +790,7 @@ async fn save_text_to_path(text: String, file_path: String) -> Result<(), String
 }
 
 // ============================================
-// 自动化测试 API
+// Automated Testing API
 // ============================================
 
 #[derive(Debug, Serialize)]
@@ -836,23 +836,23 @@ async fn run_automated_test(test_image_path: Option<String>) -> Result<TestImage
 
     let start = Instant::now();
 
-    // 如果没有提供测试图片，创建一个简单的测试图片
+    // If no test image provided, create a simple test image
     let image_path = if let Some(path) = test_image_path {
         path
     } else {
-        // 创建一个包含文本的测试图片
+        // Create a test image containing text
         let temp_dir = std::env::temp_dir();
         let test_path = temp_dir.join("imagio_test.png");
 
-        // 创建简单的测试图片（白底黑字）
+        // Create simple test image (white background, black text)
         let width = 400;
         let height = 100;
         let img = ImageBuffer::from_fn(width, height, |_, _| {
             Rgba([255u8, 255u8, 255u8, 255u8])
         });
 
-        // 这里应该画文字，但为了简单起见，我们就用一个纯色块
-        // 在实际应用中，你需要使用 imageproc::drawing 来画文字
+        // Text should be drawn here, but for simplicity we use a solid color block
+        // In actual applications, you need to use imageproc::drawing to draw text
 
         let dynamic_img = DynamicImage::ImageRgba8(img);
         dynamic_img.save(&test_path)
@@ -861,7 +861,7 @@ async fn run_automated_test(test_image_path: Option<String>) -> Result<TestImage
         test_path.to_string_lossy().to_string()
     };
 
-    // 运行 OCR
+    // Run OCR
     let params = ProcessingParams {
         contrast: 1.3,
         brightness: 0.0,
@@ -902,20 +902,20 @@ async fn copy_image_from_bytes(image_bytes: Vec<u8>) -> Result<(), String> {
     use std::time::Instant;
     let start = Instant::now();
 
-    // 解码图片
+    // Decode image
     let t0 = Instant::now();
     let img = image::load_from_memory(&image_bytes)
         .map_err(|e| format!("Failed to decode image: {}", e))?;
     println!("[Performance] Decode: {}ms", t0.elapsed().as_millis());
 
-    // 转换为 RGBA
+    // Convert to RGBA
     let t0 = Instant::now();
     let rgba_img = img.to_rgba8();
     let (width, height) = rgba_img.dimensions();
     let raw_data = rgba_img.into_raw();
     println!("[Performance] Convert to RGBA: {}ms ({}x{})", t0.elapsed().as_millis(), width, height);
 
-    // 写入剪贴板
+    // Write to clipboard
     let t0 = Instant::now();
     use arboard::{Clipboard, ImageData as ArboardImageData};
 

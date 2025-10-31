@@ -30,13 +30,13 @@ const DEFAULT_PARAMS: ProcessingParams = {
   contrast: 1.3,
   brightness: 0.0,
   sharpness: 1.2,
-  binarizationMethod: 'otsu',  // 使用Otsu二值化（参考Chinese-OCR3）
+  binarizationMethod: 'otsu',  // Use Otsu binarization (referencing Chinese-OCR3)
   useClahe: false,
   gaussianBlur: 0.5,
   bilateralFilter: false,
   morphology: 'none',
   language: 'eng',
-  correctSkew: true  // 默认开启倾斜校正（参考Chinese-OCR3）
+  correctSkew: true  // Enable skew correction by default (referencing Chinese-OCR3)
 };
 
 const reflowOcrText = (text: string): string => {

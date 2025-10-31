@@ -149,14 +149,14 @@ const App = () => {
         ...session.ocr,
         processedImageUrl: details.processedImageUrl,
         ocrText: details.ocrText,
-        // 清空optimizedText，防止旧内容残留
+        // Clear optimizedText to prevent old content from persisting
         optimizedText: '',
         textDisplayMode: 'original' as const
         // params remains from session.ocr.params - no change needed
       }
     }), sortBy));
 
-    // 自动优化：只对当前活动session触发，以确保state正确同步
+    // Auto-optimize: Only trigger for current active session to ensure state is correctly synchronized
     // Use refs to check latest values instead of closure values
     if (sessionId === currentActiveSessionId && currentAutomationSettings.autoOptimizeOcr && details.ocrText.trim() && !isRestoringSessionRef.current) {
       // Mark this text as being optimized to prevent duplicate optimization
@@ -166,7 +166,7 @@ const App = () => {
       void optimizeOcrTextRef.current?.(details.ocrText);
     }
 
-    // 自动生成prompt:如果这是当前active session且开启了auto-generate prompt
+    // Auto-generate prompt: If this is the current active session and auto-generate prompt is enabled
     // Use refs to check latest values instead of closure values
     if (sessionId === currentActiveSessionId && currentAutomationSettings.autoGeneratePrompt && details.ocrText.trim() && !isRestoringSessionRef.current) {
       // Reset the lastAutoPromptRef to allow auto-generation for the new image

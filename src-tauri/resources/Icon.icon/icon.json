@@ -9,8 +9,8 @@
           "blend-mode" : "normal",
           "fill" : "automatic",
           "glass" : true,
-          "image-name" : "顶.png",
-          "name" : "顶",
+          "image-name" : "top.png",
+          "name" : "top",
           "position" : {
             "scale" : 0.92,
             "translation-in-points" : [

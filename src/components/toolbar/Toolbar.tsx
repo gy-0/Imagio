@@ -46,9 +46,9 @@ export const Toolbar: FC<ToolbarProps> = ({
           onChange={(event) => onLanguageChange(event.target.value)}
         >
           <option value="eng">English</option>
-          <option value="chi_sim">简体中文</option>
-          <option value="chi_tra">繁體中文</option>
-          <option value="jpn">日本語</option>
+          <option value="chi_sim">Simplified Chinese</option>
+          <option value="chi_tra">Traditional Chinese</option>
+          <option value="jpn">Japanese</option>
           <option value="kor">한국어</option>
           <option value="fra">Français</option>
           <option value="deu">Deutsch</option>

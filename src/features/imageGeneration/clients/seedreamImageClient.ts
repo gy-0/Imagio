@@ -1,9 +1,9 @@
 /**
- * 即梦4 (Seedream 4) Image Generation Client
+ * Seedream 4 Image Generation Client
  * Supports advanced features:
- * - Multi-image reference (图生图)
- * - Sequential image generation (连续生成)
- * - Batch generation (组图)
+ * - Multi-image reference (image-to-image)
+ * - Sequential image generation
+ * - Batch generation
  * - Streaming responses
  * - Watermark control
  * - 2K resolution
@@ -135,7 +135,7 @@ export class SeedreamImageClient {
 
       console.log('[SeedreamImageClient] Request body:', JSON.stringify(requestBody, null, 2));
 
-      onProgress?.('Generating images with 即梦4');
+      onProgress?.('Generating images with Seedream 4');
 
       const response = await resolveFetch()(`${this.baseURL}/v1/images/generations`, {
         method: 'POST',
