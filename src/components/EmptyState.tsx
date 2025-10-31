@@ -45,19 +45,19 @@ export const EmptyState: FC<EmptyStateProps> = ({
         <div className="empty-state-actions">
           <button
             onClick={onSelectImage}
-            className="empty-state-btn primary"
+            className="toolbar-btn"
           >
             <span className="btn-icon">📁</span>
             <span className="btn-text">Select Image</span>
           </button>
           <button
             onClick={onTakeScreenshot}
-            className="empty-state-btn secondary"
+            className="toolbar-btn"
           >
             <span className="btn-icon">📸</span>
             <span className="btn-text">Screenshot</span>
           </button>
-          <div className="empty-state-btn language-btn-wrapper">
+          <div className="toolbar-btn language-btn">
             <span className="btn-icon">🌐</span>
             <select
               className="language-select"
@@ -76,7 +76,7 @@ export const EmptyState: FC<EmptyStateProps> = ({
           </div>
           <button
             onClick={onOpenSettings}
-            className="empty-state-btn secondary"
+            className="toolbar-btn settings-btn"
           >
             <span className="btn-icon">⚙️</span>
             <span className="btn-text">Settings</span>
