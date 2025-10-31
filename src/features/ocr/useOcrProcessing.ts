@@ -82,8 +82,10 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     setOptimizedText(value);
   }, []);
 
-  const optimizeOcrText = useCallback(async () => {
-    if (!ocrText.trim() || !llmSettings) {
+  const optimizeOcrText = useCallback(async (textToOptimize?: string) => {
+    // Use provided text or fall back to current ocrText state
+    const text = textToOptimize ?? ocrText;
+    if (!text.trim() || !llmSettings) {
       return;
     }
 
@@ -110,7 +112,7 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
           },
           {
             role: 'user',
-            content: `Please correct the following OCR-extracted text:\n\n${ocrText}`
+            content: `Please correct the following OCR-extracted text:\n\n${text}`
           }
         ]
       }, (chunk) => {

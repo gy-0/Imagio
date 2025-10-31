@@ -4,6 +4,7 @@ import { ProcessingStatus } from './components/ProcessingStatus';
 import { Toolbar } from './components/toolbar/Toolbar';
 import { OverlaySidebar } from './components/OverlaySidebar';
 import { SettingsModal } from './components/SettingsModal';
+import { EmptyState } from './components/EmptyState';
 import { useApplicationConfig } from './hooks/useApplicationConfig';
 import { useAutomationSettings } from './hooks/useAutomationSettings';
 import { useSessionStorage } from './hooks/useSessionStorage';
@@ -42,7 +43,7 @@ const App = () => {
   const imagePathToSessionIdRef = useRef<Map<string, { sessionId: string; timestamp: number }>>(new Map());
   const MAX_MAPPING_ENTRIES = 100;
   const MAPPING_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
-  const optimizeOcrTextRef = useRef<(() => Promise<void>) | null>(null);
+  const optimizeOcrTextRef = useRef<((textToOptimize?: string) => Promise<void>) | null>(null);
   const currentGenerationSessionIdRef = useRef<string | null>(null);
   // Use refs to avoid stale closure values in async callbacks
   const activeSessionIdRef = useRef<string | null>(null);
@@ -161,8 +162,9 @@ const App = () => {
     if (sessionId === currentActiveSessionId && currentAutomationSettings.autoOptimizeOcr && details.ocrText.trim() && !isRestoringSessionRef.current) {
       // Mark this text as being optimized to prevent duplicate optimization
       lastAutoOptimizedOcrRef.current = details.ocrText;
+      // Pass the OCR text directly to ensure we use the latest value
       // Use the hook's optimizeOcrText function to ensure all state updates are synchronized
-      void optimizeOcrTextRef.current?.();
+      void optimizeOcrTextRef.current?.(details.ocrText);
     }
 
     // 自动生成prompt:如果这是当前active session且开启了auto-generate prompt
@@ -820,7 +822,9 @@ const App = () => {
       className="container"
       {...dragAndDropHandlers}
     >
-      <h1><span className="emoji">🪄</span> Imagio  <span className="emoji">✨</span></h1>
+      {imagePath && (
+        <h1><span className="emoji">🪄</span> Imagio  <span className="emoji">✨</span></h1>
+      )}
 
       <DropOverlay isVisible={isDragging} />
 
@@ -859,18 +863,20 @@ const App = () => {
         onProcessingParamChange={updateParam}
       />
 
-      <Toolbar
-        onSelectImage={() => { void selectImage(); }}
-        onTakeScreenshot={() => { void takeScreenshot(); }}
-        language={params.language}
-        onLanguageChange={handleLanguageChange}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onToggleSidebar={() => setIsSidebarOpen(true)}
-      />
+      {imagePath && (
+        <Toolbar
+          onSelectImage={() => { void selectImage(); }}
+          onTakeScreenshot={() => { void takeScreenshot(); }}
+          language={params.language}
+          onLanguageChange={handleLanguageChange}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onToggleSidebar={() => setIsSidebarOpen(true)}
+        />
+      )}
 
       <ProcessingStatus isProcessing={isProcessing} statusMessage={processingStatus} />
 
-      {imagePath && (
+      {imagePath ? (
         <div className={gridClassName}>
           <div className="left-panel">
             <OcrPreviewPanel
@@ -934,6 +940,15 @@ const App = () => {
             </>
           )}
         </div>
+      ) : (
+        <EmptyState
+          onSelectImage={() => { void selectImage(); }}
+          onTakeScreenshot={() => { void takeScreenshot(); }}
+          language={params.language}
+          onLanguageChange={handleLanguageChange}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onToggleSidebar={() => setIsSidebarOpen(true)}
+        />
       )}
     </div>
   );
