@@ -2180,6 +2180,9 @@ input[type="text"]:focus {
   transition: border 0.2s ease, background 0.2s ease;
   text-align: left;
   color: inherit;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .overlay-session-item:hover {
@@ -2195,6 +2198,10 @@ input[type="text"]:focus {
 .overlay-session-title {
   font-weight: 600;
   font-size: 0.95rem;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .overlay-session-meta {
