@@ -82,9 +82,6 @@ export const EmptyState: FC<EmptyStateProps> = ({
             <span className="btn-text">Settings</span>
           </button>
         </div>
-        <div className="empty-state-hint">
-          <span className="hint-text">💡 Tip: You can also drag and drop images directly into the window</span>
-        </div>
       </div>
     </div>
   );

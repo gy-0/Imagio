@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DropOverlay } from './components/DropOverlay';
 import { ProcessingStatus } from './components/ProcessingStatus';
 import { Toolbar } from './components/toolbar/Toolbar';
 import { OverlaySidebar } from './components/OverlaySidebar';
@@ -223,8 +222,6 @@ const App = () => {
     performOCR,
     copyOcrText,
     saveOcrText,
-    isDragging,
-    dragAndDropHandlers,
     loadSessionSnapshot: loadOcrSnapshot
   } = useOcrProcessing({
     llmSettings,
@@ -818,15 +815,10 @@ const App = () => {
   }, [activeSessionId, clearGeneratedImage, deleteSessionImageFile, setGeneratedImageOwnerSessionId, setSessions]);
 
   return (
-    <div
-      className="container"
-      {...dragAndDropHandlers}
-    >
+    <div className="container">
       {imagePath && (
         <h1><span className="emoji">🪄</span> Imagio  <span className="emoji">✨</span></h1>
       )}
-
-      <DropOverlay isVisible={isDragging} />
 
       <OverlaySidebar
         isOpen={isSidebarOpen}

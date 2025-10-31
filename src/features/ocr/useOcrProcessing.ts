@@ -1,5 +1,5 @@
-import type { DragEvent, MutableRefObject } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { MutableRefObject } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { callChatCompletionStream } from '../../utils/llmClient';
@@ -63,7 +63,6 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
 
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [params, setParams] = useState<ProcessingParams>(DEFAULT_PARAMS);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
 
   const resetProcessedPreview = useCallback(() => {
     setProcessedImageUrl('');
@@ -314,42 +313,6 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     }
   }, [ocrText]);
 
-  const handleDragEnter = useCallback((event: DragEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((event: DragEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragging(false);
-  }, []);
-
-  const handleDragOver = useCallback((event: DragEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-  }, []);
-
-  const handleDrop = useCallback(async (event: DragEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragging(false);
-
-    const files = Array.from(event.dataTransfer.files);
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
-
-    if (imageFiles.length === 0) {
-      return;
-    }
-
-    try {
-      const imagePaths = imageFiles.map(file => (file as any).path || file.name);
-      await processMultipleImages(imagePaths, 'drop');
-    } catch (error) {
-      console.error('Error handling dropped file:', error);
-    }
-  }, [processMultipleImages]);
 
   // Note: Removed imagePath from dependencies to prevent duplicate processing
   // processImageAtPath already calls performOcrOnPath when image changes
@@ -385,12 +348,6 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramsStr, suppressAutoProcessRef]);
 
-  const dragAndDropHandlers = useMemo(() => ({
-    onDragEnter: handleDragEnter,
-    onDragLeave: handleDragLeave,
-    onDragOver: handleDragOver,
-    onDrop: handleDrop
-  }), [handleDragEnter, handleDragLeave, handleDragOver, handleDrop]);
 
   const getSessionSnapshot = useCallback((): OcrSessionSnapshot => ({
     imagePath,
@@ -434,8 +391,6 @@ export const useOcrProcessing = (options: UseOcrProcessingOptions = {}) => {
     performOCR,
     copyOcrText,
     saveOcrText,
-    isDragging,
-    dragAndDropHandlers,
     processImageAtPath,
     getSessionSnapshot,
     loadSessionSnapshot
