@@ -4,6 +4,9 @@ import { Toolbar } from './components/toolbar/Toolbar';
 import { SidebarContainer } from './features/sidebar/containers/SidebarContainer';
 import { SettingsContainer } from './features/settings/containers/SettingsContainer';
 import { EmptyState } from './components/EmptyState';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorNotification } from './components/ErrorNotification';
+import { useErrorHandler } from './hooks/useErrorHandler';
 import { useApplicationConfig } from './hooks/useApplicationConfig';
 import { useAutomationSettings } from './hooks/useAutomationSettings';
 import { useSessionStorage } from './hooks/useSessionStorage';
@@ -19,6 +22,7 @@ import { updateSessionInPlace, sortSessions, insertSessionSorted } from './utils
 import type { SessionSource, AppSession } from './types/appSession';
 import type { SortOption } from './utils/sessionUtils';
 import { exists as fsExists, remove as fsRemove } from '@tauri-apps/plugin-fs';
+import { MAX_MAPPING_ENTRIES, MAPPING_MAX_AGE_MS, MAIN_GRID_CLASS, DEFAULT_SORT_OPTION } from './constants';
 import './App.css';
 
 const App = () => {
@@ -27,7 +31,7 @@ const App = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const { sessions, setSessions, isLoading: isSessionsLoading } = useSessionStorage();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>('createdAt');
+  const [sortBy, setSortBy] = useState<SortOption>(DEFAULT_SORT_OPTION);
   const [currentGenerationSessionId, setCurrentGenerationSessionId] = useState<string | null>(null);
   const [generatedImageOwnerSessionId, setGeneratedImageOwnerSessionId] = useState<string | null>(null);
   const suppressAutoProcessRef = useRef<boolean>(false);
@@ -39,8 +43,6 @@ const App = () => {
   const lastAutoSavedImageRef = useRef<string>('');
   const onNewImageHandlerRef = useRef<((details: { path: string; previewUrl: string; source: 'file' | 'drop' | 'screenshot'; }) => string) | null>(null);
   const imagePathToSessionIdRef = useRef<Map<string, { sessionId: string; timestamp: number }>>(new Map());
-  const MAX_MAPPING_ENTRIES = 100;
-  const MAPPING_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
   const optimizeOcrTextRef = useRef<((textToOptimize?: string) => Promise<void>) | null>(null);
   const currentGenerationSessionIdRef = useRef<string | null>(null);
   // Use refs to avoid stale closure values in async callbacks
@@ -67,6 +69,9 @@ const App = () => {
   
   // Initialize automationSettingsRef after automationSettings is declared
   const automationSettingsRef = useRef(automationSettings);
+
+  // Error handling
+  const { errors, clearError, reportError } = useErrorHandler();
 
   const {
     aspectRatio,
@@ -662,7 +667,7 @@ const App = () => {
     updateParam('language', language);
   };
 
-  const gridClassName = 'main-content-three-column has-generated';
+  const gridClassName = MAIN_GRID_CLASS;
   const isActiveSessionGenerating = isGenerating && currentGenerationSessionId === activeSessionId;
   const isGenerationLocked = isGenerating;
   const ownsGeneratedImage = generatedImageOwnerSessionId === activeSessionId;
@@ -799,7 +804,9 @@ const App = () => {
   }, [activeSessionId, clearGeneratedImage, deleteSessionImageFile, setGeneratedImageOwnerSessionId, setSessions]);
 
   return (
-    <div className="container">
+    <ErrorBoundary>
+      <div className="container">
+        <ErrorNotification errors={errors} onErrorDismiss={clearError} />
       {imagePath && (
         <h1><span className="emoji">🪄</span> Imagio  <span className="emoji">✨</span></h1>
       )}
@@ -926,7 +933,8 @@ const App = () => {
           onToggleSidebar={() => setIsSidebarOpen(true)}
         />
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 
