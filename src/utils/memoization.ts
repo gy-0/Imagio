@@ -76,8 +76,10 @@ export function memoize<TArgs extends unknown[], TResult>(
 
     if (cache.size >= maxSize) {
       // Remove oldest entry when cache is full
-      const firstKey = cache.keys().next().value;
-      cache.delete(firstKey);
+      const firstKey = cache.keys().next().value as string | undefined;
+      if (firstKey !== undefined) {
+        cache.delete(firstKey);
+      }
     }
 
     cache.set(key, result);
@@ -94,7 +96,6 @@ export function debounce<TArgs extends unknown[], TResult>(
   delayMs: number
 ): (...args: TArgs) => Promise<TResult> {
   let timeoutId: NodeJS.Timeout | null = null;
-  let lastResult: TResult | null = null;
 
   return (...args: TArgs) => {
     return new Promise((resolve, reject) => {
@@ -106,12 +107,8 @@ export function debounce<TArgs extends unknown[], TResult>(
         try {
           const result = fn(...args);
           if (result instanceof Promise) {
-            result.then(r => {
-              lastResult = r;
-              resolve(r);
-            }).catch(reject);
+            result.then(resolve).catch(reject);
           } else {
-            lastResult = result;
             resolve(result);
           }
         } catch (error) {
@@ -131,16 +128,15 @@ export function throttle<TArgs extends unknown[], TResult>(
   delayMs: number
 ): (...args: TArgs) => TResult | undefined {
   let lastCallTime = 0;
-  let lastResult: TResult | undefined;
 
   return (...args: TArgs) => {
     const now = Date.now();
 
     if (now - lastCallTime >= delayMs) {
       lastCallTime = now;
-      lastResult = fn(...args);
+      return fn(...args);
     }
 
-    return lastResult;
+    return undefined;
   };
 }

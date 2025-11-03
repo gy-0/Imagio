@@ -71,7 +71,7 @@ const App = () => {
   const automationSettingsRef = useRef(automationSettings);
 
   // Error handling
-  const { errors, clearError, reportError } = useErrorHandler();
+  const { errors, clearError } = useErrorHandler();
 
   const {
     aspectRatio,
