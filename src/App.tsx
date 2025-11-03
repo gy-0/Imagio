@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ProcessingStatus } from './components/ProcessingStatus';
 import { Toolbar } from './components/toolbar/Toolbar';
 import { SidebarContainer } from './features/sidebar/containers/SidebarContainer';
-import { SettingsModal } from './components/SettingsModal';
+import { SettingsContainer } from './features/settings/containers/SettingsContainer';
 import { EmptyState } from './components/EmptyState';
 import { useApplicationConfig } from './hooks/useApplicationConfig';
 import { useAutomationSettings } from './hooks/useAutomationSettings';
@@ -822,7 +822,7 @@ const App = () => {
         onSortByChange={setSortBy}
       />
 
-      <SettingsModal
+      <SettingsContainer
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         llmSettings={llmSettings}

@@ -2,7 +2,8 @@
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
-      "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: 拆分侧边栏逻辑到独立容器组件\n\n## 主要变更\n\n### 新增 SidebarContainer\n- 创建 src/features/sidebar/containers/SidebarContainer.tsx\n- 将所有侧边栏相关的逻辑从App.tsx迁移到容器组件中\n- 处理会话管理、自动保存目录选择等功能\n\n### App.tsx 简化\n- 移除 handleSelectAutoSaveDirectory 函数\n- 移除 OverlaySidebar 中关于会话恢复的复杂逻辑\n- 移除不需要的 openDialog import\n- 使用 SidebarContainer 替代 OverlaySidebar\n\n### 职责划分\n- **SidebarContainer**: 管理侧边栏状态和事件处理\n  - 会话选择和删除\n  - 自动保存目录选择\n  - 文件清理逻辑\n  \n- **App.tsx**: 保留顶层状态管理\n  - 会话列表（sessions）\n  - 活跃会话（activeSessionId）\n  - 侧边栏打开/关闭状态\n\n## 收益\n- App.tsx 复杂度降低（代码行数减少约15行）\n- 侧边栏逻辑更内聚\n- 易于测试和维护\n- 为后续使用Context API做准备\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: 拆分侧边栏逻辑到独立容器组件\n\n## 主要变更\n\n### 新增 SidebarContainer\n- 创建 src/features/sidebar/containers/SidebarContainer.tsx\n- 将所有侧边栏相关的逻辑从App.tsx迁移到容器组件中\n- 处理会话管理、自动保存目录选择等功能\n\n### App.tsx 简化\n- 移除 handleSelectAutoSaveDirectory 函数\n- 移除 OverlaySidebar 中关于会话恢复的复杂逻辑\n- 移除不需要的 openDialog import\n- 使用 SidebarContainer 替代 OverlaySidebar\n\n### 职责划分\n- **SidebarContainer**: 管理侧边栏状态和事件处理\n  - 会话选择和删除\n  - 自动保存目录选择\n  - 文件清理逻辑\n  \n- **App.tsx**: 保留顶层状态管理\n  - 会话列表（sessions）\n  - 活跃会话（activeSessionId）\n  - 侧边栏打开/关闭状态\n\n## 收益\n- App.tsx 复杂度降低（代码行数减少约15行）\n- 侧边栏逻辑更内聚\n- 易于测试和维护\n- 为后续使用Context API做准备\nEOF\n)\")",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": [],
