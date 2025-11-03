@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ProcessingStatus } from './components/ProcessingStatus';
 import { Toolbar } from './components/toolbar/Toolbar';
-import { OverlaySidebar } from './components/OverlaySidebar';
+import { SidebarContainer } from './features/sidebar/containers/SidebarContainer';
 import { SettingsModal } from './components/SettingsModal';
 import { EmptyState } from './components/EmptyState';
 import { useApplicationConfig } from './hooks/useApplicationConfig';
@@ -18,7 +18,6 @@ import { usePromptOptimization } from './features/promptOptimization/usePromptOp
 import { updateSessionInPlace, sortSessions, insertSessionSorted } from './utils/sessionUtils';
 import type { SessionSource, AppSession } from './types/appSession';
 import type { SortOption } from './utils/sessionUtils';
-import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { exists as fsExists, remove as fsRemove } from '@tauri-apps/plugin-fs';
 import './App.css';
 
@@ -658,21 +657,6 @@ const App = () => {
     }
   }, [activeSessionId, clearGeneratedImage, isGenerating, setGeneratedImageOwnerSessionId]);
 
-  const handleSelectAutoSaveDirectory = useCallback(async () => {
-    try {
-      const selected = await openDialog({
-        directory: true,
-        multiple: false,
-        defaultPath: automationSettings.autoSaveDirectory || undefined
-      });
-
-      if (typeof selected === 'string' && selected.trim()) {
-        updateAutomationSetting('autoSaveDirectory', selected);
-      }
-    } catch (error) {
-      console.error('Failed to select auto-save directory:', error);
-    }
-  }, [automationSettings.autoSaveDirectory, updateAutomationSetting]);
 
   const handleLanguageChange = (language: string) => {
     updateParam('language', language);
@@ -820,16 +804,16 @@ const App = () => {
         <h1><span className="emoji">🪄</span> Imagio  <span className="emoji">✨</span></h1>
       )}
 
-      <OverlaySidebar
+      <SidebarContainer
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         automationSettings={automationSettings}
         onAutomationSettingChange={updateAutomationSetting}
-        onSelectAutoSaveDirectory={() => { void handleSelectAutoSaveDirectory(); }}
         sessions={sessions}
         activeSessionId={activeSessionId}
         onSelectSession={handleSelectSession}
         onDeleteSession={handleDeleteSession}
+        onSessionsChange={setSessions}
         onOpenSettings={() => {
           setIsSidebarOpen(false);
           setIsSettingsOpen(true);
