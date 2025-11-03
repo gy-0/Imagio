@@ -10,6 +10,7 @@
  */
 
 import { resolveFetch } from '../../../utils/fetchUtils';
+import { base64ToBlob } from '../../../utils/imageConversion';
 import { ImageGenerationError } from './imageGenClient';
 
 export interface SeedreamImageGenerationOptions {
@@ -58,6 +59,19 @@ export interface SeedreamGenerationResult {
   totalTokens: number;
 }
 
+interface SeedreamRequestBody {
+  model: string;
+  prompt: string;
+  response_format: string;
+  stream: boolean;
+  watermark: boolean;
+  image?: string[];
+  n?: string;
+  sequential_image_generation?: 'auto' | 'enable' | 'disable';
+  size?: '1K' | '2K';
+  aspect_ratio?: string;
+}
+
 export class SeedreamImageClient {
   private baseURL: string;
   private apiKey: string;
@@ -98,39 +112,27 @@ export class SeedreamImageClient {
       });
 
       // Build request body according to OpenAPI spec
-      const requestBody: any = {
+      const requestBody: SeedreamRequestBody = {
         model: this.model,
         prompt,
         response_format: 'url',
         stream: false, // We'll handle streaming separately if needed
-        watermark
+        watermark,
+        image: referenceImages && referenceImages.length > 0 ? referenceImages : undefined,
+        n: count > 1 ? count.toString() : undefined,
+        sequential_image_generation: sequentialMode,
+        size,
+        aspect_ratio: aspectRatio
       };
 
-      // Add reference images if provided
+      // Log if adding reference images
       if (referenceImages && referenceImages.length > 0) {
-        requestBody.image = referenceImages;
         onProgress?.('Preparing image-to-image generation...');
       }
 
-      // Add count (n parameter) if more than 1
+      // Log if generating multiple images
       if (count > 1) {
-        requestBody.n = count.toString();
         onProgress?.(`Preparing to generate ${count} images...`);
-      }
-
-      // Add sequential generation mode if specified
-      if (sequentialMode) {
-        requestBody.sequential_image_generation = sequentialMode;
-      }
-
-      // Add size if specified
-      if (size) {
-        requestBody.size = size;
-      }
-
-      // Add aspect ratio if specified
-      if (aspectRatio) {
-        requestBody.aspect_ratio = aspectRatio;
       }
 
       console.log('[SeedreamImageClient] Request body:', JSON.stringify(requestBody, null, 2));
@@ -192,7 +194,7 @@ export class SeedreamImageClient {
         } else if (imageData.b64_json) {
           // Base64 format
           console.log(`[SeedreamImageClient] Converting image ${i + 1} from base64`);
-          const result = this.base64ToBlob(imageData.b64_json);
+          const result = base64ToBlob(imageData.b64_json);
           blob = result.blob;
           objectUrl = result.objectUrl;
         } else {
@@ -243,30 +245,24 @@ export class SeedreamImageClient {
     try {
       console.log('[SeedreamImageClient] Creating streaming generation request');
 
-      const requestBody: any = {
+      const requestBody: SeedreamRequestBody = {
         model: this.model,
         prompt,
         response_format: 'url',
         stream: true,
-        watermark
+        watermark,
+        image: referenceImages && referenceImages.length > 0 ? referenceImages : undefined,
+        n: count > 1 ? count.toString() : undefined,
+        sequential_image_generation: sequentialMode,
+        size
       };
 
       if (referenceImages && referenceImages.length > 0) {
-        requestBody.image = referenceImages;
         onProgress('Preparing image-to-image generation...');
       }
 
       if (count > 1) {
-        requestBody.n = count.toString();
         onProgress(`Preparing to generate ${count} images...`);
-      }
-
-      if (sequentialMode) {
-        requestBody.sequential_image_generation = sequentialMode;
-      }
-
-      if (size) {
-        requestBody.size = size;
       }
 
       onProgress('Starting streaming generation...');
@@ -354,7 +350,7 @@ export class SeedreamImageClient {
           blobs.push(blob);
           objectUrls.push(objectUrl);
         } else if (imageData.b64_json) {
-          const result = this.base64ToBlob(imageData.b64_json);
+          const result = base64ToBlob(imageData.b64_json);
           blobs.push(result.blob);
           objectUrls.push(result.objectUrl);
         }
@@ -369,40 +365,6 @@ export class SeedreamImageClient {
       console.error('[SeedreamImageClient] Streaming generation error:', error);
       throw this.handleError(error);
     }
-  }
-
-  /**
-   * Convert base64 string to Blob
-   */
-  private base64ToBlob(base64Data: string): { blob: Blob; objectUrl: string } {
-    // Remove data URL prefix if present
-    let cleanBase64 = base64Data;
-    const dataUrlMatch = base64Data.match(/^data:image\/[a-z]+;base64,(.+)$/i);
-    if (dataUrlMatch) {
-      cleanBase64 = dataUrlMatch[1];
-    }
-
-    // Convert base64 to blob
-    const binaryData = atob(cleanBase64);
-    const bytes = new Uint8Array(binaryData.length);
-    for (let i = 0; i < binaryData.length; i++) {
-      bytes[i] = binaryData.charCodeAt(i);
-    }
-
-    // Determine MIME type from magic bytes
-    let mimeType = 'image/png'; // Default to PNG
-    if (bytes[0] === 0xFF && bytes[1] === 0xD8) {
-      mimeType = 'image/jpeg';
-    } else if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
-      mimeType = 'image/png';
-    } else if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) {
-      mimeType = 'image/webp';
-    }
-
-    const blob = new Blob([bytes], { type: mimeType });
-    const objectUrl = URL.createObjectURL(blob);
-
-    return { blob, objectUrl };
   }
 
   /**
