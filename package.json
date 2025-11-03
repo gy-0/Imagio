@@ -24,6 +24,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix && prettier --write \"src/**/*.{ts,tsx,json}\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx,json}\"",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:dev:fast": "CARGO_PROFILE_DEV_OPT_LEVEL=2 tauri dev",
@@ -42,11 +45,18 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.0",
     "@tauri-apps/cli": "^2.8.4",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
     "@vitejs/plugin-react": "^5.0.4",
+    "eslint": "^9.39.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "prettier": "^3.6.2",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3",
     "vite": "^7.1.9"
   }
 }
