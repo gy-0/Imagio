@@ -1,8 +1,8 @@
-import { createContext, useContext, useCallback, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { AppSession } from '../types/appSession';
 import type { SortOption } from '../utils/sessionUtils';
 
-interface AppContextType {
+export interface AppContextType {
   // Session management
   sessions: AppSession[];
   setSessions: (sessions: AppSession[]) => void;

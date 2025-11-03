@@ -826,7 +826,7 @@ const App = () => {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         llmSettings={llmSettings}
-        onLLMSettingChange={updateLLMSetting}
+        onLLMSettingChange={(key: string, value: unknown) => updateLLMSetting(key as keyof typeof llmSettings, value as string | number)}
         bflApiKey={bflApiKey}
         onBflApiKeyChange={setBflApiKey}
         geminiApiKey={geminiApiKey}
@@ -836,7 +836,7 @@ const App = () => {
         selectedModel={selectedModel}
         onSelectedModelChange={setSelectedModel}
         processingParams={params}
-        onProcessingParamChange={updateParam}
+        onProcessingParamChange={(key: string, value: number | boolean | string) => updateParam(key as keyof typeof params, value)}
       />
 
       {imagePath && (

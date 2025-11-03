@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react';
 import { OverlaySidebar } from '../../../components/OverlaySidebar';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { exists as fsExists, remove as fsRemove } from '@tauri-apps/plugin-fs';
-import type { AppSession, SessionSource } from '../../../types/appSession';
+import type { AppSession } from '../../../types/appSession';
 import type { SortOption } from '../../../utils/sessionUtils';
 import type { AutomationSettings } from '../../../hooks/useAutomationSettings';
 
@@ -129,14 +129,14 @@ export const SidebarContainer = ({
       }
 
       // Delete associated image file if exists
-      if (session.generation?.imagePath) {
+      if (session.generation?.generatedImageLocalPath) {
         try {
-          const fileExists = await fsExists(session.generation.imagePath);
+          const fileExists = await fsExists(session.generation.generatedImageLocalPath);
           if (fileExists) {
-            await fsRemove(session.generation.imagePath);
+            await fsRemove(session.generation.generatedImageLocalPath);
           }
         } catch (error) {
-          console.warn('Failed to delete generated image file:', session.generation.imagePath, error);
+          console.warn('Failed to delete generated image file:', session.generation.generatedImageLocalPath, error);
         }
       }
 
@@ -144,15 +144,15 @@ export const SidebarContainer = ({
       const updatedSessions = sessions.filter(s => s.id !== sessionId);
       onSessionsChange(updatedSessions);
 
-      // Clear active session if it was deleted
+      // Clear active session if it was deleted (no need to call onSelectSession with null)
       if (activeSessionId === sessionId) {
-        onSelectSession(null);
+        onDeleteSession(sessionId);
+      } else {
+        // Call parent's delete handler for any additional cleanup
+        onDeleteSession(sessionId);
       }
-
-      // Call parent's delete handler for any additional cleanup
-      onDeleteSession(sessionId);
     },
-    [sessions, activeSessionId, onSessionsChange, onSelectSession, onDeleteSession]
+    [sessions, activeSessionId, onSessionsChange, onDeleteSession]
   );
 
   return (

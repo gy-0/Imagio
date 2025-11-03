@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { SettingsModal } from '../../../components/SettingsModal';
-import type { LLMSettings } from '../../../hooks/useApplicationConfig';
-import type { ProcessingParams } from '../../../types/processingParams';
-import type { ImageGenModel } from '../../../types/imageGenModels';
+import type { LLMSettings } from '../../../features/promptOptimization/types';
+import type { ProcessingParams } from '../../../features/ocr/types';
+import type { ImageGenModel } from '../../../features/promptOptimization/types';
 
 interface SettingsContainerProps {
   // Modal control
@@ -11,7 +10,7 @@ interface SettingsContainerProps {
 
   // LLM settings
   llmSettings: LLMSettings;
-  onLLMSettingChange: <K extends keyof LLMSettings>(key: K, value: LLMSettings[K]) => void;
+  onLLMSettingChange: (key: string, value: unknown) => void;
 
   // API Keys
   bflApiKey: string;
@@ -27,7 +26,7 @@ interface SettingsContainerProps {
 
   // OCR processing parameters
   processingParams: ProcessingParams;
-  onProcessingParamChange: (key: keyof ProcessingParams, value: number | boolean | string) => void;
+  onProcessingParamChange: (key: string, value: number | boolean | string) => void;
 }
 
 /**
