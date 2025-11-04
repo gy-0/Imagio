@@ -94,7 +94,7 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
         />
       </div>
 
-      {/* Second row: 2 dropdowns + 3 checkboxes */}
+      {/* Second row: 3 dropdowns + 2 checkboxes */}
       <div className="controls-row-mixed">
         <div className="control-group">
           <label>
@@ -107,6 +107,7 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
               <option value="otsu">Otsu (Auto) ⭐</option>
               <option value="adaptive">Adaptive</option>
               <option value="mean">Mean</option>
+              <option value="sauvola">Sauvola (Uneven Light) 🆕</option>
             </select>
           </label>
         </div>
@@ -127,11 +128,19 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
           </label>
         </div>
 
-        <Checkbox
-          label="📐 Deskew"
-          checked={params.correctSkew}
-          onChange={(checked) => onParamChange('correctSkew', checked)}
-        />
+        <div className="control-group">
+          <label>
+            Deskew Method:
+            <select
+              value={params.skewMethod}
+              onChange={(event: ChangeEvent<HTMLSelectElement>) => onParamChange('skewMethod', event.target.value)}
+              disabled={!params.correctSkew}
+            >
+              <option value="hough">Hough Transform</option>
+              <option value="projection">Projection (Fast) ⭐</option>
+            </select>
+          </label>
+        </div>
 
         <Checkbox
           label="CLAHE"
@@ -143,6 +152,27 @@ export const AdvancedControls: FC<AdvancedControlsProps> = ({
           label="Bilateral"
           checked={params.bilateralFilter}
           onChange={(checked) => onParamChange('bilateralFilter', checked)}
+        />
+      </div>
+
+      {/* Third row: New features */}
+      <div className="controls-row-mixed">
+        <Checkbox
+          label="📐 Deskew"
+          checked={params.correctSkew}
+          onChange={(checked) => onParamChange('correctSkew', checked)}
+        />
+
+        <Checkbox
+          label="✂️ Remove Borders"
+          checked={params.removeBorders}
+          onChange={(checked) => onParamChange('removeBorders', checked)}
+        />
+
+        <Checkbox
+          label="🤖 Adaptive Mode (Auto) 🆕"
+          checked={params.adaptiveMode}
+          onChange={(checked) => onParamChange('adaptiveMode', checked)}
         />
       </div>
     </div>
