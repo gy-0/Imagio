@@ -12,9 +12,8 @@ interface ImagePathMapping {
  * Hook to manage OCR workflow and session image mapping
  */
 export const useOcrWorkflow = () => {
-  const { activeSessionId, activeSessionIdRef, updateSession } = useSessionContext();
+  const { activeSessionIdRef, updateSession } = useSessionContext();
   const {
-    settings: automationSettings,
     settingsRef: automationSettingsRef,
     isRestoringSessionRef,
     lastAutoOptimizedOcrRef,
@@ -117,7 +116,12 @@ export const useOcrWorkflow = () => {
     imagePath: string;
     optimizedText: string;
   }) => {
-    updateSession(activeSessionId!, session => {
+    const currentActiveSessionId = activeSessionIdRef.current;
+    if (!currentActiveSessionId) {
+      return;
+    }
+
+    updateSession(currentActiveSessionId, session => {
       if (session.ocr.imagePath !== details.imagePath) {
         return {};
       }
@@ -130,7 +134,7 @@ export const useOcrWorkflow = () => {
         }
       };
     });
-  }, [activeSessionId, updateSession]);
+  }, [activeSessionIdRef, updateSession]);
 
   // Handle OCR error
   const handleOcrError = useCallback((details: {

@@ -12,7 +12,8 @@ class Logger {
   constructor() {
     // Check if we're in development mode
     // Vite sets import.meta.env.DEV to true in development
-    this.isDevelopment = import.meta.env.DEV;
+    // Use type assertion since Vite's env types may not be available in all contexts
+    this.isDevelopment = (import.meta as any).env?.DEV ?? true;
   }
 
   private shouldLog(level: LogLevel): boolean {

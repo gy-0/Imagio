@@ -5,7 +5,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { join, appLocalDataDir } from '@tauri-apps/api/path';
 import { downloadImageAsBlob, ImageGenerationClient, ImageGenerationError } from './clients/imageGenClient';
 import { GeminiImageClient } from './clients/geminiImageClient';
-import { BltcyImageClient } from './clients/bltcyImageClient';
+import { BltcyImageClient, type BltcyModel } from './clients/bltcyImageClient';
 import { SeedreamImageClient } from './clients/seedreamImageClient';
 import { detectImageFormat, formatToMimeType, generateImageFilename } from './utils/imageFormat';
 import { getModelProvider, getModelDisplayName, getApiModelName } from '../promptOptimization/modelConfig';
@@ -257,7 +257,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
         setGenerationStatus(`Generating with ${modelDisplayName}`);
         const result = await client.generateImage({
           prompt,
-          model: apiModel as 'flux-pro' | 'flux-dev' | 'flux-schnell',
+          model: apiModel as BltcyModel,
           aspectRatio: aspectRatio || undefined
         });
         blob = result.blob;
