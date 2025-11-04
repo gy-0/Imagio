@@ -76,13 +76,23 @@ export const useSessionStorage = (): UseSessionStorageResult => {
     const saveWithFallback = (sessionsToSave: AppSession[], attemptNumber: number = 1): boolean => {
       try {
         // Clean up blob URLs before saving (they won't be valid after restart)
+        // BUT keep all file paths for image restoration
         const sanitizedSessions = sessionsToSave.map(session => ({
           ...session,
+          ocr: {
+            ...session.ocr,
+            // Keep imagePath and processedImageUrl for restoration
+            // Only clear runtime blob URLs that start with 'blob:'
+            imagePreviewUrl: session.ocr.imagePreviewUrl.startsWith('blob:') ? '' : session.ocr.imagePreviewUrl,
+            processedImageUrl: session.ocr.processedImageUrl.startsWith('blob:') ? '' : session.ocr.processedImageUrl,
+          },
           generation: {
             ...session.generation,
-            // Don't persist local blob URLs, only remote URLs
-            generatedImageUrl: '',
-            generatedImageLocalPath: session.generation.generatedImageLocalPath || ''
+            // Don't persist local blob URLs, only remote URLs and local file paths
+            generatedImageUrl: session.generation.generatedImageUrl.startsWith('blob:') ? '' : session.generation.generatedImageUrl,
+            // IMPORTANT: Keep local file path for image restoration
+            generatedImageLocalPath: session.generation.generatedImageLocalPath || '',
+            generatedImageRemoteUrl: session.generation.generatedImageRemoteUrl || ''
           }
         }));
 

@@ -257,7 +257,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
         setGenerationStatus(`Generating with ${modelDisplayName}`);
         const result = await client.generateImage({
           prompt,
-          model: apiModel as any,
+          model: apiModel as 'flux-pro' | 'flux-dev' | 'flux-schnell',
           aspectRatio: aspectRatio || undefined
         });
         blob = result.blob;

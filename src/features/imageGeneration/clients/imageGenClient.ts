@@ -61,7 +61,7 @@ export class ImageGenerationClient {
   private async createGenerationRequest(options: ImageGenerationOptions): Promise<{ requestId: string; pollingUrl: string }> {
     const url = `${this.baseURL}/flux-pro-1.1-ultra`;
 
-    const requestBody: Record<string, any> = {
+    const requestBody: Record<string, unknown> = {
       prompt: options.prompt,
       output_format: options.outputFormat || 'jpeg',
       safety_tolerance: options.safetyTolerance ?? 2,
