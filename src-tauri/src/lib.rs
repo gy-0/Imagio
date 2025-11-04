@@ -692,7 +692,6 @@ fn correct_skew_projection(img: &DynamicImage) -> Result<DynamicImage, String> {
     use imageproc::geometric_transformations::{rotate_about_center, Interpolation};
 
     let gray = img.to_luma8();
-    let (width, height) = gray.dimensions();
 
     // Binary threshold first
     let threshold_value = calculate_otsu_threshold(&gray);
