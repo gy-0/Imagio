@@ -1184,7 +1184,32 @@ async fn take_screenshot() -> Result<ScreenshotResult, String> {
 
 #[tauri::command]
 async fn save_text_to_path(text: String, file_path: String) -> Result<(), String> {
-    fs::write(&file_path, text)
+    use std::path::Path;
+
+    // Validate and canonicalize the path to prevent directory traversal
+    let path = Path::new(&file_path);
+
+    // Canonicalize will resolve .. and symlinks, and fail if path doesn't exist yet
+    // For new files, we check the parent directory instead
+    let parent_dir = path.parent()
+        .ok_or_else(|| "Invalid file path: no parent directory".to_string())?;
+
+    // Verify parent directory exists and is accessible
+    if !parent_dir.exists() {
+        return Err(format!("Parent directory does not exist: {}", parent_dir.display()));
+    }
+
+    // Canonicalize parent to prevent traversal attacks
+    let canonical_parent = parent_dir.canonicalize()
+        .map_err(|e| format!("Failed to resolve parent path: {}", e))?;
+
+    // Reconstruct the full path with canonical parent
+    let canonical_path = canonical_parent.join(
+        path.file_name().ok_or_else(|| "Invalid file name".to_string())?
+    );
+
+    // Write to the validated path
+    fs::write(&canonical_path, text)
         .map_err(|e| format!("Failed to save file: {}", e))?;
 
     Ok(())

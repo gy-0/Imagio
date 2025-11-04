@@ -102,12 +102,28 @@ interface LLMResponseValidation {
 	};
 }
 
-function validateLLMResponse(parsed: any): LLMResponseValidation {
-	if (!parsed) {
-		return { valid: false, reason: 'Response is null/undefined' };
+interface LLMResponseStructure {
+	choices?: Array<{
+		message?: { content?: unknown };
+		text?: unknown;
+	}>;
+	usage?: {
+		prompt_tokens?: number;
+		promptTokens?: number;
+		completion_tokens?: number;
+		completionTokens?: number;
+		total_tokens?: number;
+		totalTokens?: number;
+	};
+}
+
+function validateLLMResponse(parsed: unknown): LLMResponseValidation {
+	if (!parsed || typeof parsed !== 'object') {
+		return { valid: false, reason: 'Response is null/undefined or not an object' };
 	}
 
-	const hasChoices = Array.isArray(parsed?.choices);
+	const response = parsed as LLMResponseStructure;
+	const hasChoices = Array.isArray(response.choices);
 	if (!hasChoices) {
 		return { 
 			valid: false, 
@@ -122,12 +138,12 @@ function validateLLMResponse(parsed: any): LLMResponseValidation {
 		};
 	}
 
-	const choices = parsed.choices;
+	const choices = response.choices;
 	const choicesLength = choices.length;
-	
+
 	if (choicesLength === 0) {
-		return { 
-			valid: false, 
+		return {
+			valid: false,
 			reason: 'Empty choices array',
 			diagnostics: {
 				hasChoices: true,
@@ -255,33 +271,40 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 			throw new LLMError(`LLM returned non-JSON content: ${bodyText.slice(0, 200)}`);
 		}
 
-		let parsed: any;
+		let parsed: unknown;
 		try {
 			parsed = await response.json();
 		} catch (error) {
 					throw new LLMError('Failed to parse LLM response JSON', response.status, error);
 		}
 
+		// Validate that parsed is an object
+		if (!parsed || typeof parsed !== 'object') {
+			throw new LLMError('LLM response is not a valid JSON object', response.status);
+		}
+
+		const responseData = parsed as LLMResponseStructure;
+
 		// Log response structure for debugging
-		const debugContent = parsed?.choices?.[0]?.message?.content ?? parsed?.choices?.[0]?.text ?? '';
+		const debugContent = responseData.choices?.[0]?.message?.content ?? responseData.choices?.[0]?.text ?? '';
 		console.log('[LLM Debug] Response structure:', {
-			hasChoices: Array.isArray(parsed?.choices),
-			choicesLength: parsed?.choices?.length ?? 0,
-			firstChoice: parsed?.choices?.[0] ? {
-				hasMessage: !!parsed.choices[0].message,
-				hasContent: !!parsed.choices[0].message?.content,
-				hasText: !!parsed.choices[0].text,
-				contentType: typeof parsed.choices[0].message?.content,
-				textType: typeof parsed.choices[0].text,
-				contentLength: debugContent.length,
-				contentPreview: `"${debugContent.slice(0, 100)}..."`,
-				contentTrimmedLength: debugContent.trim().length
+			hasChoices: Array.isArray(responseData.choices),
+			choicesLength: responseData.choices?.length ?? 0,
+			firstChoice: responseData.choices?.[0] ? {
+				hasMessage: !!responseData.choices[0].message,
+				hasContent: !!responseData.choices[0].message?.content,
+				hasText: !!responseData.choices[0].text,
+				contentType: typeof responseData.choices[0].message?.content,
+				textType: typeof responseData.choices[0].text,
+				contentLength: typeof debugContent === 'string' ? debugContent.length : 0,
+				contentPreview: typeof debugContent === 'string' ? `"${debugContent.slice(0, 100)}..."` : 'N/A',
+				contentTrimmedLength: typeof debugContent === 'string' ? debugContent.trim().length : 0
 			} : null,
-			rawSample: JSON.stringify(parsed).slice(0, 500)
+			rawSample: JSON.stringify(responseData).slice(0, 500)
 		});
 
 		// Validate the response structure
-		const validation = validateLLMResponse(parsed);
+		const validation = validateLLMResponse(responseData);
 		
 		if (!validation.valid) {
 			const contentInfo = debugContent ? `raw length=${debugContent.length}, trimmed length=${debugContent.trim().length}` : '';
@@ -296,18 +319,18 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 			console.error('[LLM Error] Invalid response:', {
 				reason: validation.reason,
 				diagnostics: validation.diagnostics,
-				rawContentLength: debugContent?.length ?? 0,
-				rawContentPreview: debugContent ? `"${debugContent.slice(0, 200)}"` : 'N/A',
-				fullResponse: parsed
+				rawContentLength: typeof debugContent === 'string' ? debugContent.length : 0,
+				rawContentPreview: typeof debugContent === 'string' ? `"${debugContent.slice(0, 200)}"` : 'N/A',
+				fullResponse: responseData
 			});
-			
+
 			throw new LLMError(
 				`LLM response missing valid content (${validation.reason})。${diagnosticsStr}`,
 				response.status
 			);
 		}
 
-		const choices = Array.isArray(parsed?.choices) ? parsed.choices : [];
+		const choices = Array.isArray(responseData.choices) ? responseData.choices : [];
 		const primaryChoice = choices[0] ?? null;
 		const rawContent =
 			typeof primaryChoice?.message?.content === 'string'
@@ -318,18 +341,18 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 
 		const content = rawContent.trim();
 
-		const usage: ChatCompletionUsage | undefined = parsed?.usage
+		const usage: ChatCompletionUsage | undefined = responseData.usage
 			? {
-					promptTokens: parsed.usage.prompt_tokens ?? parsed.usage.promptTokens,
-					completionTokens: parsed.usage.completion_tokens ?? parsed.usage.completionTokens,
-					totalTokens: parsed.usage.total_tokens ?? parsed.usage.totalTokens,
+					promptTokens: responseData.usage.prompt_tokens ?? responseData.usage.promptTokens,
+					completionTokens: responseData.usage.completion_tokens ?? responseData.usage.completionTokens,
+					totalTokens: responseData.usage.total_tokens ?? responseData.usage.totalTokens,
 				}
 			: undefined;
 
 		return {
 			content,
 			usage,
-			raw: parsed,
+			raw: responseData,
 		};
 	} catch (error) {
 		if (error instanceof LLMError) {
