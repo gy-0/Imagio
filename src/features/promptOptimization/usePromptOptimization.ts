@@ -97,15 +97,15 @@ export const usePromptOptimization = (
     setOptimizedPrompt(''); // Clear previous prompt
 
     try {
-      const systemPrompt = 'You are a prompt optimization expert for image generation models like FLUX. Your task is to transform input text into optimized prompts suitable for image generation. IMPORTANT: Output ONLY the prompt content itself, without any introductory phrases, titles, or explanations like "Concise FLUX prompt" or "Here is the prompt". Start directly with the prompt description.';
+      const systemPrompt = 'You are a prompt optimization expert for image generation models. Your task is to transform input text into optimized prompts suitable for image generation. IMPORTANT: Output ONLY the prompt content itself, without any introductory phrases, titles, or explanations like "Concise prompt" or "Here is the prompt". Start directly with the prompt description.';
 
-      const userPrompt = `Please optimize the following text for image generation with FLUX model:
+      const userPrompt = `Please optimize the following text for image generation models:
 
 Extracted text: ${ocrText}
 
 Image style: ${imageStyle}
 
-Additional description: ${customDescription || 'None'}
+Users specific description: ${customDescription || 'None'}
 
 Generate a concise, descriptive prompt that captures the essence and key visual elements. Focus on visual details, composition, lighting, and style.
 
