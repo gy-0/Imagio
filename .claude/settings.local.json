@@ -6,7 +6,8 @@
       "Bash(git commit:*)",
       "Bash(pnpm run tauri:build:*)",
       "Bash(npm test:*)",
-      "Bash(pnpm run build:*)"
+      "Bash(pnpm run build:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],
