@@ -2463,6 +2463,9 @@ input[type="text"]:focus {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  word-break: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .overlay-session-meta {
@@ -2474,6 +2477,12 @@ input[type="text"]:focus {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.7);
   line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .overlay-settings-section {
