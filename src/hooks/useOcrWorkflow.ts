@@ -14,7 +14,6 @@ interface ImagePathMapping {
 export const useOcrWorkflow = () => {
   const { activeSessionId, activeSessionIdRef, updateSession } = useSessionContext();
   const {
-    settings: automationSettings,
     settingsRef: automationSettingsRef,
     isRestoringSessionRef,
     lastAutoOptimizedOcrRef,

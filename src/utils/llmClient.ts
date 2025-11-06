@@ -139,7 +139,7 @@ function validateLLMResponse(parsed: unknown): LLMResponseValidation {
 	}
 
 	const choices = response.choices;
-	const choicesLength = choices.length;
+	const choicesLength = choices?.length ?? 0;
 
 	if (choicesLength === 0) {
 		return {
@@ -155,19 +155,19 @@ function validateLLMResponse(parsed: unknown): LLMResponseValidation {
 		};
 	}
 
-	const primaryChoice = choices[0];
+	const primaryChoice = choices?.[0];
 	const hasFirstChoice = !!primaryChoice;
 	const contentType = typeof primaryChoice?.message?.content;
 	const textType = typeof primaryChoice?.text;
 
-	const rawContent =
+	const rawContent: unknown =
 		contentType === 'string'
-			? primaryChoice.message.content
+			? primaryChoice?.message?.content
 			: textType === 'string'
-			? primaryChoice.text
+			? primaryChoice?.text
 			: '';
 
-	const content = rawContent.trim();
+	const content = typeof rawContent === 'string' ? rawContent.trim() : '';
 
 	if (!content) {
 		return {
@@ -307,7 +307,7 @@ export async function callChatCompletion(params: ChatCompletionParams): Promise<
 		const validation = validateLLMResponse(responseData);
 		
 		if (!validation.valid) {
-			const contentInfo = debugContent ? `raw length=${debugContent.length}, trimmed length=${debugContent.trim().length}` : '';
+			const contentInfo = typeof debugContent === 'string' && debugContent ? `raw length=${debugContent.length}, trimmed length=${debugContent.trim().length}` : '';
 			const diagnosticsStr = validation.diagnostics
 				? `Debug info: choices count=${validation.diagnostics.choicesLength}, ` +
 				  `primary choice exists=${validation.diagnostics.hasFirstChoice}, ` +

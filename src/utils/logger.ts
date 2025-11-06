@@ -12,7 +12,11 @@ class Logger {
   constructor() {
     // Check if we're in development mode
     // Vite sets import.meta.env.DEV to true in development
-    this.isDevelopment = import.meta.env.DEV;
+    try {
+      this.isDevelopment = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
+    } catch {
+      this.isDevelopment = false;
+    }
   }
 
   private shouldLog(level: LogLevel): boolean {
