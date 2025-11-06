@@ -999,66 +999,153 @@ input[type="text"]:focus {
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
-    background-color: #ffffff;
+    background: radial-gradient(ellipse at top, #f8f9fa 0%, #e9ecef 100%);
   }
 
-  .llm-status {
-    background: rgba(102, 126, 234, 0.08);
-    border-color: rgba(102, 126, 234, 0.25);
-    color: #2b3a6b;
+  h1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  .llm-status.success {
-    background: rgba(76, 175, 80, 0.14);
-    border-color: rgba(76, 175, 80, 0.3);
-    color: #1b5e20;
+  h1 .emoji {
+    filter: drop-shadow(0 2px 12px rgba(102, 126, 234, 0.3));
   }
 
-  .llm-status.error {
-    background: rgba(235, 87, 87, 0.14);
-    border-color: rgba(235, 87, 87, 0.35);
-    color: #b71c1c;
+  h3 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .panel-title {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.7) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .preview-section,
   .result-card {
-    border-color: rgba(0, 0, 0, 0.1);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  .preview-section:hover,
+  .result-card:hover {
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+  }
+
+  textarea,
+  input[type="text"] {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  textarea:hover,
+  input[type="text"]:hover {
+    border-color: rgba(0, 0, 0, 0.2);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
+  }
+
+  textarea:focus,
+  input[type="text"]:focus {
+    border-color: var(--color-primary);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.9) 100%);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12),
+                inset 0 1px 3px rgba(0, 0, 0, 0.06),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .image-block h3 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .llm-status {
+    background: linear-gradient(145deg, rgba(102, 126, 234, 0.12) 0%, rgba(102, 126, 234, 0.08) 100%);
+    border-color: rgba(102, 126, 234, 0.25);
+    color: #2b3a6b;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.08);
+  }
+
+  .llm-status.success {
+    background: linear-gradient(145deg, rgba(76, 175, 80, 0.16) 0%, rgba(76, 175, 80, 0.12) 100%);
+    border-color: rgba(76, 175, 80, 0.3);
+    color: #1b5e20;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.12);
+  }
+
+  .llm-status.error {
+    background: linear-gradient(145deg, rgba(235, 87, 87, 0.16) 0%, rgba(235, 87, 87, 0.12) 100%);
+    border-color: rgba(235, 87, 87, 0.35);
+    color: #b71c1c;
+    box-shadow: 0 2px 8px rgba(235, 87, 87, 0.12);
   }
 
   .primary-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
     color: #ffffff;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25),
-                0 2px 6px rgba(118, 75, 162, 0.2);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3) inset,
+                0 8px 24px rgba(102, 126, 234, 0.35),
+                0 4px 12px rgba(118, 75, 162, 0.25);
   }
 
   .primary-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, #7c8ff7 0%, #8a6cc4 50%, #f5a5fe 100%);
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.35),
-                0 4px 8px rgba(118, 75, 162, 0.25);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset,
+                0 12px 32px rgba(102, 126, 234, 0.45),
+                0 6px 16px rgba(118, 75, 162, 0.35);
   }
 
   .primary-btn:focus-visible {
-    outline-color: rgba(102, 126, 234, 0.6);
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2),
-                0 4px 12px rgba(102, 126, 234, 0.25);
+    outline-color: rgba(102, 126, 234, 0.8);
+    box-shadow: 0 0 0 5px rgba(102, 126, 234, 0.25),
+                0 8px 24px rgba(102, 126, 234, 0.35);
   }
 
   .secondary-btn {
-    background: rgba(0, 0, 0, 0.05);
-    border-color: rgba(0, 0, 0, 0.15);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+    border-color: rgba(0, 0, 0, 0.12);
     color: #213547;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 1) inset,
+                0 2px 8px rgba(0, 0, 0, 0.08);
   }
 
   .secondary-btn:hover:not(:disabled) {
-    background: rgba(0, 0, 0, 0.08);
-    border-color: rgba(0, 0, 0, 0.25);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.85) 100%);
+    border-color: rgba(0, 0, 0, 0.2);
     color: #213547;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 1) inset,
+                0 4px 16px rgba(0, 0, 0, 0.12);
   }
 
   .secondary-btn:focus-visible {
-    outline-color: rgba(0, 0, 0, 0.4);
-    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+    outline-color: rgba(102, 126, 234, 0.6);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15),
+                0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .spinner {
+    border-color: rgba(102, 126, 234, 0.12);
+    border-top-color: #667eea;
+    border-right-color: #764ba2;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2),
+                inset 0 0 8px rgba(102, 126, 234, 0.1);
+    filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.3));
   }
 
   .secondary-btn.danger {
