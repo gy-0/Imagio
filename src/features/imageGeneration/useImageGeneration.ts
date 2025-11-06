@@ -7,6 +7,7 @@ import { downloadImageAsBlob, ImageGenerationClient, ImageGenerationError } from
 import { GeminiImageClient } from './clients/geminiImageClient';
 import { BltcyImageClient, type BltcyModel } from './clients/bltcyImageClient';
 import { SeedreamImageClient } from './clients/seedreamImageClient';
+import { MidjourneyClient, MidjourneyError } from './clients/midjourneyClient';
 import { detectImageFormat, formatToMimeType, generateImageFilename } from './utils/imageFormat';
 import { getModelProvider, getModelDisplayName, getApiModelName } from '../promptOptimization/modelConfig';
 import type { ImageGenModel } from '../promptOptimization/types';
@@ -174,7 +175,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
       return;
     }
 
-    if (provider === 'bltcy' && !bltcyApiKey.trim()) {
+    if ((provider === 'bltcy' || provider === 'midjourney') && !bltcyApiKey.trim()) {
       setGenerationError('Please configure BLTCY API Key in settings.');
       return;
     }
@@ -249,6 +250,24 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
         blob = result.blobs[0];
         objectUrl = result.objectUrls[0];
         console.log('[useImageGeneration] Seedream 4 generation completed, tokens:', result.totalTokens);
+      } else if (provider === 'midjourney') {
+        // Midjourney generation flow (via BLTCY)
+        const mode = selectedModel === 'midjourney-fast' ? 'fast' : 'relax';
+        const client = new MidjourneyClient(bltcyApiKey, mode);
+
+        setGenerationStatus(`Generating with ${modelDisplayName}`);
+        const result = await client.generateImage(
+          {
+            prompt,
+            base64Array: [] // Can be extended for image-to-image in the future
+          },
+          (message) => {
+            setGenerationStatus(message);
+          }
+        );
+        blob = result.blob;
+        objectUrl = result.objectUrl;
+        console.log('[useImageGeneration] Midjourney generation completed');
       } else {
         // BLTCY generation flow (proxy provider)
         const client = new BltcyImageClient(bltcyApiKey);
@@ -286,7 +305,7 @@ export const useImageGeneration = ({ bflApiKey, geminiApiKey, bltcyApiKey, selec
       console.error('Error generating image:', error);
       setGenerationStatus('');
 
-      if (error instanceof ImageGenerationError) {
+      if (error instanceof ImageGenerationError || error instanceof MidjourneyError) {
         setGenerationError(error.message);
       } else if (error instanceof Error) {
         setGenerationError(`Unexpected error: ${error.message}`);

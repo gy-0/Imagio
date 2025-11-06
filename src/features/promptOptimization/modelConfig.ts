@@ -8,7 +8,7 @@ import type { ImageGenModel } from './types';
 export interface ModelInfo {
   id: ImageGenModel;
   displayName: string;
-  provider: 'bltcy' | 'bfl' | 'gemini';
+  provider: 'bltcy' | 'bfl' | 'gemini' | 'midjourney';
   apiModel?: string; // The actual model name to send to the API (if different from id)
 }
 
@@ -33,6 +33,10 @@ export const IMAGE_GEN_MODELS: ModelInfo[] = [
   // Official provider models (with provider suffix in display)
   { id: 'flux-bfl', displayName: 'FLUX (BFL)', provider: 'bfl' },
   { id: 'nano-banana-gemini', displayName: 'Nano Banana🍌 (Gemini)', provider: 'gemini' },
+
+  // Midjourney models
+  { id: 'midjourney-fast', displayName: 'Midjourney Fast', provider: 'midjourney' },
+  { id: 'midjourney-relax', displayName: 'Midjourney Relax', provider: 'midjourney' },
 ];
 
 export const getModelInfo = (modelId: ImageGenModel): ModelInfo | undefined => {
@@ -44,7 +48,7 @@ export const getModelDisplayName = (modelId: ImageGenModel): string => {
   return model?.displayName || modelId;
 };
 
-export const getModelProvider = (modelId: ImageGenModel): 'bltcy' | 'bfl' | 'gemini' => {
+export const getModelProvider = (modelId: ImageGenModel): 'bltcy' | 'bfl' | 'gemini' | 'midjourney' => {
   const model = getModelInfo(modelId);
   return model?.provider || 'bltcy';
 };

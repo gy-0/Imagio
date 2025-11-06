@@ -189,10 +189,10 @@ export const SettingsModal: FC<SettingsModalProps> = ({
                 </label>
               </div>
 
-              {modelProvider === 'bltcy' && (
+              {(modelProvider === 'bltcy' || modelProvider === 'midjourney') && (
                 <div className="settings-field">
                   <label>
-                    BLTCY API Key
+                    BLTCY API Key {modelProvider === 'midjourney' && '(for Midjourney)'}
                     <div className="password-input-wrapper">
                       <input
                         type={showBltcyApiKey ? "text" : "password"}

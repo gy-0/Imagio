@@ -24,7 +24,10 @@ export type ImageGenModel =
   | 'doubao-seedream-3-0'
   // Official provider models (with provider suffix)
   | 'flux-bfl'
-  | 'nano-banana-gemini';
+  | 'nano-banana-gemini'
+  // Midjourney models
+  | 'midjourney-fast'
+  | 'midjourney-relax';
 
 export interface LocalConfig {
   llm?: Partial<LLMSettings>;
