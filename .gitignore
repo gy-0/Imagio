@@ -43,3 +43,4 @@ lerna-debug.log*
 /.claude
 DESKEW_FEATURE.md
 .claude/settings.local.json
+claude.md
