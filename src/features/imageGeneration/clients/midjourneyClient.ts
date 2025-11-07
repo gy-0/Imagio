@@ -188,7 +188,7 @@ export class MidjourneyClient {
   private async pollTaskResult(
     taskId: string,
     onProgress?: (message: string) => void,
-    maxAttempts: number = 240 // 240 * 2.5s = 10 minutes
+    maxAttempts: number = 1200 // 1200 * 0.5s = 10 minutes
   ): Promise<MidjourneyTaskResponse> {
     const modePrefix = this.mode === 'fast' ? 'mj-fast' : 'mj-relax';
     const endpoint = `/${modePrefix}/mj/task`;
@@ -230,7 +230,7 @@ export class MidjourneyClient {
 
         // Still in progress, wait before next poll
         console.log(`[MidjourneyClient] Polling attempt ${attempt + 1}/${maxAttempts}: ${data.status} (${data.progress})`);
-        await this.sleep(2500); // Poll every 2.5 seconds
+        await this.sleep(500); // Poll every 0.5 seconds
       } catch (error) {
         if (error instanceof MidjourneyError) {
           throw error;
