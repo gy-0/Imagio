@@ -18,7 +18,7 @@ export interface ChatCompletionParams {
 	timeoutMs?: number;
 	endpoint?: string;
 	headers?: Record<string, string>;
-	reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
+	reasoningEffort?: 'none' | 'low' | 'medium' | 'high';
 }
 
 export interface ChatCompletionUsage {

@@ -123,7 +123,7 @@ CRITICAL: Output ONLY the prompt content. Do NOT include any meta-descriptions, 
         ],
         temperature: llmSettings.temperature,
         maxTokens: 8000,
-        reasoningEffort: 'minimal'
+        reasoningEffort: 'none'
       }, (chunk) => {
         if (!chunk.isDone && chunk.content) {
           accumulatedPrompt += chunk.content;
