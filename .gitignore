@@ -44,3 +44,15 @@ lerna-debug.log*
 DESKEW_FEATURE.md
 .claude/settings.local.json
 claude.md
+thesis_by_gemini/chapters/abstract.tex
+thesis_by_gemini/chapters/appendix_a.tex
+thesis_by_gemini/chapters/chapter1_introduction.tex
+thesis_by_gemini/chapters/chapter2_background.tex
+thesis_by_gemini/chapters/chapter3_system_overview.tex
+thesis_by_gemini/chapters/chapter4_ocr.tex
+thesis_by_gemini/chapters/chapter5_prompt_optimization.tex
+thesis_by_gemini/chapters/chapter6_text_gen_image.tex
+thesis_by_gemini/chapters/chapter7_results.tex
+thesis_by_gemini/chapters/chapter8_conclusion.tex
+thesis_by_gemini/main.tex
+thesis_by_gemini/references.bib

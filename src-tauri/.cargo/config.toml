@@ -1,0 +1,4 @@
+[target.aarch64-apple-darwin.env]
+# Point pkg-config at Apple Silicon Homebrew so we link against arm64 tesseract/leptonica
+PKG_CONFIG_PATH = "/opt/homebrew/lib/pkgconfig:/opt/homebrew/share/pkgconfig"
+LIBRARY_PATH = "/opt/homebrew/lib"
