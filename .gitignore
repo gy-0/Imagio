@@ -56,3 +56,6 @@ thesis_by_gemini/chapters/chapter7_results.tex
 thesis_by_gemini/chapters/chapter8_conclusion.tex
 thesis_by_gemini/main.tex
 thesis_by_gemini/references.bib
+/thesis
+/.claude
+.claude/settings.local.json

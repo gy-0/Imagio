@@ -12,12 +12,11 @@ import { useAutomationSettings } from './hooks/useAutomationSettings';
 import { useSessionManager } from './hooks/useSessionManager';
 import { useAutomationFlow } from './hooks/useAutomationFlow';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { OcrPreviewPanel } from './features/ocr/components/OcrPreviewPanel';
-import { OcrTextPanel } from './features/ocr/components/OcrTextPanel';
+import { useSessionStateSync } from './hooks/useSessionStateSync';
+import { OcrContainer } from './features/ocr/containers/OcrContainer';
+import { PromptContainer } from './features/promptOptimization/containers/PromptContainer';
 import { useOcrProcessing } from './features/ocr/useOcrProcessing';
 import { useImageGeneration } from './features/imageGeneration/useImageGeneration';
-import { PromptGenerationPanel } from './features/promptOptimization/components/PromptGenerationPanel';
-import { GeneratedImagePanel } from './features/promptOptimization/components/GeneratedImagePanel';
 import { usePromptOptimization } from './features/promptOptimization/usePromptOptimization';
 import { updateSessionInPlace } from './utils/sessionUtils';
 import { MAIN_GRID_CLASS } from './constants';
@@ -160,142 +159,40 @@ const App = () => {
     optimizeOcrTextRef.current = optimizeOcrText;
   }, [optimizeOcrText]);
 
-  // Update the active session's OCR state
-  useEffect(() => {
-    if (!activeSessionId || isRestoringSessionRef.current || isSessionsLoading) {
-      return;
-    }
-
-    // Don't update session state while optimization is in progress
-    // This prevents saving incomplete/incorrect optimization results
-    if (isOptimizingText) {
-      return;
-    }
-
-    setSessions(prev => {
-      if (!prev.find(s => s.id === activeSessionId)) {
-        return prev;
-      }
-
-      return updateSessionInPlace(prev, activeSessionId, session => ({
-        ...session,
-        updatedAt: Date.now(),
-        ocr: {
-          imagePath,
-          imagePreviewUrl,
-          processedImageUrl,
-          ocrText,
-          optimizedText,
-          textDisplayMode,
-          params
-        }
-      }), sortBy);
-    });
-    // Note: isRestoringSessionRef excluded from deps - refs don't trigger re-renders
-    // We read .current value inside the effect instead
-  }, [activeSessionId, imagePath, imagePreviewUrl, processedImageUrl, ocrText, optimizedText, textDisplayMode, params, isOptimizingText, isSessionsLoading, setSessions, sortBy]);
-
-  useEffect(() => {
-    if (!activeSessionId || isRestoringSessionRef.current || isSessionsLoading) {
-      return;
-    }
-
-    // Don't update while optimization is in progress
-    if (isOptimizing) {
-      return;
-    }
-
-    setSessions(prev => {
-      if (!prev.find(s => s.id === activeSessionId)) {
-        return prev;
-      }
-
-      return updateSessionInPlace(prev, activeSessionId, session => ({
-        ...session,
-        updatedAt: Date.now(),
-        prompt: {
-          imageStyle,
-          customDescription,
-          optimizedPrompt
-        }
-      }), sortBy);
-    });
-    // Note: isRestoringSessionRef excluded from deps - refs don't trigger re-renders
-  }, [activeSessionId, imageStyle, customDescription, optimizedPrompt, isOptimizing, isSessionsLoading, setSessions, sortBy]);
-
-  useEffect(() => {
-    if (isRestoringSessionRef.current || isSessionsLoading) {
-      return;
-    }
-
-    if (isGenerating) {
-      return;
-    }
-
-    const targetSessionId = currentGenerationSessionIdRef.current ?? activeSessionId;
-    if (!targetSessionId) {
-      return;
-    }
-
-    setSessions(prev => {
-      if (!prev.find(s => s.id === targetSessionId)) {
-        return prev;
-      }
-
-      return updateSessionInPlace(prev, targetSessionId, session => ({
-        ...session,
-        updatedAt: Date.now(),
-        generation: {
-          aspectRatio,
-          generatedImageUrl: '',
-          generatedImageRemoteUrl,
-          generatedImageLocalPath
-        }
-      }), sortBy);
-    });
-
-    if (currentGenerationSessionIdRef.current) {
-      setCurrentGenerationSessionId(null);
-      currentGenerationSessionIdRef.current = null;
-    }
-    // Note: isRestoringSessionRef excluded from deps - refs don't trigger re-renders
-  }, [
+  // Use the session state sync hook to handle all session state synchronization
+  useSessionStateSync({
     activeSessionId,
-    aspectRatio,
-    generatedImageLocalPath,
-    generatedImageRemoteUrl,
-    isGenerating,
+    isRestoringSession: isRestoringSessionRef.current,
     isSessionsLoading,
+    sortBy,
     setSessions,
-    sortBy
-  ]);
-
-  // Track OCR state changes
-  const previousOcrText = useRef<string>('');
-  useEffect(() => {
-    // Don't reset prompt when restoring a session
-    if (isRestoringSessionRef.current) {
-      return;
-    }
-
-    if (previousOcrText.current !== ocrText) {
-      // OCR text changed - mark as performed if not empty
-      if (ocrText) {
-        setHasPerformedOcr(true);
-      }
-
-      // Reset prompt when OCR text changes, but keep the generated image
-      // Users may want to keep the generated image even if OCR text changes
-      if (previousOcrText.current) {
-        setOptimizedPrompt('');
-        // Don't reset generation state - let users manually clear if needed
-      }
-
-      previousOcrText.current = ocrText;
-    }
-    // Note: isRestoringSessionRef, previousOcrText excluded from deps
-    // Refs don't trigger re-renders, we read .current inside effect
-  }, [ocrText, setOptimizedPrompt]);
+    ocrState: {
+      imagePath,
+      imagePreviewUrl,
+      processedImageUrl,
+      ocrText,
+      optimizedText,
+      textDisplayMode,
+      params
+    },
+    isOptimizingText,
+    promptState: {
+      imageStyle,
+      customDescription,
+      optimizedPrompt
+    },
+    isOptimizing,
+    generationState: {
+      aspectRatio,
+      generatedImageRemoteUrl,
+      generatedImageLocalPath
+    },
+    isGenerating,
+    currentGenerationSessionIdRef,
+    setCurrentGenerationSessionId,
+    setHasPerformedOcr,
+    setOptimizedPrompt
+  });
 
   const triggerImageGeneration = useCallback((prompt: string): boolean => {
     if (!activeSessionId) {
@@ -621,66 +518,48 @@ const App = () => {
 
       {imagePath ? (
         <div className={gridClassName}>
-          <div className="left-panel">
-            <OcrPreviewPanel
-              imagePreviewUrl={imagePreviewUrl}
-              processedImageUrl={processedImageUrl}
-            />
-          </div>
-
-          <div className="middle-panel">
-            {hasPerformedOcr && (
-              <OcrTextPanel
-                value={ocrText}
-                onChange={updateOcrText}
-                onCopy={() => copyOcrText()}
-                onSave={() => saveOcrText()}
-                optimizedText={optimizedText}
-                isOptimizing={isOptimizingText}
-                onOptimize={optimizeOcrText}
-                textDisplayMode={textDisplayMode}
-                onTextDisplayModeChange={setTextDisplayMode}
-                onOptimizedTextChange={updateOptimizedText}
-              />
-            )}
-          </div>
+          <OcrContainer
+            imagePreviewUrl={imagePreviewUrl}
+            processedImageUrl={processedImageUrl}
+            ocrText={ocrText}
+            optimizedText={optimizedText}
+            isOptimizingText={isOptimizingText}
+            textDisplayMode={textDisplayMode}
+            hasPerformedOcr={hasPerformedOcr}
+            onOcrTextChange={updateOcrText}
+            onOptimizedTextChange={updateOptimizedText}
+            onCopy={() => copyOcrText()}
+            onSave={() => saveOcrText()}
+            onOptimize={optimizeOcrText}
+            onTextDisplayModeChange={setTextDisplayMode}
+          />
 
           {hasPerformedOcr && (
-            <>
-              <div className="right-panel">
-                <PromptGenerationPanel
-                  imageStyle={imageStyle}
-                  onImageStyleChange={setImageStyle}
-                  aspectRatio={aspectRatio}
-                  onAspectRatioChange={setAspectRatio}
-                  customDescription={customDescription}
-                  onCustomDescriptionChange={setCustomDescription}
-                  optimizedPrompt={optimizedPrompt}
-                  onOptimizedPromptChange={setOptimizedPrompt}
-                  onOptimize={optimizePrompt}
-                  isOptimizing={isOptimizing}
-                  llmError={llmError}
-                  isOptimizeDisabled={!ocrText.trim()}
-                  onCopyPrompt={handleCopyPrompt}
-                  onGenerateImage={handleGenerateImage}
-                  isGenerating={isActiveSessionGenerating}
-                  isGenerationLocked={isGenerationLocked}
-                />
-              </div>
-
-              <div className="generated-panel">
-                <GeneratedImagePanel
-                  generatedImageUrl={activeGeneratedImageUrl}
-                  isGenerating={isActiveSessionGenerating}
-                  generationStatus={generationStatus}
-                  onSaveGeneratedImage={() => saveGeneratedImage()}
-                  onCopyGeneratedImage={() => copyGeneratedImageToClipboard()}
-                  onCopyGeneratedImageUrl={() => copyGeneratedImageUrl()}
-                  onClearGeneratedImage={handleClearGeneratedImage}
-                  hasRemoteImageUrl={Boolean(activeGeneratedImageRemoteUrl)}
-                />
-              </div>
-            </>
+            <PromptContainer
+              imageStyle={imageStyle}
+              aspectRatio={aspectRatio}
+              customDescription={customDescription}
+              optimizedPrompt={optimizedPrompt}
+              isOptimizing={isOptimizing}
+              llmError={llmError}
+              ocrText={ocrText}
+              isGenerating={isActiveSessionGenerating}
+              isGenerationLocked={isGenerationLocked}
+              generatedImageUrl={activeGeneratedImageUrl}
+              generationStatus={generationStatus}
+              hasRemoteImageUrl={Boolean(activeGeneratedImageRemoteUrl)}
+              onImageStyleChange={setImageStyle}
+              onAspectRatioChange={setAspectRatio}
+              onCustomDescriptionChange={setCustomDescription}
+              onOptimizedPromptChange={setOptimizedPrompt}
+              onOptimize={optimizePrompt}
+              onCopyPrompt={handleCopyPrompt}
+              onGenerateImage={handleGenerateImage}
+              onSaveGeneratedImage={() => saveGeneratedImage()}
+              onCopyGeneratedImage={() => copyGeneratedImageToClipboard()}
+              onCopyGeneratedImageUrl={() => copyGeneratedImageUrl()}
+              onClearGeneratedImage={handleClearGeneratedImage}
+            />
           )}
         </div>
       ) : (
