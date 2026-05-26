@@ -1,418 +1,234 @@
-# Imagio - OCR & AI Image Generation Application
+# Imagio: Optical Character Recognition to Image Generation
 
-A modern desktop OCR (Optical Character Recognition) and AI image generation application built with Tauri, React, and Tesseract. This is a rewrite of the [Tesseract-macOS](https://github.com/scott0123/Tesseract-macOS) app using modern web technologies and Rust, enhanced with AI-powered features.
+Imagio is a macOS desktop application that transforms text-bearing images into
+new visual content through an inspectable pipeline:
 
-## ✨ Features
+1. acquire an image from a file, screenshot, or drag-and-drop action;
+2. preprocess the image and recognise its text with Tesseract OCR;
+3. refine the recognised text or synthesise an image-ready prompt with a
+   configurable large language model (LLM) endpoint; and
+4. send the prompt to a selected text-to-image (T2I) backend, then preview,
+   copy, or save the returned image.
 
-### 🖼️ Multiple Input Methods
-- Select images from your filesystem
-- Capture screenshots directly (macOS screencapture integration)
-- Drag & drop image support
+This repository contains the application implementation developed for the
+M.Eng. report *Optical Character Recognition to Image Generation*. It focuses
+on integrating OCR, prompt optimisation, and image generation in one
+interactive desktop workflow while retaining user control at each stage.
 
-### 🔍 Advanced OCR
-- Powered by Tesseract 5.5.1
-- Multi-language support (English, Chinese, Japanese, Korean, French, German, Spanish)
-- Real-time text extraction with progress indicators
-- **Skew correction** using Hough Transform (significantly improves OCR accuracy for scanned documents)
+## System Overview
 
-### 🎨 Advanced Image Processing (10+ Algorithms)
-- **Skew Correction** - Automatic document rotation correction (0.5° - 15° detection range)
-- **Contrast adjustment** (0.5 - 2.0x)
-- **Brightness adjustment** (-0.5 - +0.5)
-- **Sharpness enhancement** (0.5 - 2.0x, unsharp mask)
-- **Adaptive threshold** - Binary conversion for better text recognition
-- **CLAHE** - Contrast Limited Adaptive Histogram Equalization
-- **Gaussian blur** (0-5.0 sigma) - Noise reduction
-- **Bilateral filter** - Edge-preserving noise reduction
-- **Morphological operations** - Erosion and dilation for text refinement
-- **Preset configurations** for common scenarios:
-  - 📄 Printed Document
-  - ✍️ Handwriting
-  - 📷 Low Quality / Scanned
-  - 📸 Photo of Text
-
-### 🤖 AI-Powered Features
-- **OCR Text Optimization** - Clean and enhance OCR text using LLM
-- **Prompt Optimization** - Transform OCR text into optimized image generation prompts using LLM
-- **Image Generation** - Generate images from optimized prompts using FLUX Pro 1.1 Ultra / Gemini API
-- Support for multiple aspect ratios (21:9, 16:9, 4:3, 1:1, 3:4, 9:16, 9:21)
-- Integration with multiple APIs:
-  - Black Forest Labs (FLUX) API
-  - Google Gemini API
-  - Custom LLM endpoints (OpenAI-compatible)
-- Customizable image styles (realistic, artistic, anime, abstract, etc.)
-
-### 📑 Session Management
-- **Multi-session support** - Work with multiple images simultaneously
-- **Session history** - Quick access to previous OCR sessions
-- **Session sorting** - Sort by creation time or last update
-- **Session persistence** - All sessions saved automatically with localStorage
-- **Quick session switching** - Sidebar with session list
-
-### ⚙️ Automation Features
-- **Auto-optimize OCR text** - Automatically clean OCR results
-- **Auto-generate prompt** - Automatically create image generation prompts
-- **Auto-generate image** - Automatically generate images from prompts
-- **Auto-save images** - Automatically save generated images to specified directory
-
-### 📝 Text Management
-- Copy extracted text to clipboard
-- Save results to text files
-- Editable text display with monospace font
-- Toggle between original and optimized OCR text
-
-### 🎨 Modern UI/UX
-- Clean, responsive three-column layout
-- Light/Dark mode support
-- Smooth animations and transitions
-- Collapsible advanced controls
-- Before/after image comparison view
-- Processing progress indicator with real-time status
-- Comprehensive keyboard shortcuts (⌘O, ⌘⇧S, ⌘↵, etc.)
-- Settings persistence (localStorage)
-
-## 📸 Screenshots
-
-*(Coming soon)*
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) v20.19+ or v22.12+
-- [Rust](https://www.rust-lang.org/tools/install) 1.77.2+
-- [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) 5.5.1+
-
-### Installation Steps
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/gy-0/Imagio.git
-   cd Imagio
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure API keys** (optional, for AI features)
-   ```bash
-   cp public/config.local.json.example public/config.local.json
-   # Edit config.local.json with your API keys
-   ```
-
-4. **Run in development mode**
-   ```bash
-   npm run tauri:dev
-   ```
-
-### Project Structure
-
+```mermaid
+flowchart LR
+    A["Input image<br/>file, screenshot, or drag-and-drop"] --> B["Rust OCR pipeline<br/>preprocess + Tesseract"]
+    B --> C["Recognised text"]
+    C --> D["LLM prompt optimisation<br/>OpenAI-compatible endpoint"]
+    D --> E["Optimised prompt"]
+    E --> F["T2I provider client"]
+    F --> G["Generated image<br/>preview, copy, save"]
+    C -. session data .-> H["Local session persistence"]
+    E -. session data .-> H
+    G -. local image file .-> H
 ```
+
+The desktop shell is implemented with Tauri 2. The Rust host process performs
+OCR, image preprocessing, screenshot capture, file operations, and clipboard
+operations. A React and TypeScript WebView presents the interface, maintains
+sessions, invokes LLM/T2I requests, and coordinates the full workflow through
+typed Tauri commands.
+
+The application supports manual inspection of intermediate results as well as
+an automated sequence in which OCR output is refined, converted into a prompt,
+sent for image generation, and saved after completion.
+
+## Implemented Subsystems
+
+### OCR And Adaptive Preprocessing
+
+The OCR subsystem is implemented in Rust under `src-tauri/src/`. Recognition is
+performed using Tesseract through the Rust `tesseract` binding. The language
+selector supports the traineddata language packs available to the local
+Tesseract installation, including English, simplified and traditional Chinese,
+Japanese, Korean, French, German, and Spanish when those packs are installed.
+
+Before recognition, the user may configure an ordered preprocessing pipeline:
+
+1. border removal;
+2. skew correction using a Hough-transform or projection-profile approach;
+3. Gaussian or bilateral noise reduction;
+4. brightness and contrast adjustment;
+5. sharpening;
+6. contrast-limited adaptive histogram equalisation (CLAHE);
+7. morphological refinement; and
+8. binarisation using Otsu, adaptive, mean, or Sauvola thresholding.
+
+An adaptive mode calculates image-quality measurements and selects
+preprocessing parameters automatically. This is intended for photographs,
+screenshots, and degraded document captures where a fixed configuration is not
+appropriate for every input.
+
+### Prompt Optimisation
+
+The prompt subsystem accepts OCR text and supports two related operations:
+text refinement for correcting common recognition artefacts, and prompt
+synthesis for converting the content into a visually descriptive prompt. The
+generated prompt can be reviewed or edited before image generation.
+
+The LLM client communicates through an OpenAI-compatible Chat Completions
+interface. A local Ollama endpoint can therefore be used for local text
+processing, while a remote compatible API can be selected by changing the
+base URL, model name, and API key in the settings panel or local configuration
+file.
+
+### Image Generation And Persistence
+
+The generation layer provides a common UI contract over multiple generation
+clients. The source tree includes direct client integrations for Black Forest
+Labs FLUX and Google Gemini, together with additional routed model adapters.
+Responses are normalised to a local image preview regardless of whether the
+provider returns an image directly or requires polling for a completed job.
+
+Generated images are persisted under the application's local data directory so
+that a session can be restored. The user can also explicitly save a result to a
+chosen path or copy an image to the clipboard.
+
+### Sessions And Workflow Control
+
+Each input image is represented as an independent session containing its image,
+OCR state, prompt state, selected configuration, and generated output. The
+application supports multiple sessions, session switching, locally persisted
+history, and automation controls for OCR refinement, prompt generation, image
+generation, and image saving.
+
+## Repository Structure
+
+```text
 Imagio/
-├── src/                        # React frontend source code
-│   ├── App.tsx                # Application shell orchestrating feature modules
-│   ├── components/            # Reusable UI building blocks (toolbar, status, overlays)
-│   ├── features/              # Feature-oriented folders (ocr, promptOptimization, imageGeneration)
-│   │   ├── ocr/
-│   │   │   ├── components/    # OCR-specific panels and advanced controls
-│   │   │   └── useOcrProcessing.ts
-│   │   ├── promptOptimization/
-│   │   │   ├── components/    # Prompt settings and optimized prompt panels
-│   │   │   └── usePromptOptimization.ts
-│   │   └── imageGeneration/
-│   │       └── useImageGeneration.ts
-│   ├── hooks/                 # Cross-cutting hooks (config loading, keyboard shortcuts)
-│   ├── utils/                 # API clients for OCR-adjacent services
-│   └── main.tsx               # React entry point
-├── src-tauri/                 # Tauri/Rust backend
-│   ├── src/
-│   │   ├── lib.rs             # OCR bindings, image processing, and command handlers
-│   │   └── main.rs            # Tauri entry point
-│   ├── Cargo.toml             # Rust dependencies
-│   └── tauri.conf.json        # Tauri configuration
+|-- public/
+|   `-- config.local.json.example   Local configuration template
+|-- src/
+|   |-- components/                 Shared interface components
+|   |-- context/                    Session and automation contexts
+|   |-- features/
+|   |   |-- ocr/                    OCR-facing UI and state
+|   |   |-- promptOptimization/     Prompt synthesis and model selection
+|   |   `-- imageGeneration/        Provider clients and image handling
+|   |-- hooks/                      Workflow and persistence hooks
+|   `-- utils/                      LLM transport and utility functions
+|-- src-tauri/
+|   |-- src/
+|   |   |-- ocr/                    OCR pipeline orchestration
+|   |   |-- preprocessing/          Geometric and filtering operations
+|   |   |-- binarization/           Thresholding and CLAHE operations
+|   |   |-- morphology/             Morphological transformations
+|   |   `-- quality/                Adaptive-mode quality metrics
+|   |-- icons/                      Bundle icons
+|   |-- resources/                  macOS bundle resources
+|   |-- Cargo.toml
+|   `-- tauri.conf.json
+|-- package.json
+`-- vite.config.ts
 ```
 
-### 🧱 Frontend Architecture
+## Requirements
 
-The React layer follows a feature-first structure:
+Imagio has been developed and verified on macOS. Development requires:
 
-- **Shared UI components** live in `src/components` and stay presentation-only
-- **Feature folders** bundle logic, hooks, and screens for OCR, prompt optimization, and image generation
-- **Custom hooks** (`src/hooks`) encapsulate cross-cutting concerns such as config loading, keyboard shortcuts, and session management
-- `App.tsx` acts as a lightweight coordinator, composing features via the hooks and UI primitives
+- Node.js 20.19 or later, or Node.js 22.12 or later;
+- pnpm;
+- Rust 1.77.2 or later;
+- Tesseract OCR with the required language packs installed; and
+- API credentials only for any remote LLM or image-generation provider used.
 
-## 🎯 Usage
+On macOS with Homebrew, Tesseract may be installed with:
 
-### Basic OCR Workflow
-
-1. **Select an Image**
-   - Click "📁 Select Image" (⌘O) to choose an image file
-   - OR click "📸 Take Screenshot" (⌘⇧S) to capture a screenshot
-   - OR drag & drop an image file directly
-
-2. **Adjust Processing** (Optional)
-   - Click "⚙️ Settings" to open settings modal
-   - Configure LLM settings for prompt optimization
-   - OR manually adjust OCR preprocessing parameters:
-     - **Enable skew correction** (recommended for scanned documents/photos) - Automatically corrects rotated documents up to 15°
-     - Adjust contrast, brightness, sharpness
-     - Apply preset configurations for common scenarios:
-       - 📄 Printed Document - Optimized for clear printed text
-       - ✍️ Handwriting - Enhanced for handwritten text
-       - 📷 Low Quality / Scanned - Maximum preprocessing for scans
-       - 📸 Photo of Text - Balanced settings for photos
-     - Choose recognition language (8 languages supported)
-
-3. **Extract Text**
-   - OCR automatically runs when an image is selected
-   - View the extracted text in the middle panel
-   - Toggle between original and processed image view
-   - Edit the text if needed
-
-4. **Export Results**
-   - Click "📋 Copy" (⌘C) to copy text to clipboard
-   - Click "💾 Save" (⌘S) to save as a text file
-
-### AI Image Generation Workflow
-
-1. **Optimize OCR Text** (Optional)
-   - After extracting text, click "✨ Optimize" to clean and enhance OCR text using LLM
-   - Toggle between original and optimized text views
-
-2. **Generate Prompt**
-   - Configure your desired image style (realistic, artistic, anime, etc.)
-   - Add additional description (optional)
-   - Click "✨ Generate Prompt" to create an optimized prompt using LLM
-   - Review and edit the optimized prompt if needed
-
-3. **Generate Image**
-   - Select your desired aspect ratio (21:9, 16:9, 4:3, 1:1, 3:4, 9:16, 9:21)
-   - Click "🎨 Generate Image" to create an image using FLUX Pro 1.1 Ultra or Gemini API
-   - Wait for the generation to complete (usually 10-30 seconds)
-   - View the generated image in the right panel
-   - Copy to clipboard, save to file, or copy image URL
-
-### Session Management
-
-- **View Sessions**: Click the sidebar icon to open session history
-- **Switch Sessions**: Click any session in the sidebar to restore it
-- **Delete Sessions**: Right-click or use delete button to remove sessions
-- **Sort Sessions**: Sort by creation time or last update time
-- Each session maintains its own OCR results, prompts, and generated images
-
-### Automation Setup
-
-Enable automation features in the sidebar:
-- **Auto-optimize OCR**: Automatically clean OCR text after extraction
-- **Auto-generate prompt**: Automatically create prompts after OCR
-- **Auto-generate image**: Automatically generate images after prompt creation
-- **Auto-save images**: Automatically save generated images to a specified directory
-
-**Note:** Image generation requires valid API keys configured in `public/config.local.json`
-
-## ⌨️ Keyboard Shortcuts
-
-- `⌘O` - Open image file
-- `⌘⇧S` - Take screenshot
-- `⌘↵` - Extract text (when image loaded)
-- `⌘C` - Copy text to clipboard (when text available)
-- `⌘S` - Save text to file (when text available)
-- `⌘A` - Toggle advanced settings (when no text)
-
-## 📦 Supported Image Formats
-
-- PNG
-- JPG/JPEG
-- GIF
-- BMP
-- TIFF
-- WebP
-
-## 🌍 Supported Languages
-
-- 🇬🇧 English (eng)
-- 🇨🇳 Chinese Simplified (chi_sim)
-- 🇹🇼 Chinese Traditional (chi_tra)
-- 🇯🇵 Japanese (jpn)
-- 🇰🇷 Korean (kor)
-- 🇫🇷 French (fra)
-- 🇩🇪 German (deu)
-- 🇪🇸 Spanish (spa)
-
-*Note: Additional language packs can be installed via Tesseract*
-
-## 🏗️ Building
-
-### Development
 ```bash
-npm run tauri:dev
+brew install tesseract
 ```
 
-### Production Build
+Additional traineddata language packs must be available to Tesseract before
+selecting the corresponding recognition language in the application.
+
+## Running The Application
+
+Install JavaScript dependencies:
+
 ```bash
-npm run tauri:build
+pnpm install
 ```
 
-The built application will be available in `src-tauri/target/release/bundle/`.
+Start the desktop application in development mode:
 
-## 🔐 Local API Configuration
+```bash
+pnpm run tauri:dev
+```
 
-Create a `public/config.local.json` file (this path is `.gitignore`d) to store your API credentials without committing them:
+Build the macOS application bundle:
+
+```bash
+pnpm run tauri:build
+```
+
+The release bundle is produced under
+`src-tauri/target/release/bundle/macos/Imagio.app`.
+
+## Local Configuration
+
+The repository includes `public/config.local.json.example`. To define local
+service settings without committing credentials, create
+`public/config.local.json`:
 
 ```json
 {
   "llm": {
-    "apiBaseUrl": "https://api.openai.com/v1",
-    "apiKey": "sk-your-key",
-    "modelName": "gpt-4"
+    "apiBaseUrl": "http://127.0.0.1:11434/v1",
+    "apiKey": "",
+    "modelName": "gpt-oss:20b",
+    "temperature": 0.7
   },
-  "bflApiKey": "your-bfl-api-key-here",
-  "geminiApiKey": "your-gemini-api-key-here",
-  "bltcyApiKey": "your-bltcy-api-key-here",
-  "selectedModel": "flux"
+  "selectedModel": "flux-bfl",
+  "bflApiKey": "your-bfl-api-key",
+  "geminiApiKey": "your-gemini-api-key",
+  "bltcyApiKey": "your-additional-provider-api-key"
 }
 ```
 
-**Configuration Options:**
-- `llm.apiBaseUrl`: LLM API endpoint (default: `http://127.0.0.1:11434/v1` for local Ollama)
-- `llm.apiKey`: Your LLM API key (optional for local models like Ollama)
-- `llm.modelName`: Model name to use (e.g., `llama3.1:8b`, `gpt-4`, `gpt-4o`)
-- `bflApiKey`: Your [Black Forest Labs](https://api.bfl.ai/) API key for FLUX image generation
-- `geminiApiKey`: Your [Google Gemini](https://aistudio.google.com/app/apikey) API key for Gemini image generation
-- `bltcyApiKey`: Your BLTCY API key (alternative image generation service)
-- `selectedModel`: Default image generation model (`"flux"`, `"gemini"`, or `"bltcy"`)
+The application defaults to a local Ollama-compatible endpoint with the
+`gpt-oss:20b` model identifier. Install and serve that model locally, or
+replace the URL and model name with another OpenAI-compatible local model. For
+a remote LLM provider, replace the URL and supply its API key.
+Image-generation providers require network access and the corresponding
+credential.
 
-The app will merge these values with its defaults at startup. Keep this file local—never add it to git.
+The same configuration values may be changed in the application's Settings
+panel. `public/config.local.json` is excluded from version control.
 
-**Note:** You can also configure these settings through the Settings modal (⌘,) in the app.
+## Development Verification
 
-## 📂 Project Structure
+The current source tree can be checked with:
 
-```
-Imagio/
-├── src/                    # React frontend source code
-│   ├── App.tsx            # Main application component (session orchestrator)
-│   ├── App.css            # Application styles
-│   ├── main.tsx           # React entry point
-│   ├── components/        # Shared UI components
-│   │   ├── Toolbar.tsx
-│   │   ├── OverlaySidebar.tsx
-│   │   ├── SettingsModal.tsx
-│   │   └── ...
-│   ├── features/          # Feature modules
-│   │   ├── ocr/           # OCR functionality
-│   │   ├── promptOptimization/  # Prompt optimization
-│   │   └── imageGeneration/     # Image generation
-│   ├── hooks/             # Custom React hooks
-│   │   ├── useSessionManagement.ts
-│   │   ├── useAutomationSettings.ts
-│   │   └── ...
-│   ├── utils/             # Utility functions
-│   │   ├── sessionUtils.ts
-│   │   └── ...
-│   └── types/             # TypeScript type definitions
-│       └── appSession.ts
-├── src-tauri/             # Tauri/Rust backend
-│   ├── src/
-│   │   ├── lib.rs         # OCR bindings, image processing (skew correction, etc.)
-│   │   └── main.rs        # Tauri entry point
-│   ├── Cargo.toml         # Rust dependencies
-│   ├── tauri.conf.json    # Tauri configuration
-│   └── icons/             # App icons
-├── public/                # Static assets
-│   └── config.local.json.example  # API config template
-├── index.html             # HTML entry point
-├── package.json           # Node.js dependencies
-├── vite.config.ts         # Vite configuration
-├── README.md              # This file
+```bash
+pnpm run build
+pnpm test -- --run
+cargo check --manifest-path src-tauri/Cargo.toml
 ```
 
-## 🛠️ Technology Stack
+## Scope And Limitations
 
-### Frontend
-- **React 19.2.0** - UI framework
-- **TypeScript 5.9.3** - Type-safe JavaScript
-- **Vite 7.1.9** - Fast build tool and dev server
-- **Pure CSS** - Modern styling with CSS variables and gradients
+The repository provides the integrated desktop application and its
+preprocessing, workflow, and provider-client implementation. Recognition
+quality depends on the installed Tesseract language models and the
+characteristics of the input image. LLM-based refinement may alter text and
+should be reviewed when textual fidelity matters.
 
-### Backend
-- **Rust 1.77.2+** - Systems programming language
-- **Tauri 2.8.5** - Desktop app framework
-- **Tesseract 5.5.1** - OCR engine (via `tesseract` crate v0.15)
-- **Image Processing Libraries**:
-  - `image` v0.25 - Core image manipulation
-  - `imageproc` v0.25 - Advanced algorithms (Hough transform, morphological operations, etc.)
+OCR and local LLM processing can be run without sending source text to a
+remote LLM when a local compatible endpoint is configured. Image generation
+uses a selected remote provider and therefore requires a network connection and
+appropriate credentials. The application has been developed and tested on
+macOS; portability to other platforms is not claimed by this repository.
 
-### Tauri Plugins
-- `@tauri-apps/plugin-dialog` - File picker and dialogs
-- `@tauri-apps/plugin-fs` - Filesystem access
-- `@tauri-apps/plugin-clipboard-manager` - Clipboard operations
-- `@tauri-apps/plugin-http` - HTTP requests for API integration
+## Acknowledgements
 
-### API Integrations
-- **OpenAI-compatible LLM APIs** - For text optimization and prompt generation
-- **Black Forest Labs API** - FLUX Pro 1.1 Ultra image generation
-- **Google Gemini API** - Alternative image generation
-- **BLTCY API** - Additional image generation service
-
-## 🔄 Development Status
-
-### ✅ Completed Features
-- ✅ Core OCR functionality with 8 languages
-- ✅ Screenshot capture
-- ✅ Image preview with before/after comparison
-- ✅ Advanced image preprocessing (10+ algorithms, including skew correction)
-- ✅ Preset configurations
-- ✅ Text export (copy/save)
-- ✅ Drag & drop support
-- ✅ Keyboard shortcuts
-- ✅ Settings persistence
-- ✅ Processing progress indicator
-- ✅ Modern responsive UI/UX
-- ✅ Multi-session management
-- ✅ OCR text optimization
-- ✅ AI-powered prompt optimization
-- ✅ AI image generation (FLUX, Gemini, BLTCY)
-- ✅ Automation features (auto-optimize, auto-generate, auto-save)
-- ✅ Session history and persistence
-
-### 🎉 Status: **Production Ready!**
-
-All core features are implemented and functional. The app now matches and exceeds the original Tesseract-macOS feature set, with additional AI-powered capabilities and modern session management.
-
-## 🤝 Acknowledgments
-
-- Original [Tesseract-macOS](https://github.com/scott0123/Tesseract-macOS) project by [Scott Liu](https://github.com/scott0123)
-- [Tauri](https://tauri.app/) - For the amazing framework
-- [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) - For the OCR engine
-- [React](https://react.dev/) - For the UI framework
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details
-
-## 🐛 Known Issues & Limitations
-
-All major issues have been resolved! ✅
-
-Minor considerations:
-- Bilateral filter may be slow on very large images (>10MP)
-- Temp processed images are cleaned up on app exit
-- Skew correction works best for angles between 0.5° - 15°
-- Image generation requires stable internet connection
-
-### Performance Tips
-- For very large images, consider resizing before OCR processing
-- Skew correction adds ~15-30ms processing time but significantly improves OCR accuracy
-- Bilateral filter is recommended for photos, but may be slow on large images
-
-
-## 💡 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📧 Contact
-
-For questions or feedback, please open an issue on GitHub.
+Imagio builds upon [Tesseract OCR](https://github.com/tesseract-ocr/tesseract),
+[Tauri](https://tauri.app/), and [React](https://react.dev/). The application
+was inspired by the desktop workflow of
+[Tesseract-macOS](https://github.com/scott0123/Tesseract-macOS).
