@@ -327,7 +327,6 @@ Imagio/
 ├── package.json           # Node.js dependencies
 ├── vite.config.ts         # Vite configuration
 ├── README.md              # This file
-└── FEATURES.md            # Feature tracking document
 ```
 
 ## 🛠️ Technology Stack
@@ -359,8 +358,6 @@ Imagio/
 - **BLTCY API** - Additional image generation service
 
 ## 🔄 Development Status
-
-See [FEATURES.md](FEATURES.md) for detailed feature implementation progress.
 
 ### ✅ Completed Features
 - ✅ Core OCR functionality with 8 languages
@@ -411,7 +408,6 @@ Minor considerations:
 - Skew correction adds ~15-30ms processing time but significantly improves OCR accuracy
 - Bilateral filter is recommended for photos, but may be slow on large images
 
-See [FEATURES.md](FEATURES.md) for complete issue tracking.
 
 ## 💡 Contributing
 
