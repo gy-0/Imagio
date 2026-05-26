@@ -1,6 +1,6 @@
 {
   "name": "imagio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Tauri-based OCR and Image Generation App for macOS",
   "keywords": [
     "tauri",
@@ -20,6 +20,16 @@
   "author": "Yuan Gao",
   "type": "module",
   "main": "index.js",
+  "bin": {
+    "imagio": "./bin/imagio.mjs"
+  },
+  "files": [
+    "bin/",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

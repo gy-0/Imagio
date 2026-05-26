@@ -150,6 +150,25 @@ selecting the corresponding recognition language in the application.
 
 ## Running The Application
 
+### Install The macOS Application
+
+On an Apple silicon Mac, the published application can be installed and opened
+with one command:
+
+```bash
+npx imagio@latest
+```
+
+The installer requires [Homebrew](https://brew.sh/) and automatically ensures
+that the Tesseract OCR runtime and language data used by the application are
+installed before copying Imagio to `~/Applications`.
+
+The command downloads the current macOS application release, installs it in
+`~/Applications`, and opens Imagio. The distributed application is currently
+built for Apple silicon macOS.
+
+### Run From Source
+
 Install JavaScript dependencies:
 
 ```bash

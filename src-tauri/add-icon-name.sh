@@ -26,4 +26,8 @@ else
   echo "✓ Added CFBundleIconName to Info.plist"
 fi
 
+# Changing Info.plist invalidates Tauri's embedded signature.
+codesign --force --deep --sign - "$APP_BUNDLE"
+codesign --verify --deep --strict "$APP_BUNDLE"
+
 echo "📦 App bundle is ready for macOS 26 Liquid Glass!"
