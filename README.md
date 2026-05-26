@@ -230,6 +230,4 @@ macOS; portability to other platforms is not claimed by this repository.
 ## Acknowledgements
 
 Imagio builds upon [Tesseract OCR](https://github.com/tesseract-ocr/tesseract),
-[Tauri](https://tauri.app/), and [React](https://react.dev/). The application
-was inspired by the desktop workflow of
-[Tesseract-macOS](https://github.com/scott0123/Tesseract-macOS).
+[Tauri](https://tauri.app/), and [React](https://react.dev/).
