@@ -2214,7 +2214,7 @@ dependencies = [
 
 [[package]]
 name = "imagio"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "arboard",
  "dirs 5.0.1",

@@ -12,6 +12,7 @@ mod quality;
 use image::{DynamicImage, ImageBuffer, Rgba};
 use serde::Serialize;
 use std::fs;
+use tauri::Manager;
 use tesseract::Tesseract;
 
 use ocr::{adaptive_preprocess, preprocess_image, OcrResult, ProcessingParams};
@@ -24,9 +25,41 @@ struct ScreenshotResult {
     text: String,
 }
 
+const DEGRADED_ENGLISH_LANGUAGE: &str = "eng_degraded";
+
+fn bundled_tessdata_path(app: &tauri::AppHandle, language: &str) -> Result<Option<String>, String> {
+    if language != DEGRADED_ENGLISH_LANGUAGE {
+        return Ok(None);
+    }
+
+    let model_filename = format!("{}.traineddata", DEGRADED_ENGLISH_LANGUAGE);
+    let resource_dir = app
+        .path()
+        .resource_dir()
+        .map_err(|e| format!("Failed to resolve bundled OCR model directory: {}", e))?;
+    let development_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("resources")
+        .join("tessdata");
+
+    for tessdata_dir in [resource_dir.join("tessdata"), development_dir] {
+        if tessdata_dir.join(&model_filename).exists() {
+            return Ok(Some(tessdata_dir.to_string_lossy().to_string()));
+        }
+    }
+
+    Err(format!(
+        "Bundled OCR model was not found: {}",
+        model_filename
+    ))
+}
+
 /// Perform OCR on an image with preprocessing
 #[tauri::command]
-fn perform_ocr(image_path: String, params: ProcessingParams) -> Result<OcrResult, String> {
+fn perform_ocr(
+    app: tauri::AppHandle,
+    image_path: String,
+    params: ProcessingParams,
+) -> Result<OcrResult, String> {
     use std::time::Instant;
     let total_start = Instant::now();
 
@@ -89,7 +122,8 @@ fn perform_ocr(image_path: String, params: ProcessingParams) -> Result<OcrResult
 
     // Perform OCR on processed image
     let ocr_start = Instant::now();
-    let tesseract = Tesseract::new(None, Some(lang))
+    let tessdata_path = bundled_tessdata_path(&app, lang)?;
+    let tesseract = Tesseract::new(tessdata_path.as_deref(), Some(lang))
         .map_err(|e| format!("Failed to initialize Tesseract: {}", e))?;
 
     let result = tesseract
@@ -116,7 +150,7 @@ fn perform_ocr(image_path: String, params: ProcessingParams) -> Result<OcrResult
 
 /// Take a screenshot with interactive selection
 #[tauri::command]
-async fn take_screenshot() -> Result<ScreenshotResult, String> {
+async fn take_screenshot(app: tauri::AppHandle) -> Result<ScreenshotResult, String> {
     use std::process::Command;
 
     let temp_dir = std::env::temp_dir();
@@ -164,8 +198,8 @@ async fn take_screenshot() -> Result<ScreenshotResult, String> {
         adaptive_mode: true,
     };
 
-    let ocr_result =
-        perform_ocr(path_str.clone(), params).map_err(|e| format!("Screenshot OCR failed: {}", e))?;
+    let ocr_result = perform_ocr(app, path_str.clone(), params)
+        .map_err(|e| format!("Screenshot OCR failed: {}", e))?;
 
     Ok(ScreenshotResult {
         path: path_str,
@@ -247,7 +281,10 @@ struct TestImageResult {
 
 /// Run automated test with optional test image
 #[tauri::command]
-async fn run_automated_test(test_image_path: Option<String>) -> Result<TestImageResult, String> {
+async fn run_automated_test(
+    app: tauri::AppHandle,
+    test_image_path: Option<String>,
+) -> Result<TestImageResult, String> {
     use std::time::Instant;
 
     let start = Instant::now();
@@ -287,7 +324,7 @@ async fn run_automated_test(test_image_path: Option<String>) -> Result<TestImage
         adaptive_mode: true,
     };
 
-    match perform_ocr(image_path, params) {
+    match perform_ocr(app, image_path, params) {
         Ok(result) => {
             let duration = start.elapsed();
             Ok(TestImageResult {

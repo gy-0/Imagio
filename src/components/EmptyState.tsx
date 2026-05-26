@@ -65,6 +65,7 @@ export const EmptyState: FC<EmptyStateProps> = ({
               onChange={(event) => onLanguageChange(event.target.value)}
             >
               <option value="eng">English</option>
+              <option value="eng_degraded">English (Degraded Images)</option>
               <option value="chi_sim">Simplified Chinese</option>
               <option value="chi_tra">Traditional Chinese</option>
               <option value="jpn">Japanese</option>
@@ -86,4 +87,3 @@ export const EmptyState: FC<EmptyStateProps> = ({
     </div>
   );
 };
-
