@@ -151,7 +151,7 @@ export const SettingsModal: FC<SettingsModalProps> = ({
                     type="text"
                     value={llmSettings.modelName}
                     onChange={(event: ChangeEvent<HTMLInputElement>) => onLLMSettingChange('modelName', event.target.value)}
-                    placeholder="gpt-4o-mini"
+                    placeholder="gpt-5.5"
                   />
                 </label>
               </div>

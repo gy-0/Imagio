@@ -200,21 +200,19 @@ service settings while running from source, create
 ```json
 {
   "llm": {
-    "apiBaseUrl": "http://127.0.0.1:11434/v1",
-    "apiKey": "",
-    "modelName": "gpt-oss:20b",
-    "temperature": 0.7
+    "apiBaseUrl": "https://api.openai.com/v1",
+    "apiKey": "your-openai-api-key",
+    "modelName": "gpt-5.5",
+    "temperature": 1
   },
   "selectedModel": "nano-banana",
   "bltcyApiKey": "your-image-generation-api-key"
 }
 ```
 
-To reproduce a local-first text-processing setup, serve an
-OpenAI-compatible model through Ollama and set its endpoint and model name in
-this local configuration file. The example above uses `gpt-oss:20b`; another
-compatible local model may be substituted. For a remote LLM provider, replace
-the URL and supply its API key.
+The recommended configuration above uses `gpt-5.5` through an
+OpenAI-compatible endpoint for text processing. A local compatible model may
+also be used by replacing the endpoint and model name.
 The image-generation configuration shown above selects Nano Banana as the
 default model. Image generation requires network access and its corresponding
 credential; alternative supported models can be selected and configured in
