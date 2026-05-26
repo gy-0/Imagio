@@ -150,22 +150,21 @@ selecting the corresponding recognition language in the application.
 
 ## Running The Application
 
-### Install The macOS Application
+### Download The macOS Application
 
-On an Apple silicon Mac, the published application can be installed and opened
-with one command:
+Prebuilt Apple silicon macOS application bundles are published on the
+[GitHub Releases page](https://github.com/gy-0/Imagio/releases/latest).
+Before launching a downloaded release, install the OCR runtime and language
+data:
 
 ```bash
-npx imagio@latest
+brew install tesseract tesseract-lang
 ```
 
-The installer requires [Homebrew](https://brew.sh/) and automatically ensures
-that the Tesseract OCR runtime and language data used by the application are
-installed before copying Imagio to `~/Applications`.
-
-The command downloads the current macOS application release, installs it in
-`~/Applications`, and opens Imagio. The distributed application is currently
-built for Apple silicon macOS.
+Download the macOS `.zip` release asset, extract `Imagio.app`, and move it to
+the `Applications` folder. Depending on local macOS security settings, the
+first launch of a downloaded application may require confirmation through
+Finder's **Open** action.
 
 ### Run From Source
 

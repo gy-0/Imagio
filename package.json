@@ -20,16 +20,6 @@
   "author": "Yuan Gao",
   "type": "module",
   "main": "index.js",
-  "bin": {
-    "imagio": "./bin/imagio.mjs"
-  },
-  "files": [
-    "bin/",
-    "README.md"
-  ],
-  "engines": {
-    "node": ">=18"
-  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
