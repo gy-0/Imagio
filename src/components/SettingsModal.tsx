@@ -107,7 +107,7 @@ export const SettingsModal: FC<SettingsModalProps> = ({
                     type="text"
                     value={llmSettings.apiBaseUrl}
                     onChange={(event: ChangeEvent<HTMLInputElement>) => onLLMSettingChange('apiBaseUrl', event.target.value)}
-                    placeholder="http://127.0.0.1:11434/v1"
+                    placeholder="https://api.openai.com/v1"
                   />
                 </label>
               </div>
@@ -151,7 +151,7 @@ export const SettingsModal: FC<SettingsModalProps> = ({
                     type="text"
                     value={llmSettings.modelName}
                     onChange={(event: ChangeEvent<HTMLInputElement>) => onLLMSettingChange('modelName', event.target.value)}
-                    placeholder="gpt-oss:20b"
+                    placeholder="gpt-4o-mini"
                   />
                 </label>
               </div>

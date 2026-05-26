@@ -192,10 +192,11 @@ service settings without committing credentials, create
 }
 ```
 
-The application defaults to a local Ollama-compatible endpoint with the
-`gpt-oss:20b` model identifier. Install and serve that model locally, or
-replace the URL and model name with another OpenAI-compatible local model. For
-a remote LLM provider, replace the URL and supply its API key.
+To reproduce a local-first text-processing setup, serve an
+OpenAI-compatible model through Ollama and set its endpoint and model name in
+this local configuration file. The example above uses `gpt-oss:20b`; another
+compatible local model may be substituted. For a remote LLM provider, replace
+the URL and supply its API key.
 Image-generation providers require network access and the corresponding
 credential.
 
