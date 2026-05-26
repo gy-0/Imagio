@@ -5,6 +5,7 @@ interface GeneratedImagePanelProps {
   generatedImageUrl: string;
   isGenerating: boolean;
   generationStatus: string;
+  generationError: string;
   onSaveGeneratedImage: () => Promise<void> | void;
   onCopyGeneratedImage: () => Promise<void> | void;
   onCopyGeneratedImageUrl: () => Promise<void> | void;
@@ -16,6 +17,7 @@ export const GeneratedImagePanel: FC<GeneratedImagePanelProps> = ({
   generatedImageUrl,
   isGenerating,
   generationStatus,
+  generationError,
   onSaveGeneratedImage,
   onCopyGeneratedImage,
   onCopyGeneratedImageUrl,
@@ -64,6 +66,13 @@ export const GeneratedImagePanel: FC<GeneratedImagePanelProps> = ({
         </div>
       )}
 
+      {generationError && (
+        <div className="generation-error-message" role="alert">
+          <strong>Image generation failed</strong>
+          <span>{generationError}</span>
+        </div>
+      )}
+
       {generatedImageUrl && (
         <div className="generated-image-actions">
           <button
@@ -105,4 +114,3 @@ export const GeneratedImagePanel: FC<GeneratedImagePanelProps> = ({
     </div>
   );
 };
-

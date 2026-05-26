@@ -1,6 +1,6 @@
 [package]
 name = "imagio"
-version = "1.0.3"
+version = "1.0.4"
 description = "OCR application built with Tauri"
 authors = ["you"]
 license = "MIT"

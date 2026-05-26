@@ -16,6 +16,7 @@ interface PromptContainerProps {
   // Generated image props
   generatedImageUrl: string;
   generationStatus: string | null;
+  generationError: string;
   hasRemoteImageUrl: boolean;
 
   // Callbacks - Prompt
@@ -46,6 +47,7 @@ export const PromptContainer = ({
   isGenerationLocked,
   generatedImageUrl,
   generationStatus,
+  generationError,
   hasRemoteImageUrl,
   onImageStyleChange,
   onAspectRatioChange,
@@ -87,6 +89,7 @@ export const PromptContainer = ({
           generatedImageUrl={generatedImageUrl}
           isGenerating={isGenerating}
           generationStatus={generationStatus ?? ''}
+          generationError={generationError}
           onSaveGeneratedImage={onSaveGeneratedImage}
           onCopyGeneratedImage={onCopyGeneratedImage}
           onCopyGeneratedImageUrl={onCopyGeneratedImageUrl}

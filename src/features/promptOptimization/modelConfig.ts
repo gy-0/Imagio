@@ -14,15 +14,11 @@ export interface ModelInfo {
 
 export const IMAGE_GEN_MODELS: ModelInfo[] = [
   // BLTCY models (no provider suffix in display)
-  // Note: flux-dev and flux-pro use BFL proxy format (supports aspect_ratio)
-  { id: 'flux-dev', displayName: 'FLUX-DEV', provider: 'bltcy', apiModel: 'flux-dev' },
-  { id: 'flux-pro', displayName: 'FLUX-Pro', provider: 'bltcy', apiModel: 'flux-pro' },
   { id: 'nano-banana', displayName: 'Nano Banana🍌', provider: 'bltcy', apiModel: 'nano-banana' },
   { id: 'nano-banana-hd', displayName: 'Nano Banana HD🍌', provider: 'bltcy', apiModel: 'nano-banana-hd' },
   { id: 'dall-e-3', displayName: 'DALL-E 3', provider: 'bltcy', apiModel: 'dall-e-3' },
   { id: 'recraftv3', displayName: 'Recraft v3', provider: 'bltcy', apiModel: 'recraftv3' },
   { id: 'qwen-image', displayName: 'Qwen Image', provider: 'bltcy', apiModel: 'qwen-image' },
-  { id: 'flux-kontext-pro', displayName: 'FLUX Kontext Pro', provider: 'bltcy', apiModel: 'flux-kontext-pro' },
   { id: 'gpt-image-1', displayName: 'GPT Image 1', provider: 'bltcy', apiModel: 'gpt-image-1' },
   { id: 'gpt-4o-image', displayName: 'GPT-4o Image', provider: 'bltcy', apiModel: 'gpt-4o-image' },
   { id: 'sora-image', displayName: 'Sora Image', provider: 'bltcy', apiModel: 'sora_image' },
@@ -38,6 +34,10 @@ export const IMAGE_GEN_MODELS: ModelInfo[] = [
   { id: 'midjourney-fast', displayName: 'Midjourney Fast', provider: 'midjourney' },
   { id: 'midjourney-relax', displayName: 'Midjourney Relax', provider: 'midjourney' },
 ];
+
+export const isAvailableImageGenModel = (modelId: string): modelId is ImageGenModel => {
+  return IMAGE_GEN_MODELS.some(model => model.id === modelId);
+};
 
 export const getModelInfo = (modelId: ImageGenModel): ModelInfo | undefined => {
   return IMAGE_GEN_MODELS.find(m => m.id === modelId);

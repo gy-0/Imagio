@@ -203,7 +203,7 @@ service settings without committing credentials, create
     "modelName": "gpt-oss:20b",
     "temperature": 0.7
   },
-  "selectedModel": "flux-bfl",
+  "selectedModel": "nano-banana",
   "bflApiKey": "your-bfl-api-key",
   "geminiApiKey": "your-gemini-api-key",
   "bltcyApiKey": "your-additional-provider-api-key"

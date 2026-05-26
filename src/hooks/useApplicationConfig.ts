@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_LLM_SETTINGS } from '../features/promptOptimization/constants';
 import type { LLMSettings, LocalConfig, ImageGenModel } from '../features/promptOptimization/types';
+import { isAvailableImageGenModel } from '../features/promptOptimization/modelConfig';
 
 type UpdateLLMSetting<T extends keyof LLMSettings> = (key: T, value: LLMSettings[T]) => void;
+const DEFAULT_IMAGE_MODEL: ImageGenModel = 'nano-banana';
 
 export const useApplicationConfig = () => {
   const [llmSettings, setLLMSettings] = useState<LLMSettings>(DEFAULT_LLM_SETTINGS);
   const [bflApiKey, setBflApiKey] = useState<string>('');
   const [geminiApiKey, setGeminiApiKey] = useState<string>('');
   const [bltcyApiKey, setBltcyApiKey] = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<ImageGenModel>('flux-dev');
+  const [selectedModel, setSelectedModel] = useState<ImageGenModel>(DEFAULT_IMAGE_MODEL);
   const [configError, setConfigError] = useState<string>('');
   const [isConfigLoading, setIsConfigLoading] = useState<boolean>(true);
 
@@ -72,7 +74,17 @@ export const useApplicationConfig = () => {
         }
 
         if (parsed.selectedModel) {
-          setSelectedModel(parsed.selectedModel);
+          if (isAvailableImageGenModel(parsed.selectedModel)) {
+            setSelectedModel(parsed.selectedModel);
+          } else if (
+            parsed.selectedModel === 'flux-dev' ||
+            parsed.selectedModel === 'flux-pro' ||
+            parsed.selectedModel === 'flux-kontext-pro'
+          ) {
+            setSelectedModel(DEFAULT_IMAGE_MODEL);
+          } else {
+            console.warn(`Unsupported image generation model: ${parsed.selectedModel}`);
+          }
         }
       } catch (error) {
         console.error('Error loading local config:', error);

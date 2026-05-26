@@ -62,6 +62,7 @@ const App = () => {
     generatedImageLocalPath,
     isGenerating,
     generationStatus,
+    generationError,
     generateImage,
     saveGeneratedImage,
     copyGeneratedImageUrl,
@@ -547,6 +548,7 @@ const App = () => {
               isGenerationLocked={isGenerationLocked}
               generatedImageUrl={activeGeneratedImageUrl}
               generationStatus={generationStatus}
+              generationError={generationError}
               hasRemoteImageUrl={Boolean(activeGeneratedImageRemoteUrl)}
               onImageStyleChange={setImageStyle}
               onAspectRatioChange={setAspectRatio}

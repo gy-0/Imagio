@@ -14,7 +14,6 @@ export type BltcyModel =
   | 'gpt-image-1'
   | 'gpt-4o-image'
   | 'sora_image'
-  | 'flux-kontext-pro'
   | 'flux'
   | 'nano-banana'
   | 'dall-e-3'
@@ -61,18 +60,6 @@ interface ChatCompletionResponse {
   };
 }
 
-interface BflProxyRequestBody {
-  prompt: string;
-  width: number;
-  height: number;
-  steps: number;
-  prompt_upsampling: boolean;
-  seed: number;
-  guidance: number;
-  safety_tolerance: number;
-  output_format: string;
-}
-
 interface DalleRequestBody {
   model: string;
   prompt: string;
@@ -101,16 +88,7 @@ export class BltcyImageClient {
   /**
    * Determine which API format to use based on model
    */
-  private getApiFormat(model: string): 'bfl-proxy' | 'dalle' | 'chat' {
-    // BFL proxy format for FLUX Pro/Dev models only
-    // BLTCY's BFL proxy supports: flux-kontext-pro, flux-kontext-max,
-    // flux-pro-1.1-ultra, flux-pro-1.1, flux-pro, flux-dev
-    // Note: 'flux' (without suffix) is NOT supported by BFL proxy
-    if (model === 'flux-kontext-pro' || model === 'flux-kontext-max' ||
-        model === 'flux-pro-1.1-ultra' || model === 'flux-pro-1.1' ||
-        model === 'flux-pro' || model === 'flux-dev') {
-      return 'bfl-proxy';
-    }
+  private getApiFormat(model: string): 'dalle' | 'chat' {
     // DALL-E format for nano-banana models
     if (model === 'nano-banana' || model === 'nano-banana-hd') {
       return 'dalle';
@@ -125,179 +103,14 @@ export class BltcyImageClient {
    * Returns a blob and object URL for the generated image
    */
   async generateImage(options: BltcyImageGenerationOptions): Promise<{ blob: Blob; objectUrl: string }> {
-    const { prompt, model = 'flux-pro-1.1-ultra', aspectRatio } = options;
+    const { prompt, model = 'nano-banana', aspectRatio } = options;
 
     const format = this.getApiFormat(model);
 
-    if (format === 'bfl-proxy') {
-      return this.generateImageBflProxy(prompt, model, aspectRatio);
-    } else if (format === 'dalle') {
+    if (format === 'dalle') {
       return this.generateImageDalleFormat(prompt, model, aspectRatio);
-    } else {
-      return this.generateImageChatFormat(prompt, model);
     }
-  }
-
-  /**
-   * Convert aspect ratio string to width/height dimensions
-   * BFL API requires explicit width/height instead of aspect_ratio
-   */
-  private aspectRatioToWidthHeight(aspectRatio: string): { width: number; height: number } {
-    const ratioMap: Record<string, { width: number; height: number }> = {
-      '1:1': { width: 1024, height: 1024 },
-      '16:9': { width: 1344, height: 768 },
-      '9:16': { width: 768, height: 1344 },
-      '21:9': { width: 1536, height: 640 },
-      '9:21': { width: 640, height: 1536 },
-      '4:3': { width: 1152, height: 896 },
-      '3:4': { width: 896, height: 1152 },
-      '3:2': { width: 1216, height: 832 },
-      '2:3': { width: 832, height: 1216 }
-    };
-
-    return ratioMap[aspectRatio] || { width: 1024, height: 1024 };
-  }
-
-  /**
-   * Generate image using BFL proxy API (compatible with BFL official API)
-   * Used for FLUX models with width/height support
-   */
-  private async generateImageBflProxy(
-    prompt: string,
-    model: string,
-    aspectRatio?: string
-  ): Promise<{ blob: Blob; objectUrl: string }> {
-    try {
-      console.log('[BltcyImageClient] Creating BFL proxy request:', { prompt, model, aspectRatio });
-
-      // Convert aspect ratio to width/height
-      const dimensions = aspectRatio
-        ? this.aspectRatioToWidthHeight(aspectRatio)
-        : { width: 1024, height: 1024 };
-
-      // Step 1: Create generation request
-      const requestBody: BflProxyRequestBody = {
-        prompt,
-        width: dimensions.width,
-        height: dimensions.height,
-        steps: 28,
-        prompt_upsampling: false,
-        seed: Math.floor(Math.random() * 1000000),
-        guidance: 3.5,
-        safety_tolerance: 2,
-        output_format: 'jpeg'
-      };
-
-      console.log('[BltcyImageClient] BFL request body:', JSON.stringify(requestBody, null, 2));
-
-      const createResponse = await resolveFetch()(`${this.baseURL}/bfl/v1/${model}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!createResponse.ok) {
-        const errorText = await createResponse.text();
-        console.error('[BltcyImageClient] BFL API error response:', errorText);
-        throw this.handleApiError(createResponse.status, errorText);
-      }
-
-      const createData = await createResponse.json();
-      console.log('[BltcyImageClient] BFL request created:', {
-        id: createData.id,
-        status: createData.status
-      });
-
-      if (!createData.id) {
-        throw new ImageGenerationError(
-          'BFL API response missing request ID',
-          'REQUEST_FAILED'
-        );
-      }
-
-      // Step 2: Poll for result
-      const imageUrl = await this.pollBflResult(createData.id);
-
-      // Step 3: Download the image
-      console.log('[BltcyImageClient] Downloading BFL image from:', imageUrl);
-      const imageResponse = await resolveFetch()(imageUrl);
-      if (!imageResponse.ok) {
-        throw new ImageGenerationError(
-          `Failed to download image: HTTP ${imageResponse.status}`,
-          'DOWNLOAD_FAILED'
-        );
-      }
-
-      const blob = await imageResponse.blob();
-      const objectUrl = URL.createObjectURL(blob);
-
-      console.log('[BltcyImageClient] BFL image generated successfully:', {
-        blobSize: blob.size,
-        blobType: blob.type,
-        objectUrl
-      });
-
-      return { blob, objectUrl };
-    } catch (error) {
-      console.error('[BltcyImageClient] BFL generation error:', error);
-      throw this.handleError(error);
-    }
-  }
-
-  /**
-   * Poll BFL proxy API for generation result
-   */
-  private async pollBflResult(requestId: string, maxAttempts: number = 120): Promise<string> {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      try {
-        const response = await resolveFetch()(`${this.baseURL}/bfl/v1/get_result?id=${requestId}`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new ImageGenerationError(
-            `Failed to get BFL result: HTTP ${response.status}`,
-            'REQUEST_FAILED'
-          );
-        }
-
-        const data = await response.json();
-        console.log('[BltcyImageClient] BFL poll attempt', attempt + 1, ':', data.status);
-
-        if (data.status === 'Ready' && data.result?.sample) {
-          return data.result.sample;
-        } else if (data.status === 'Error') {
-          throw new ImageGenerationError(
-            `BFL generation failed: ${data.error || 'Unknown error'}`,
-            'REQUEST_FAILED'
-          );
-        }
-
-        // Still pending, wait before next poll
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (error) {
-        if (error instanceof ImageGenerationError) {
-          throw error;
-        }
-        throw new ImageGenerationError(
-          `Failed to poll BFL result: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          'REQUEST_FAILED'
-        );
-      }
-    }
-
-    throw new ImageGenerationError(
-      'BFL generation timed out after maximum polling attempts',
-      'REQUEST_FAILED'
-    );
+    return this.generateImageChatFormat(prompt, model);
   }
 
   /**
@@ -534,7 +347,7 @@ export class BltcyImageClient {
       errorMessage = 'Rate limit exceeded. Please try again later.';
     } else if (status === 503) {
       errorCode = 'REQUEST_FAILED';
-      errorMessage = 'The image generation service is temporarily unavailable. This is likely due to high demand or maintenance on the upstream provider (Black Forest Labs). Please try again in a few minutes, or switch to a different model that doesn\'t use the BFL proxy (e.g., "flux", "nano-banana", "gpt-image-1").';
+      errorMessage = 'The image generation service is temporarily unavailable. Please try again in a few minutes or switch to a different model.';
     } else if (status >= 500) {
       errorCode = 'REQUEST_FAILED';
       errorMessage = `The image generation service encountered an error (HTTP ${status}). Please try again later or switch to a different model.`;
@@ -576,4 +389,3 @@ export class BltcyImageClient {
     );
   }
 }
-

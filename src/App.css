@@ -1805,6 +1805,20 @@ input[type="text"]:focus {
   border: 1px solid rgba(102, 126, 234, 0.25);
 }
 
+.generation-error-message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9em;
+  line-height: 1.45;
+  color: rgba(255, 214, 214, 0.96);
+  padding: 0.7rem 0.85rem;
+  background: rgba(235, 87, 87, 0.12);
+  border-radius: 6px;
+  border: 1px solid rgba(235, 87, 87, 0.38);
+  word-break: break-word;
+}
+
 .generated-image-actions {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1910,6 +1924,12 @@ input[type="text"]:focus {
     color: #2b3a6b;
     background: rgba(102, 126, 234, 0.12);
     border-color: rgba(102, 126, 234, 0.3);
+  }
+
+  .generation-error-message {
+    color: #9c2d2d;
+    background: rgba(204, 55, 55, 0.09);
+    border-color: rgba(204, 55, 55, 0.26);
   }
 
   .empty-state {

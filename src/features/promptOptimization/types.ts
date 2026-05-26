@@ -8,14 +8,11 @@ export interface LLMSettings {
 // Unified image generation model type
 export type ImageGenModel =
   // BLTCY models (no provider suffix)
-  | 'flux-dev'
-  | 'flux-pro'
   | 'nano-banana'
   | 'nano-banana-hd'
   | 'dall-e-3'
   | 'recraftv3'
   | 'qwen-image'
-  | 'flux-kontext-pro'
   | 'gpt-image-1'
   | 'gpt-4o-image'
   | 'sora-image'
@@ -38,5 +35,5 @@ export interface LocalConfig {
   bflApiKey?: string;
   geminiApiKey?: string;
   bltcyApiKey?: string;
-  selectedModel?: ImageGenModel;
+  selectedModel?: string;
 }
