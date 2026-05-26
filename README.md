@@ -191,10 +191,10 @@ pnpm run tauri:build
 The release bundle is produced under
 `src-tauri/target/release/bundle/macos/Imagio.app`.
 
-## Local Configuration
+## Local Development Configuration
 
 The repository includes `public/config.local.json.example`. To define local
-service settings without committing credentials, create
+service settings while running from source, create
 `public/config.local.json`:
 
 ```json
@@ -221,7 +221,11 @@ credential; alternative supported models can be selected and configured in
 the Settings panel.
 
 The same configuration values may be changed in the application's Settings
-panel. `public/config.local.json` is excluded from version control.
+panel. `public/config.local.json` is excluded from version control and is
+automatically removed from production builds so that local credentials are
+not bundled into a published application. Users of a downloaded release
+should enter private credentials through the Settings panel instead of
+placing them in the public repository.
 
 ## Development Verification
 
