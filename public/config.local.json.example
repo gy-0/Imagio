@@ -6,7 +6,5 @@
     "temperature": 0.7
   },
   "selectedModel": "nano-banana",
-  "bltcyApiKey": "your-bltcy-api-key-here",
-  "bflApiKey": "your-bfl-api-key-here",
-  "geminiApiKey": "your-gemini-api-key-here"
+  "bltcyApiKey": "your-image-generation-api-key-here"
 }

@@ -82,10 +82,12 @@ file.
 ### Image Generation And Persistence
 
 The generation layer provides a common UI contract over multiple generation
-clients. The source tree includes direct client integrations for Black Forest
-Labs FLUX and Google Gemini, together with additional routed model adapters.
-Responses are normalised to a local image preview regardless of whether the
-provider returns an image directly or requires polling for a completed job.
+clients. Nano Banana is the default text-to-image (T2I) model in the
+application and provides the primary generation path for the workflow.
+Supported alternative models can still be selected through the settings panel
+when required. Responses are normalised to a local image preview regardless of
+whether the provider returns an image directly or requires polling for a
+completed job.
 
 Generated images are persisted under the application's local data directory so
 that a session can be restored. The user can also explicitly save a result to a
@@ -204,9 +206,7 @@ service settings without committing credentials, create
     "temperature": 0.7
   },
   "selectedModel": "nano-banana",
-  "bflApiKey": "your-bfl-api-key",
-  "geminiApiKey": "your-gemini-api-key",
-  "bltcyApiKey": "your-additional-provider-api-key"
+  "bltcyApiKey": "your-image-generation-api-key"
 }
 ```
 
@@ -215,8 +215,10 @@ OpenAI-compatible model through Ollama and set its endpoint and model name in
 this local configuration file. The example above uses `gpt-oss:20b`; another
 compatible local model may be substituted. For a remote LLM provider, replace
 the URL and supply its API key.
-Image-generation providers require network access and the corresponding
-credential.
+The image-generation configuration shown above selects Nano Banana as the
+default model. Image generation requires network access and its corresponding
+credential; alternative supported models can be selected and configured in
+the Settings panel.
 
 The same configuration values may be changed in the application's Settings
 panel. `public/config.local.json` is excluded from version control.
